@@ -7,11 +7,9 @@ repos:
         language: python
         types: [python]
         pass_filenames: false
-        verbose: true
       - id: type-check
         name: type-check
         entry: hatch run types:check
         language: python
         types: [python]
         pass_filenames: false
-        verbose: true

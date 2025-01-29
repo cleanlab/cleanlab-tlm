@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_call:
 
 jobs:
   typecheck:
@@ -17,9 +18,6 @@ jobs:
         with:
           python-version: "3.13"
       - uses: pypa/hatch@install
-      # TODO: remove after we release tlm-sdk package (and are no longer installing from github)
-      - name: setup git url rewrite
-        run: git config --global url."https://${{ secrets.GH_USERNAME }}:${{ secrets.CLEANLAB_BOT_PAT }}@github.com".insteadOf ssh://git@github.com
       - run: hatch run types:check
   fmt:
     name: Format and lint
@@ -43,7 +41,4 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: pypa/hatch@install
-      # TODO: remove after we release tlm-sdk package (and are no longer installing from github)
-      - name: setup git url rewrite
-        run: git config --global url."https://${{ secrets.GH_USERNAME }}:${{ secrets.CLEANLAB_BOT_PAT }}@github.com".insteadOf ssh://git@github.com
       - run: hatch test -v --cover --include python=$(echo ${{ matrix.python }})

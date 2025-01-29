@@ -73,6 +73,20 @@ You can use [`hatch publish`][hatch-publish] if you want to manually publish bui
 [hatch-publish]: https://hatch.pypa.io/latest/publish/
 [pypi]: https://pypi.org/
 
+### Automated releases
+
+Automated releases are handled by the [release workflow][release-workflow] which is triggered by pushing a new tag to the repository. To create a new release:
+
+1. Bump the version in `src/cleanlab_tlm/__about__.py`. You can use the [`hatch version`][hatch-version] command to do this.
+2. Ensure that the release notes are updated in [`CHANGELOG.md`][changelog]. You should update the `[Unreleased]` header to the new version and add a new `[Unreleased]` section at the top of the file.
+3. Create a PR and merge these changes into the `main` branch.
+4. After the PR is merged into `main`, create a new release tag by running `git tag v<output of hatch version>` (i.e. `git tag v0.0.1`).
+5. Push the tag to the repository by running `git push origin <tag>`.
+6. This will trigger the release workflow which will build the package, create a release on GitHub, and publish the package version to PyPI. The GitHub release notes will be automatically generated from the [changelog].
+   [release-workflow]: .github/workflows/release.yml
+   [hatch-version]: https://hatch.pypa.io/latest/version/#updating
+   [changelog]: CHANGELOG.md
+
 ## Continuous integration
 
 Testing, type checking, and formatting/linting is [checked in CI][ci].
