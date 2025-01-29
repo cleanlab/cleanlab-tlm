@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cleanlab-tlm"
+dynamic = ["version"]
+description = 'Python client library for Cleanlab Trustworthy Language Model'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Cleanlab Inc", email = "team@cleanlab.ai" },
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "tlm-sdk==0.1.0a8",
+  "pydantic>=1.9.0, <3",
+]
+
+[project.urls]
+Documentation = "https://github.com/cleanlab/cleanlab-tlm#readme"
+Issues = "https://github.com/cleanlab/cleanlab-tlm/issues"
+Source = "https://github.com/cleanlab/cleanlab-tlm"
+
+[tool.hatch.version]
+path = "src/cleanlab_tlm/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+  "pytest",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --strict --install-types --non-interactive {args:src/cleanlab_tlm tests}"
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.envs.hatch-test]
+extra-dependencies = []
+
+[tool.hatch.envs.hatch-test.env-vars]
+COVERAGE_FAIL_UNDER = ""
+
+[tool.hatch.envs.hatch-test.overrides]
+matrix.python.env-vars = [ { key = "COVERAGE_FAIL_UNDER", value = "--fail-under=90", if = [ "3.13" ] } ]
+
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage report {env:COVERAGE_FAIL_UNDER}"
+
+[tool.coverage.run]
+source_pkgs = ["cleanlab_tlm", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/cleanlab_tlm/__about__.py",
+  "*/tests/*",
+]
+
+[tool.coverage.paths]
+cleanlab_tlm = ["src/cleanlab_tlm", "*/cleanlab-tlm/src/cleanlab_tlm"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.hatch.envs.coverage]
+detached = true
+dependencies = [
+  "coverage",
+]
+
+[tool.hatch.envs.coverage.scripts]
+report = "coverage report --fail-under=90"
+html = "coverage html"
+xml = "coverage xml"
+
+[tool.ruff.lint]
+ignore = ["FA100", "UP007", "UP006"]
