@@ -47,6 +47,7 @@ path = "src/cleanlab_tlm/__about__.py"
 extra-dependencies = [
   "mypy>=1.0.0",
   "pytest",
+  "pytest-asyncio",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --strict --install-types --non-interactive {args:src/cleanlab_tlm tests}"
