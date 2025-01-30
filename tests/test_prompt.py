@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any
+from typing import Any, Generator
 
 import pytest
 
@@ -231,7 +231,7 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
 
 
 @pytest.fixture(autouse=True)
-def reset_tlm(tlm):
+def reset_tlm(tlm: TLM) -> Generator[None, None, None]:
     original_timeout = tlm._timeout
     yield
     tlm._timeout = original_timeout
