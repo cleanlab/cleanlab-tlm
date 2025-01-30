@@ -100,4 +100,4 @@ html = "coverage html"
 xml = "coverage xml"
 
 [tool.ruff.lint]
-ignore = ["FA100", "UP007", "UP006"]
+ignore = ["FA100", "UP007", "UP006", "T201"]
