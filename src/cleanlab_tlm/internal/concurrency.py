@@ -35,7 +35,6 @@ class TlmRateHandler:
     async def __aenter__(self) -> None:
         """Acquires send semaphore, blocking until it can be acquired."""
         await self._send_semaphore.acquire()
-        return
 
     async def __aexit__(
         self,

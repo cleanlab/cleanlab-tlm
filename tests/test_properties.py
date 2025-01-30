@@ -25,7 +25,7 @@ test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
-    if "log" in options.keys():
+    if "log" in options:
         print("Testing log:", options["log"], end="")
         if "log" in response:
             print(" response log:", response["log"], end="")
@@ -89,14 +89,7 @@ def _is_valid_get_trustworthiness_score_response(
         ({"quality_preset", "use_self_reflection"}.issubset(options))
         and not options["use_self_reflection"]
         and options["quality_preset"] == "base"
-    ):
-        print(
-            "Options dictinary called with strange parameters. Allowing none in response."
-        )
-        return is_trustworthiness_score_json_format(
-            response, allow_null_trustworthiness_score=True
-        )
-    elif (
+    ) or (
         ({"num_consistency_samples", "use_self_reflection"}.issubset(options))
         and not options["use_self_reflection"]
         and options["num_consistency_samples"] == 0

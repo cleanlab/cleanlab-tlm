@@ -8,8 +8,8 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_MODELS,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
-    TLM_SIMILARITY_MEASURES,
     TLM_REASONING_EFFORT_VALUES,
+    TLM_SIMILARITY_MEASURES,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
@@ -263,7 +263,7 @@ def process_response_and_kwargs(
             if key == "perplexity":
                 if isinstance(response, str):
                     if not (
-                        val is None or isinstance(val, float) or isinstance(val, int)
+                        isinstance(val, (float, int))
                     ):
                         raise ValidationError(
                             f"Invalid type {type(val)}, perplexity should be a float when response is a str."
@@ -284,7 +284,7 @@ def process_response_and_kwargs(
 
                     for v in val:
                         if not (
-                            v is None or isinstance(v, float) or isinstance(v, int)
+                            isinstance(v, (float, int))
                         ):
                             raise ValidationError(
                                 f"Invalid type {type(v)}, perplexity values must be a float"

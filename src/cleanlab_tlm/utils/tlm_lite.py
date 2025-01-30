@@ -7,11 +7,11 @@ from typing import Dict, List, Optional, Sequence, Union, cast
 import numpy as np
 
 from cleanlab_tlm.errors import ValidationError
+from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.internal.validation import (
     get_tlm_lite_response_options,
     validate_tlm_lite_score_options,
 )
-from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import (
     TLM,
     TLMOptions,

@@ -1,4 +1,4 @@
-from typing import Literal, Dict, Any
+from typing import Any, Dict, Literal
 
 TLMQualityPreset = Literal["best", "high", "medium", "low", "base"]
 

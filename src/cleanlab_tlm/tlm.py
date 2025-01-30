@@ -27,12 +27,13 @@ from cleanlab_tlm.errors import (
     ValidationError,
 )
 from cleanlab_tlm.internal.api import api
+from cleanlab_tlm.internal.concurrency import TlmRateHandler
 from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
 )
-from cleanlab_tlm.internal.concurrency import TlmRateHandler
+from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.internal.validation import (
     process_response_and_kwargs,
     validate_tlm_options,
@@ -42,7 +43,6 @@ from cleanlab_tlm.internal.validation import (
     validate_tlm_try_prompt,
     validate_try_tlm_prompt_response,
 )
-from cleanlab_tlm.internal.types import TLMQualityPreset
 
 
 def handle_tlm_exceptions(
@@ -217,12 +217,12 @@ class TLM:
             self._return_log = True
 
         # explicitly specify the default model
-        self._options = {**{"model": _TLM_DEFAULT_MODEL}, **options_dict}
+        self._options = {"model": _TLM_DEFAULT_MODEL, **options_dict}
 
         self._quality_preset = quality_preset
 
         if timeout is not None and not (
-            isinstance(timeout, int) or isinstance(timeout, float)
+            isinstance(timeout, (float, int))
         ):
             raise ValidationError("timeout must be a integer or float value")
 
@@ -825,7 +825,7 @@ class TLMOptions(TypedDict):
     Args:
         model (str, default = "gpt-4o-mini"): underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
         - Models currently supported include: "gpt-4o-mini", "gpt-4o", "o1-preview", "gpt-3.5-turbo-16k", "gpt-4", "claude-3.5-sonnet", "claude-3-haiku".
-        - Additional models supported in beta include: "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
+        - Additional models supported in beta include: "o1", "o1-mini", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
 
         max_tokens (int, default = 512): the maximum number of tokens to generate in the TLM response.
         This number will impact the maximum number of tokens you will see in the output response, and also the number of tokens

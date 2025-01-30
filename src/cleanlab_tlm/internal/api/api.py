@@ -21,8 +21,6 @@ from cleanlab_tlm.errors import (
     TlmServerError,
 )
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
-
-
 from cleanlab_tlm.internal.types import JSONDict
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
