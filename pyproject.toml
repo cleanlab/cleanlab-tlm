@@ -104,4 +104,7 @@ ignore = ["FA100", "UP007", "UP006", "T201", "FBT001", "FBT002", "S101"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
   "SLF001", # private member accessed
+  "BLE001", # blind except
+  "S311", # random number generator
+  "DTZ005", # datetime timezone
 ]

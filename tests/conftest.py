@@ -69,11 +69,7 @@ def tlm_rate_handler() -> TlmRateHandler:
 
 def _get_options_dictionary(model: Optional[str]) -> dict:
     """Returns a dictionary of randomly generated options for the TLM."""
-
-    if model is None:
-        options = {}
-    else:
-        options = {"model": model}
+    options = {} if model is None else {"model": model}
 
     add_max_tokens = np.random.choice([True, False])
     add_num_candidate_responses = np.random.choice([True, False])
