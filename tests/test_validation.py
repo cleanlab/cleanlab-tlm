@@ -24,7 +24,7 @@ test_prompt = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
-def assert_prompt_too_long_error(response: Any, index: int):
+def assert_prompt_too_long_error(response: Any, index: int) -> None:
     assert is_tlm_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
@@ -36,7 +36,7 @@ def assert_prompt_too_long_error(response: Any, index: int):
     assert response["log"]["error"]["retryable"] is False
 
 
-def assert_prompt_too_long_error_score(response: Any, index: int):
+def assert_prompt_too_long_error_score(response: Any, index: int) -> None:
     assert is_tlm_score_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
@@ -48,7 +48,7 @@ def assert_prompt_too_long_error_score(response: Any, index: int):
     assert response["log"]["error"]["retryable"] is False
 
 
-def assert_response_too_long_error_score(response: Any, index: int):
+def assert_response_too_long_error_score(response: Any, index: int) -> None:
     assert is_tlm_score_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
@@ -60,7 +60,9 @@ def assert_response_too_long_error_score(response: Any, index: int):
     assert response["log"]["error"]["retryable"] is False
 
 
-def assert_prompt_and_response_combined_too_long_error_score(response: Any, index: int):
+def assert_prompt_and_response_combined_too_long_error_score(
+    response: Any, index: int
+) -> None:
     assert is_tlm_score_response_with_error(response)
     assert response["log"]["error"]["message"].startswith(
         f"Error executing query at index {index}:"
@@ -72,7 +74,7 @@ def assert_prompt_and_response_combined_too_long_error_score(response: Any, inde
     assert response["log"]["error"]["retryable"] is False
 
 
-def test_prompt_unsupported_kwargs(tlm: TLM):
+def test_prompt_unsupported_kwargs(tlm: TLM) -> None:
     """Tests that validation error is raised when unsupported keyword arguments are passed to prompt."""
     with pytest.raises(ValidationError) as exc_info:
         tlm.prompt(
@@ -85,7 +87,7 @@ def test_prompt_unsupported_kwargs(tlm: TLM):
     )
 
 
-def test_prompt_constrain_outputs_wrong_type_single_prompt(tlm: TLM):
+def test_prompt_constrain_outputs_wrong_type_single_prompt(tlm: TLM) -> None:
     """Tests that validation error is raised when constrain_outputs is not a list of strings when prompt is a string."""
     with pytest.raises(ValidationError) as exc_info:
         tlm.prompt(
@@ -96,7 +98,7 @@ def test_prompt_constrain_outputs_wrong_type_single_prompt(tlm: TLM):
     assert str(exc_info.value).startswith("constrain_outputs must be a list of strings")
 
 
-def test_prompt_constrain_outputs_wrong_length(tlm: TLM):
+def test_prompt_constrain_outputs_wrong_length(tlm: TLM) -> None:
     """Tests that validation error is raised when constrain_outputs length does not match prompt length."""
     with pytest.raises(ValidationError) as exc_info:
         tlm.prompt(
@@ -109,7 +111,7 @@ def test_prompt_constrain_outputs_wrong_length(tlm: TLM):
     )
 
 
-def test_prompt_too_long_exception_single_prompt(tlm: TLM):
+def test_prompt_too_long_exception_single_prompt(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.prompt with a single prompt."""
     with pytest.raises(TlmBadRequest) as exc_info:
         tlm.prompt(
@@ -121,7 +123,7 @@ def test_prompt_too_long_exception_single_prompt(tlm: TLM):
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int):
+def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.prompt with a batch of prompts.
 
     Error message should indicate which the batch index for which the prompt is too long.
@@ -144,7 +146,7 @@ def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int):
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_prompt_too_long_exception_try_prompt(tlm: TLM, num_prompts: int):
+def test_prompt_too_long_exception_try_prompt(tlm: TLM, num_prompts: int) -> None:
     """Tests that None is returned when prompt is too long when calling tlm.try_prompt with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
@@ -162,7 +164,7 @@ def test_prompt_too_long_exception_try_prompt(tlm: TLM, num_prompts: int):
     )
 
 
-def test_response_too_long_exception_single_score(tlm: TLM):
+def test_response_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when response is too long when calling tlm.get_trustworthiness_score with a single prompt."""
     with pytest.raises(TlmBadRequest) as exc_info:
         tlm.get_trustworthiness_score(
@@ -175,7 +177,7 @@ def test_response_too_long_exception_single_score(tlm: TLM):
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
+def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.get_trustworthiness_score with a batch of prompts.
 
     Error message should indicate which the batch index for which the prompt is too long.
@@ -202,7 +204,7 @@ def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_response_too_long_exception_try_score(tlm: TLM, num_prompts: int):
+def test_response_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> None:
     """Tests that None is returned when prompt is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
@@ -222,7 +224,7 @@ def test_response_too_long_exception_try_score(tlm: TLM, num_prompts: int):
     )
 
 
-def test_prompt_too_long_exception_single_score(tlm: TLM):
+def test_prompt_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.get_trustworthiness_score with a single prompt."""
     with pytest.raises(TlmBadRequest) as exc_info:
         tlm.get_trustworthiness_score(
@@ -235,7 +237,7 @@ def test_prompt_too_long_exception_single_score(tlm: TLM):
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
+def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.get_trustworthiness_score with a batch of prompts.
 
     Error message should indicate which the batch index for which the prompt is too long.
@@ -262,7 +264,7 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int):
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int):
+def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> None:
     """Tests that None is returned when prompt is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
@@ -282,7 +284,7 @@ def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int):
     )
 
 
-def test_combined_too_long_exception_single_score(tlm: TLM):
+def test_combined_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt + response combined length is too long when calling tlm.get_trustworthiness_score with a single prompt."""
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
 
@@ -301,7 +303,7 @@ def test_combined_too_long_exception_single_score(tlm: TLM):
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
 def test_prompt_and_response_combined_too_long_exception_batch_score(
     tlm: TLM, num_prompts: int
-):
+) -> None:
     """Tests that bad request error is raised when prompt + response combined length is too long when calling tlm.get_trustworthiness_score with a batch of prompts.
 
     Error message should indicate which the batch index for which the prompt is too long.
@@ -330,7 +332,7 @@ def test_prompt_and_response_combined_too_long_exception_batch_score(
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
 def test_prompt_and_response_combined_too_long_exception_try_score(
     tlm: TLM, num_prompts: int
-):
+) -> None:
     """Tests that appropriate error is returned when prompt + response is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
@@ -352,7 +354,7 @@ def test_prompt_and_response_combined_too_long_exception_try_score(
     )
 
 
-def test_invalid_option_passed():
+def test_invalid_option_passed() -> None:
     """Tests that validation error is thrown when an invalid option is passed to the TLM."""
     invalid_option = "invalid_option"
 
@@ -363,7 +365,7 @@ def test_invalid_option_passed():
         TLM(options={invalid_option: "invalid_value"})
 
 
-def test_max_tokens_invalid_option_passed():
+def test_max_tokens_invalid_option_passed() -> None:
     """Tests that validation error is thrown when an invalid max_tokens option value is passed to the TLM."""
     option = "max_tokens"
     option_value = -1
