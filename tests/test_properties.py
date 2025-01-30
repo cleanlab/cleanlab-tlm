@@ -69,12 +69,11 @@ def _is_valid_prompt_response(
             allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=True,
         )
-    else:
-        return is_tlm_response(
-            response,
-            allow_none_response=allow_none_response,
-            allow_null_trustworthiness_score=allow_null_trustworthiness_score,
-        )
+    return is_tlm_response(
+        response,
+        allow_none_response=allow_none_response,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 def _is_valid_get_trustworthiness_score_response(
@@ -100,11 +99,10 @@ def _is_valid_get_trustworthiness_score_response(
         return is_trustworthiness_score_json_format(
             response, allow_null_trustworthiness_score=True
         )
-    else:
-        return is_trustworthiness_score_json_format(
-            response,
-            allow_null_trustworthiness_score=allow_null_trustworthiness_score,
-        )
+    return is_trustworthiness_score_json_format(
+        response,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
 
 def _test_prompt_response(
