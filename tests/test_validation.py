@@ -5,6 +5,8 @@ import pytest
 
 from cleanlab_tlm.errors import TlmBadRequest, ValidationError
 from cleanlab_tlm.tlm import TLM
+from tests.test_get_trustworthiness_score import is_tlm_score_response_with_error
+from tests.test_prompt import is_tlm_response_with_error
 from tests.tlm.conftest import make_text_unique
 from tests.tlm.constants import (
     CHARACTERS_PER_TOKEN,
@@ -15,9 +17,6 @@ from tests.tlm.constants import (
     TEST_PROMPT_BATCH,
     TEST_RESPONSE,
 )
-
-from .test_get_trustworthiness_score import is_tlm_score_response_with_error
-from .test_prompt import is_tlm_response_with_error
 
 np.random.seed(0)
 test_prompt = make_text_unique(TEST_PROMPT)

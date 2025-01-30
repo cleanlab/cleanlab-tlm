@@ -96,9 +96,11 @@ async def test_rate_handler_rate_limit_error(
     # - congestion window is decreased multiplicatively
     # - send semaphore value matches congestion window
     # - rate limit error is raised
+    rate_limit_error_message: str = "Rate limit error"
+    rate_limit_error_retry_after: int = 0
     with pytest.raises(RateLimitError):
         async with tlm_rate_handler:
-            raise RateLimitError("", 0)
+            raise RateLimitError(rate_limit_error_message, rate_limit_error_retry_after)
 
     assert (
         tlm_rate_handler._congestion_window
