@@ -5,15 +5,17 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, List, Optional, Sequence, Union, cast
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
 from cleanlab_tlm.errors import TlmNotCalibratedError, ValidationError
-from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
+
+if TYPE_CHECKING:
+    from cleanlab_tlm.internal.types import TLMQualityPreset
 
 
 class TLMCalibrated:
