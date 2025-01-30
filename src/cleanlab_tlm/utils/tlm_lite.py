@@ -120,7 +120,7 @@ class TLMLite:
             perplexity = [r["log"]["perplexity"] for r in prompt_response]
             return self._batch_score(prompt, response, perplexity)
 
-        elif (
+        if (
             isinstance(prompt, str)
             and isinstance(prompt_response, dict)
             and prompt_response["response"] is not None
@@ -131,8 +131,7 @@ class TLMLite:
                 perplexity=prompt_response["log"]["perplexity"],
             )
 
-        else:
-            raise ValueError("prompt and prompt_response do not have matching types")
+        raise ValueError("prompt and prompt_response do not have matching types")
 
     def try_prompt(
         self,
@@ -186,10 +185,10 @@ class TLMLite:
             prompt, response, perplexity=perplexity
         )
 
-        if isinstance(score_response, dict):
-            return {"response": response, **score_response}
-        else:
-            raise ValueError(f"score_response has invalid type {type(score_response)}")
+        if not isinstance(score_response, dict):
+            raise TypeError(f"score_response has invalid type {type(score_response)}")
+
+        return {"response": response, **score_response}
 
     def _batch_score(
         self,
@@ -214,14 +213,13 @@ class TLMLite:
         assert isinstance(score_response, list)
         assert len(prompt) == len(score_response)
 
-        if all(isinstance(score, dict) for score in score_response):
-            score_response = cast(List[TLMScore], score_response)
-            return [
-                {"response": res, **score}
-                for res, score in zip(response, score_response)
-            ]
-        else:
-            raise ValueError("score_response has invalid type")
+        if not all(isinstance(score, dict) for score in score_response):
+            raise TypeError("score_response has invalid type")
+
+        score_response = cast(List[TLMScore], score_response)
+        return [
+            {"response": res, **score} for res, score in zip(response, score_response)
+        ]
 
     def _try_batch_score(
         self,
@@ -247,13 +245,13 @@ class TLMLite:
 
         assert len(prompt) == len(score_response)
 
-        if all(isinstance(score, dict) for score in score_response):
-            return [
-                {"response": res, **score} if score else None
-                for res, score in zip(response, score_response)
-            ]
-        else:
-            raise ValueError("score_response has invalid type")
+        if not all(isinstance(score, dict) for score in score_response):
+            raise TypeError("score_response has invalid type")
+
+        return [
+            {"response": res, **score} if score else None
+            for res, score in zip(response, score_response)
+        ]
 
     def get_model_names(self) -> Dict[str, str]:
         """Returns the underlying LLMs used to generate responses and score their trustworthiness."""
