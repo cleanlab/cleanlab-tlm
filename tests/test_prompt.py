@@ -92,6 +92,7 @@ def test_single_prompt_constrain_outputs(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert is_tlm_response(response)
+    assert isinstance(response, dict)
     assert response["response"] == "test"
 
 
