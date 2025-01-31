@@ -40,7 +40,7 @@ def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
         print("... PASSED.")
 
 
-def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
+def _test_log_batch(responses: List[Dict[str, Any]], options: Dict[str, Any]) -> None:
     """Tests the log dictionary in the batch response based on the options dictionary."""
     for response in responses:
         if response is not None:
@@ -48,10 +48,10 @@ def _test_log_batch(responses: Dict[str, Any], options: Dict[str, Any]) -> None:
 
 
 def _is_valid_prompt_response(
-    response,
-    options,
-    allow_none_response=False,
-    allow_null_trustworthiness_score=False,
+    response: Dict[str, Any],
+    options: Dict[str, Any],
+    allow_none_response: bool = False,
+    allow_null_trustworthiness_score: bool = False,
 ) -> bool:
     """Returns true if prompt response is valid based on properties for prompt() functionality."""
     _test_log(response, options)
@@ -72,9 +72,9 @@ def _is_valid_prompt_response(
 
 
 def _is_valid_get_trustworthiness_score_response(
-    response,
-    options,
-    allow_null_trustworthiness_score=False,
+    response: Dict[str, Any],
+    options: Dict[str, Any],
+    allow_null_trustworthiness_score: bool = False,
 ) -> bool:
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
     assert isinstance(response, dict)
@@ -97,10 +97,10 @@ def _is_valid_get_trustworthiness_score_response(
 
 
 def _test_prompt_response(
-    response,
-    options,
-    allow_none_response=False,
-    allow_null_trustworthiness_score=False,
+    response: Dict[str, Any],
+    options: Dict[str, Any],
+    allow_none_response: bool = False,
+    allow_null_trustworthiness_score: bool = False,
 ) -> None:
     """Property tests the responses of a prompt based on the options dictionary and returned responses."""
     assert _is_valid_prompt_response(
@@ -112,10 +112,10 @@ def _test_prompt_response(
 
 
 def _test_batch_prompt_response(
-    responses,
-    options,
-    allow_none_response=False,
-    allow_null_trustworthiness_score=False,
+    responses: List[Dict[str, Any]],
+    options: Dict[str, Any],
+    allow_none_response: bool = False,
+    allow_null_trustworthiness_score: bool = False,
 ) -> None:
     """Property tests the responses of a batch prompt based on the options dictionary and returned responses."""
     assert responses is not None
@@ -136,9 +136,9 @@ def _test_batch_prompt_response(
 
 
 def _test_get_trustworthiness_score_response(
-    response,
-    options,
-    allow_null_trustworthiness_score=False,
+    response: Dict[str, Any],
+    options: Dict[str, Any],
+    allow_null_trustworthiness_score: bool = False,
 ) -> None:
     """Property tests the responses of a get_trustworthiness_score based on the options dictionary and returned responses."""
     assert _is_valid_get_trustworthiness_score_response(
@@ -148,7 +148,11 @@ def _test_get_trustworthiness_score_response(
     )
 
 
-def _test_batch_get_trustworthiness_score_response(responses, options, allow_null_trustworthiness_score=False) -> None:
+def _test_batch_get_trustworthiness_score_response(
+    responses: List[Dict[str, Any]],
+    options: Dict[str, Any],
+    allow_null_trustworthiness_score: bool = False,
+) -> None:
     """Property tests the responses of a batch get_trustworthiness_score based on the options dictionary and returned responses."""
     assert responses is not None
     assert isinstance(responses, list)
