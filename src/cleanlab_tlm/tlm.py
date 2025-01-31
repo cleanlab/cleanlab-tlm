@@ -531,6 +531,7 @@ class TLM:
         prompt: str,
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
+        capture_exceptions: bool = False,  # noqa: ARG002
         batch_index: Optional[int] = None,
         constrain_outputs: Optional[List[str]] = None,
     ) -> TLMResponse:
@@ -713,6 +714,7 @@ class TLM:
         response: Dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
+        capture_exceptions: bool = False,  # noqa: ARG002
         batch_index: Optional[int] = None,
     ) -> TLMScore:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
