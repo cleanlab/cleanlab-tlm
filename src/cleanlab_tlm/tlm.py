@@ -243,7 +243,7 @@ class TLM:
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
         if is_notebook_flag:
-            import nest_asyncio
+            import nest_asyncio  # type: ignore
 
             nest_asyncio.apply()
 
@@ -372,7 +372,7 @@ class TLM:
                 bar_format="{desc} {percentage:3.0f}%|{bar}|",
             )
         else:
-            gather_task = asyncio.gather(*tlm_query_tasks)
+            gather_task = asyncio.gather(*tlm_query_tasks)  # type: ignore[assignment]
 
         wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
         try:
