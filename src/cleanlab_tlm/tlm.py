@@ -10,7 +10,18 @@ import asyncio
 import sys
 import warnings
 from functools import wraps
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 import aiohttp
 from tqdm.asyncio import tqdm_asyncio
@@ -33,7 +44,6 @@ from cleanlab_tlm.internal.constants import (
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
 )
-from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.internal.validation import (
     process_response_and_kwargs,
     validate_tlm_options,
@@ -43,6 +53,9 @@ from cleanlab_tlm.internal.validation import (
     validate_tlm_try_prompt,
     validate_try_tlm_prompt_response,
 )
+
+if TYPE_CHECKING:
+    from cleanlab_tlm.internal.types import TLMQualityPreset
 
 
 def handle_tlm_exceptions(
@@ -99,7 +112,7 @@ def handle_tlm_exceptions(
                     retryable=True,
                     response_type=response_type,
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 return _handle_exception(
                     e,
                     capture_exceptions,
@@ -140,13 +153,12 @@ def _handle_exception(
                 trustworthiness_score=None,
                 log=error_log,
             )
-        elif response_type == "TLMScore":
+        if response_type == "TLMScore":
             return TLMScore(
                 trustworthiness_score=None,
                 log=error_log,
             )
-        else:
-            raise ValueError(f"Unsupported response type: {response_type}")
+        raise ValueError(f"Unsupported response type: {response_type}")
     raise e
 
 
@@ -210,10 +222,10 @@ class TLM:
 
         options_dict = options or {}
         validate_tlm_options(options_dict)
-        if "log" in options_dict.keys() and len(options_dict["log"]) > 0:
+        if "log" in options_dict and len(options_dict["log"]) > 0:
             self._return_log = True
 
-        if "custom_eval_criteria" in options_dict.keys():
+        if "custom_eval_criteria" in options_dict:
             self._return_log = True
 
         # explicitly specify the default model
@@ -221,9 +233,7 @@ class TLM:
 
         self._quality_preset = quality_preset
 
-        if timeout is not None and not (
-            isinstance(timeout, (float, int))
-        ):
+        if timeout is not None and not (isinstance(timeout, (float, int))):
             raise ValidationError("timeout must be a integer or float value")
 
         if verbose is not None and not isinstance(verbose, bool):
@@ -539,7 +549,6 @@ class TLM:
         prompt: str,
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
-        capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
         constrain_outputs: Optional[List[str]] = None,
     ) -> TLMResponse:
@@ -622,7 +631,8 @@ class TLM:
                 ),
             )
 
-        assert isinstance(prompt, Sequence) and isinstance(processed_response, Sequence)
+        assert isinstance(prompt, Sequence)
+        assert isinstance(processed_response, Sequence)
 
         return self._event_loop.run_until_complete(
             self._batch_get_trustworthiness_score(
@@ -711,9 +721,8 @@ class TLM:
                 )
                 return cast(TLMScore, trustworthiness_score)
 
-            assert isinstance(prompt, Sequence) and isinstance(
-                processed_response, Sequence
-            )
+            assert isinstance(prompt, Sequence)
+            assert isinstance(processed_response, Sequence)
 
             return await self._batch_get_trustworthiness_score(
                 prompt, processed_response, capture_exceptions=False
@@ -726,7 +735,6 @@ class TLM:
         response: Dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
-        capture_exceptions: bool = False,
         batch_index: Optional[int] = None,
     ) -> TLMScore:
         """Private asynchronous method to get trustworthiness score for prompt-response pairs.
@@ -889,9 +897,6 @@ def is_notebook() -> bool:
     """
     try:
         get_ipython = sys.modules["IPython"].get_ipython
-        if "IPKernelApp" in get_ipython().config:
-            return True
-
-        return False
-    except Exception:
+        return bool("IPKernelApp" in get_ipython().config)
+    except Exception:  # noqa: BLE001
         return False
