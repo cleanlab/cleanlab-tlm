@@ -11,11 +11,11 @@ from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
-    _VALID_TLM_QUALITY_PRESETS,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
 )
-from cleanlab_tlm.tlm import TLM
+from cleanlab_tlm.internal.types import TLMQualityPreset
+from cleanlab_tlm.tlm import TLM, TLMOptions
 
 
 class MissingApiKeyError(ValueError):
@@ -55,8 +55,8 @@ def tlm_dict(tlm_api_key: str) -> Dict[str, Any]:
     and to give signal if the function is not working for a specific set of options or overall.
     """
 
-    tlm_dict = {}
-    for quality_preset in _VALID_TLM_QUALITY_PRESETS:
+    tlm_dict: Dict[str, Any] = {}
+    for quality_preset in TLMQualityPreset.__args__:  # type: ignore
         tlm_dict[quality_preset] = {}
         for model in _VALID_TLM_MODELS:
             tlm_dict[quality_preset][model] = {}
@@ -70,7 +70,6 @@ def tlm_dict(tlm_api_key: str) -> Dict[str, Any]:
                 api_key=tlm_api_key,
                 quality_preset=quality_preset,
             )
-            options["quality_preset"] = quality_preset
             tlm_dict[quality_preset][model]["options"] = options
     return tlm_dict
 
@@ -81,10 +80,8 @@ def tlm_rate_handler() -> TlmRateHandler:
     return TlmRateHandler()
 
 
-def _get_options_dictionary(model: Optional[str]) -> dict:
-    """Returns a dictionary of randomly generated options for the TLM."""
-    options = {} if model is None else {"model": model}
-
+def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
+    """Returns randomly generated TLMOptions for the TLM."""
     add_max_tokens = np.random.choice([True, False])
     add_num_candidate_responses = np.random.choice([True, False])
     add_num_consistency_samples = np.random.choice([True, False])
@@ -94,11 +91,14 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
     add_log_explanation = np.random.choice([True, False])
     add_log_perplexity_score = np.random.choice([True, False])
 
+    options: Dict[str, Any] = {}
+
+    if model is not None:
+        options["model"] = model
+
     if add_max_tokens:
-        max_tokens = _TLM_MAX_TOKEN_RANGE.get(
-            options.get("model", _TLM_DEFAULT_MODEL), _TLM_MAX_TOKEN_RANGE["default"]
-        )[1]
-        options["max_tokens"] = int(np.random.randint(64, max_tokens))
+        max_tokens_limit = _TLM_MAX_TOKEN_RANGE.get(model or _TLM_DEFAULT_MODEL, _TLM_MAX_TOKEN_RANGE["default"])[1]
+        options["max_tokens"] = int(np.random.randint(64, max_tokens_limit))
     if add_use_self_reflection:
         options["use_self_reflection"] = random.choice([True, False])
     if add_num_candidate_responses:
@@ -119,7 +119,7 @@ def _get_options_dictionary(model: Optional[str]) -> dict:
             }.items()
             if options_flag
         ]
-    return options
+    return TLMOptions(**options)  # type: ignore
 
 
 def make_text_unique(text: str) -> str:
