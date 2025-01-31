@@ -112,7 +112,7 @@ def handle_tlm_exceptions(
                     retryable=True,
                     response_type=response_type,
                 )
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 return _handle_exception(
                     e,
                     capture_exceptions,
@@ -140,9 +140,7 @@ def _handle_exception(
             else "Retrying will not help. Please address the issue described in the error message before attempting again."
         )
         error_message = str(e.message) if hasattr(e, "message") else str(e)
-        warning_message = (
-            f"prompt[{batch_index}] failed. {retry_message} Error: {error_message}"
-        )
+        warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {error_message}"
         warnings.warn(warning_message)
 
         error_log = {"error": {"message": error_message, "retryable": retryable}}
@@ -289,9 +287,7 @@ class TLM:
                 for batch_index, (prompt, constrain_output) in enumerate(
                     zip(
                         prompts,
-                        constrain_outputs
-                        if constrain_outputs
-                        else [None] * len(prompts),
+                        constrain_outputs if constrain_outputs else [None] * len(prompts),
                     )
                 )
             ],
@@ -342,9 +338,7 @@ class TLM:
                     capture_exceptions=capture_exceptions,
                     batch_index=batch_index,
                 )
-                for batch_index, (prompt, response) in enumerate(
-                    zip(prompts, responses)
-                )
+                for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
             ],
             per_batch_timeout,
         )
@@ -428,9 +422,7 @@ class TLM:
                 (and save intermediate results between batches), or use the [`try_prompt()`](#method-try_prompt) method instead.
         """
         validate_tlm_prompt(prompt)
-        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(
-            prompt, **kwargs
-        )
+        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
         if isinstance(prompt, str):
             return cast(
                 TLMResponse,
@@ -448,9 +440,7 @@ class TLM:
             self._batch_prompt(
                 prompt,
                 capture_exceptions=False,
-                constrain_outputs=cast(
-                    Optional[List[Optional[List[str]]]], constrain_outputs
-                ),
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
             ),
         )
 
@@ -482,17 +472,13 @@ class TLM:
                 use the [`prompt()`](#method-prompt) method instead.
         """
         validate_tlm_try_prompt(prompt)
-        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(
-            prompt, **kwargs
-        )
+        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
 
         return self._event_loop.run_until_complete(
             self._batch_prompt(
                 prompt,
                 capture_exceptions=True,
-                constrain_outputs=cast(
-                    Optional[List[Optional[List[str]]]], constrain_outputs
-                ),
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
             ),
         )
 
@@ -520,9 +506,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt(prompt)
-        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(
-            prompt, **kwargs
-        )
+        constrain_outputs = validate_tlm_prompt_kwargs_constrain_outputs(prompt, **kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
@@ -538,9 +522,7 @@ class TLM:
             return await self._batch_prompt(
                 prompt,
                 capture_exceptions=False,
-                constrain_outputs=cast(
-                    Optional[List[Optional[List[str]]]], constrain_outputs
-                ),
+                constrain_outputs=cast(Optional[List[Optional[List[str]]]], constrain_outputs),
             )
 
     @handle_tlm_exceptions("TLMResponse")
@@ -635,9 +617,7 @@ class TLM:
         assert isinstance(processed_response, Sequence)
 
         return self._event_loop.run_until_complete(
-            self._batch_get_trustworthiness_score(
-                prompt, processed_response, capture_exceptions=False
-            )
+            self._batch_get_trustworthiness_score(prompt, processed_response, capture_exceptions=False)
         )
 
     def try_get_trustworthiness_score(
@@ -724,9 +704,7 @@ class TLM:
             assert isinstance(prompt, Sequence)
             assert isinstance(processed_response, Sequence)
 
-            return await self._batch_get_trustworthiness_score(
-                prompt, processed_response, capture_exceptions=False
-            )
+            return await self._batch_get_trustworthiness_score(prompt, processed_response, capture_exceptions=False)
 
     @handle_tlm_exceptions("TLMScore")
     async def _get_trustworthiness_score_async(
@@ -898,5 +876,5 @@ def is_notebook() -> bool:
     try:
         get_ipython = sys.modules["IPython"].get_ipython
         return bool("IPKernelApp" in get_ipython().config)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False

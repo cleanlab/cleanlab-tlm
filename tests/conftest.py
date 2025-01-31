@@ -26,9 +26,7 @@ def tlm() -> TLM:
         return TLM()
     except Exception as e:
         environment = os.environ.get("CLEANLAB_API_BASE_URL")
-        pytest.skip(
-            f"Failed to create TLM: {e}. Check your API key and environment: ({environment})."
-        )
+        pytest.skip(f"Failed to create TLM: {e}. Check your API key and environment: ({environment}).")
 
 
 @pytest.fixture(scope="module")
@@ -50,9 +48,7 @@ def tlm_dict() -> Dict[str, Any]:
         for model in _VALID_TLM_MODELS:
             tlm_dict[quality_preset][model] = {}
             options = _get_options_dictionary(model)
-            tlm_dict[quality_preset][model]["tlm"] = TLM(
-                quality_preset=quality_preset, options=options
-            )
+            tlm_dict[quality_preset][model]["tlm"] = TLM(quality_preset=quality_preset, options=options)
             tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
                 quality_preset=quality_preset,
             )

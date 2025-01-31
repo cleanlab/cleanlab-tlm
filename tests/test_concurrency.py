@@ -33,12 +33,11 @@ async def test_rate_handler_slow_start(tlm_rate_handler: TlmRateHandler) -> None
         expected_congestion_window = tlm_rate_handler.DEFAULT_CONGESTION_WINDOW * (
             tlm_rate_handler.SLOW_START_INCREASE_FACTOR**i
         )
-        assert tlm_rate_handler._congestion_window == expected_congestion_window, (
-            "Congestion window is not increased exponentially in slow start"
-        )
         assert (
-            tlm_rate_handler._send_semaphore._value
-            == tlm_rate_handler._congestion_window
+            tlm_rate_handler._congestion_window == expected_congestion_window
+        ), "Congestion window is not increased exponentially in slow start"
+        assert (
+            tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
         ), "Send semaphore value does not match congestion window in slow start"
 
 
@@ -60,18 +59,15 @@ async def test_rate_handler_additive_increase(
     # after every rate limiter acquisition, assert:
     # - congestion window *= SLOW_START_INCREASE_FACTOR
     # - congestion window == send_semaphore value
-    for expected_limit_value in range(
-        current_limit_value + 1, num_additive_increases + current_limit_value + 1
-    ):
+    for expected_limit_value in range(current_limit_value + 1, num_additive_increases + current_limit_value + 1):
         async with tlm_rate_handler:
             pass
 
-        assert tlm_rate_handler._congestion_window == expected_limit_value, (
-            "Congestion window is not increased linearly in congestion control"
-        )
         assert (
-            tlm_rate_handler._send_semaphore._value
-            == tlm_rate_handler._congestion_window
+            tlm_rate_handler._congestion_window == expected_limit_value
+        ), "Congestion window is not increased linearly in congestion control"
+        assert (
+            tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
         ), "Send semaphore value does not match congestion window in congestion control"
 
 
@@ -136,11 +132,9 @@ async def test_rate_handler_non_rate_limit_error(
         async with tlm_rate_handler:
             raise KeyError
 
-    assert tlm_rate_handler._congestion_window == initial_congestion_window, (
-        "Congestion window is kept same for non rate limit error"
-    )
+    assert (
+        tlm_rate_handler._congestion_window == initial_congestion_window
+    ), "Congestion window is kept same for non rate limit error"
     assert (
         tlm_rate_handler._send_semaphore._value == tlm_rate_handler._congestion_window
-    ), (
-        "Send semaphore value does not match congestion window after non rate limit error"
-    )
+    ), "Send semaphore value does not match congestion window after non rate limit error"

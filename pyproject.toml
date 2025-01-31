@@ -112,12 +112,12 @@ ignore = [
   "EM102",
   "B904",
   "B028",
+  "BLE001"
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
   "SLF001", # private member accessed
-  "BLE001", # blind except
   "S311", # random number generator
   "DTZ005", # datetime timezone
 ]

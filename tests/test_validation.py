@@ -25,47 +25,28 @@ test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 def assert_prompt_too_long_error(response: Any, index: int) -> None:
     assert is_tlm_response_with_error(response)
-    assert response["log"]["error"]["message"].startswith(
-        f"Error executing query at index {index}:"
-    )
-    assert (
-        "Prompt length exceeds maximum length of 70000 tokens"
-        in response["log"]["error"]["message"]
-    )
+    assert response["log"]["error"]["message"].startswith(f"Error executing query at index {index}:")
+    assert "Prompt length exceeds maximum length of 70000 tokens" in response["log"]["error"]["message"]
     assert response["log"]["error"]["retryable"] is False
 
 
 def assert_prompt_too_long_error_score(response: Any, index: int) -> None:
     assert is_tlm_score_response_with_error(response)
-    assert response["log"]["error"]["message"].startswith(
-        f"Error executing query at index {index}:"
-    )
-    assert (
-        "Prompt length exceeds maximum length of 70000 tokens"
-        in response["log"]["error"]["message"]
-    )
+    assert response["log"]["error"]["message"].startswith(f"Error executing query at index {index}:")
+    assert "Prompt length exceeds maximum length of 70000 tokens" in response["log"]["error"]["message"]
     assert response["log"]["error"]["retryable"] is False
 
 
 def assert_response_too_long_error_score(response: Any, index: int) -> None:
     assert is_tlm_score_response_with_error(response)
-    assert response["log"]["error"]["message"].startswith(
-        f"Error executing query at index {index}:"
-    )
-    assert (
-        "Response length exceeds maximum length of 15000 tokens"
-        in response["log"]["error"]["message"]
-    )
+    assert response["log"]["error"]["message"].startswith(f"Error executing query at index {index}:")
+    assert "Response length exceeds maximum length of 15000 tokens" in response["log"]["error"]["message"]
     assert response["log"]["error"]["retryable"] is False
 
 
-def assert_prompt_and_response_combined_too_long_error_score(
-    response: Any, index: int
-) -> None:
+def assert_prompt_and_response_combined_too_long_error_score(response: Any, index: int) -> None:
     assert is_tlm_score_response_with_error(response)
-    assert response["log"]["error"]["message"].startswith(
-        f"Error executing query at index {index}:"
-    )
+    assert response["log"]["error"]["message"].startswith(f"Error executing query at index {index}:")
     assert (
         "Prompt and response combined length exceeds maximum combined length of 70000 tokens"
         in response["log"]["error"]["message"]
@@ -81,9 +62,7 @@ def test_prompt_unsupported_kwargs(tlm: TLM) -> None:
             constrain_outputss=[["test constrain outputs"]],
         )
 
-    assert str(exc_info.value).startswith(
-        "Unsupported keyword arguments: {'constrain_outputss'}"
-    )
+    assert str(exc_info.value).startswith("Unsupported keyword arguments: {'constrain_outputss'}")
 
 
 def test_prompt_constrain_outputs_wrong_type_single_prompt(tlm: TLM) -> None:
@@ -105,9 +84,7 @@ def test_prompt_constrain_outputs_wrong_length(tlm: TLM) -> None:
             constrain_outputs=[["test constrain outputs"], ["test constrain outputs"]],
         )
 
-    assert str(exc_info.value).startswith(
-        "constrain_outputs must have same length as prompt"
-    )
+    assert str(exc_info.value).startswith("constrain_outputs must have same length as prompt")
 
 
 def test_prompt_too_long_exception_single_prompt(tlm: TLM) -> None:
@@ -130,16 +107,12 @@ def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int) -> N
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
-    prompts[prompt_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
-    )
+    prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.prompt(prompts)
 
-    assert exc_info.value.message.startswith(
-        f"Error executing query at index {prompt_too_long_index}:"
-    )
+    assert exc_info.value.message.startswith(f"Error executing query at index {prompt_too_long_index}:")
     assert "Prompt length exceeds" in exc_info.value.message
     assert exc_info.value.retryable is False
 
@@ -150,17 +123,13 @@ def test_prompt_too_long_exception_try_prompt(tlm: TLM, num_prompts: int) -> Non
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
-    prompts[prompt_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
-    )
+    prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
     tlm_responses = tlm.try_prompt(
         prompts,
     )
 
-    assert_prompt_too_long_error(
-        tlm_responses[prompt_too_long_index], prompt_too_long_index
-    )
+    assert_prompt_too_long_error(tlm_responses[prompt_too_long_index], prompt_too_long_index)
 
 
 def test_response_too_long_exception_single_score(tlm: TLM) -> None:
@@ -185,9 +154,7 @@ def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> 
     prompts = [test_prompt] * num_prompts
     responses = [TEST_RESPONSE] * num_prompts
     response_too_long_index = np.random.randint(0, num_prompts)
-    responses[response_too_long_index] = (
-        "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
-    )
+    responses[response_too_long_index] = "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
@@ -195,9 +162,7 @@ def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> 
             responses,
         )
 
-    assert exc_info.value.message.startswith(
-        f"Error executing query at index {response_too_long_index}:"
-    )
+    assert exc_info.value.message.startswith(f"Error executing query at index {response_too_long_index}:")
     assert "Response length exceeds" in exc_info.value.message
     assert exc_info.value.retryable is False
 
@@ -209,18 +174,14 @@ def test_response_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> No
     prompts = [test_prompt] * num_prompts
     responses = [TEST_RESPONSE] * num_prompts
     response_too_long_index = np.random.randint(0, num_prompts)
-    responses[response_too_long_index] = (
-        "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
-    )
+    responses[response_too_long_index] = "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
     tlm_responses = tlm.try_get_trustworthiness_score(
         prompts,
         responses,
     )
 
-    assert_response_too_long_error_score(
-        tlm_responses[response_too_long_index], response_too_long_index
-    )
+    assert_response_too_long_error_score(tlm_responses[response_too_long_index], response_too_long_index)
 
 
 def test_prompt_too_long_exception_single_score(tlm: TLM) -> None:
@@ -245,9 +206,7 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> No
     prompts = [test_prompt] * num_prompts
     responses = [TEST_RESPONSE] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
-    prompts[prompt_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
-    )
+    prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
@@ -255,9 +214,7 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> No
             responses,
         )
 
-    assert exc_info.value.message.startswith(
-        f"Error executing query at index {prompt_too_long_index}:"
-    )
+    assert exc_info.value.message.startswith(f"Error executing query at index {prompt_too_long_index}:")
     assert "Prompt length exceeds" in exc_info.value.message
     assert exc_info.value.retryable is False
 
@@ -269,18 +226,14 @@ def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> None
     prompts = [test_prompt] * num_prompts
     responses = [TEST_RESPONSE] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
-    prompts[prompt_too_long_index] = (
-        "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
-    )
+    prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
     responses = tlm.try_get_trustworthiness_score(
         prompts,
         responses,
     )
 
-    assert_prompt_too_long_error_score(
-        responses[prompt_too_long_index], prompt_too_long_index
-    )
+    assert_prompt_too_long_error_score(responses[prompt_too_long_index], prompt_too_long_index)
 
 
 def test_combined_too_long_exception_single_score(tlm: TLM) -> None:
@@ -293,16 +246,12 @@ def test_combined_too_long_exception_single_score(tlm: TLM) -> None:
             "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN,
         )
 
-    assert exc_info.value.message.startswith(
-        "Prompt and response combined length exceeds"
-    )
+    assert exc_info.value.message.startswith("Prompt and response combined length exceeds")
     assert exc_info.value.retryable is False
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_prompt_and_response_combined_too_long_exception_batch_score(
-    tlm: TLM, num_prompts: int
-) -> None:
+def test_prompt_and_response_combined_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> None:
     """Tests that bad request error is raised when prompt + response combined length is too long when calling tlm.get_trustworthiness_score with a batch of prompts.
 
     Error message should indicate which the batch index for which the prompt is too long.
@@ -314,9 +263,7 @@ def test_prompt_and_response_combined_too_long_exception_batch_score(
 
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
     prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
-    responses[combined_too_long_index] = (
-        "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
-    )
+    responses[combined_too_long_index] = "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
 
     tlm_responses = tlm.try_get_trustworthiness_score(
         prompts,
@@ -329,9 +276,7 @@ def test_prompt_and_response_combined_too_long_exception_batch_score(
 
 
 @pytest.mark.parametrize("num_prompts", [1, 2, 5])
-def test_prompt_and_response_combined_too_long_exception_try_score(
-    tlm: TLM, num_prompts: int
-) -> None:
+def test_prompt_and_response_combined_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> None:
     """Tests that appropriate error is returned when prompt + response is too long when calling tlm.try_get_trustworthiness_score with a batch of prompts."""
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
@@ -339,9 +284,7 @@ def test_prompt_and_response_combined_too_long_exception_try_score(
     combined_too_long_index = np.random.randint(0, num_prompts)
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
     prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
-    responses[combined_too_long_index] = (
-        "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
-    )
+    responses[combined_too_long_index] = "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
 
     responses = tlm.try_get_trustworthiness_score(
         prompts,
@@ -369,7 +312,5 @@ def test_max_tokens_invalid_option_passed() -> None:
     option = "max_tokens"
     option_value = -1
 
-    with pytest.raises(
-        ValidationError, match=f"Invalid value {option_value}, max_tokens.*"
-    ):
+    with pytest.raises(ValidationError, match=f"Invalid value {option_value}, max_tokens.*"):
         TLM(options={option: option_value})
