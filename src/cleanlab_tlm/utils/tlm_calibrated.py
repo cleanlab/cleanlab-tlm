@@ -204,13 +204,13 @@ class TLMCalibrated:
             )
             all_scores = np.hstack(
                 [
-                    tlm_scores_df["trustworthiness_score"].values.reshape(-1, 1),
+                    tlm_scores_df["trustworthiness_score"].to_numpy().reshape(-1, 1),
                     custom_eval_scores,
                 ]
             )
         # otherwise use the TLM trustworthiness score as the only feature
         else:
-            all_scores = tlm_scores_df["trustworthiness_score"].values.reshape(-1, 1)
+            all_scores = tlm_scores_df["trustworthiness_score"].to_numpy().reshape(-1, 1)
 
         return all_scores
 
