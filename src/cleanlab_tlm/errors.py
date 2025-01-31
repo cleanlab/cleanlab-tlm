@@ -40,6 +40,13 @@ class TlmPartialSuccess(APIError):
     """TLM request partially succeeded. Still returns result to user."""
 
 
-
 class TlmNotCalibratedError(HandledError):
     pass
+
+
+# HTTP status codes
+HTTP_OK = 200
+HTTP_BAD_REQUEST = 400
+HTTP_UNPROCESSABLE_ENTITY = 422
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVICE_UNAVAILABLE = 503

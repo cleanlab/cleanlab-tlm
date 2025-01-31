@@ -13,6 +13,9 @@ import requests
 from tqdm import tqdm
 
 from cleanlab_tlm.errors import (
+    HTTP_OK,
+    HTTP_TOO_MANY_REQUESTS,
+    HTTP_UNPROCESSABLE_ENTITY,
     APIError,
     InvalidProjectConfiguration,
     RateLimitError,
@@ -57,20 +60,20 @@ def handle_api_error_from_json(
     if isinstance(res_json, dict) and res_json.get("error", None) is not None:
         error = res_json["error"]
         if (
-            status_code == 422
+            status_code == HTTP_UNPROCESSABLE_ENTITY
             and isinstance(error, dict)
             and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION"
         ):
             raise InvalidProjectConfiguration(error["description"])
         raise APIError(res_json["error"])
 
-    if status_code != 200:
+    if status_code != HTTP_OK:
         raise APIError(f"API call failed with status code {status_code}")
 
 
 def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
     """Catches 429 (rate limit) errors."""
-    if resp.status == 429:
+    if resp.status == HTTP_TOO_MANY_REQUESTS:
         raise RateLimitError(
             f"Rate limit exceeded on {resp.url}",
             int(resp.headers.get("Retry-After", 0)),
@@ -81,7 +84,7 @@ async def handle_tlm_client_error_from_resp(
     resp: aiohttp.ClientResponse, batch_index: Optional[int]
 ) -> None:
     """Catches 4XX (client error) errors."""
-    if 400 <= resp.status < 500:
+    if 400 <= resp.status < 500:  # noqa: PLR2004
         try:
             res_json = await resp.json()
             error_message = res_json["error"]
@@ -101,7 +104,7 @@ async def handle_tlm_api_error_from_resp(
     resp: aiohttp.ClientResponse, batch_index: Optional[int]
 ) -> None:
     """Catches 5XX (server error) errors."""
-    if 500 <= resp.status < 600:
+    if 500 <= resp.status < 600:  # noqa: PLR2004
         try:
             res_json = await resp.json()
             error_message = res_json["error"]

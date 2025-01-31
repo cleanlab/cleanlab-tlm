@@ -2,7 +2,12 @@ import asyncio
 from types import TracebackType
 from typing import Optional, Type
 
-from cleanlab_tlm.errors import RateLimitError, TlmPartialSuccess, TlmServerError
+from cleanlab_tlm.errors import (
+    HTTP_SERVICE_UNAVAILABLE,
+    RateLimitError,
+    TlmPartialSuccess,
+    TlmServerError,
+)
 
 
 class TlmRateHandler:
@@ -57,7 +62,7 @@ class TlmRateHandler:
         elif (
             isinstance(exc, RateLimitError)
             or isinstance(exc, TlmServerError)
-            and exc.status_code == 503
+            and exc.status_code == HTTP_SERVICE_UNAVAILABLE
         ):
             await self._decrease_congestion_window()
 
