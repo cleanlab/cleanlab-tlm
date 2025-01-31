@@ -41,6 +41,7 @@ def _construct_headers(api_key: Optional[str], content_type: Optional[str] = "ap
     if content_type:
         retval["Content-Type"] = content_type
     retval["Client-Type"] = "python-api"
+    retval["X-Tlm-Origin"] = "standalone"
     return retval
 
 
