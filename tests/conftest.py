@@ -18,19 +18,32 @@ from cleanlab_tlm.internal.constants import (
 from cleanlab_tlm.tlm import TLM
 
 
+class MissingApiKeyError(ValueError):
+    def __str__(self) -> str:
+        return "No API key provided"
+
+
 @pytest.fixture(scope="module")
-def tlm() -> TLM:
+def tlm_api_key() -> str:
+    api_key = os.getenv("TLM_API_KEY")
+    if api_key is None:
+        raise MissingApiKeyError
+    return api_key
+
+
+@pytest.fixture(scope="module")
+def tlm(tlm_api_key: str) -> TLM:
     """Creates a TLM with default settings."""
     try:
         # uses environment API key
-        return TLM()
+        return TLM(api_key=tlm_api_key)
     except Exception as e:
         environment = os.environ.get("CLEANLAB_API_BASE_URL")
         pytest.skip(f"Failed to create TLM: {e}. Check your API key and environment: ({environment}).")
 
 
 @pytest.fixture(scope="module")
-def tlm_dict() -> Dict[str, Any]:
+def tlm_dict(tlm_api_key: str) -> Dict[str, Any]:
     """Creates a dictionary of initialized tlm objects for each quality preset and model to be reused throughout the test.
     Save randomly created options dictionary for each tlm object as well.
 
@@ -48,8 +61,13 @@ def tlm_dict() -> Dict[str, Any]:
         for model in _VALID_TLM_MODELS:
             tlm_dict[quality_preset][model] = {}
             options = _get_options_dictionary(model)
-            tlm_dict[quality_preset][model]["tlm"] = TLM(quality_preset=quality_preset, options=options)
+            tlm_dict[quality_preset][model]["tlm"] = TLM(
+                api_key=tlm_api_key,
+                quality_preset=quality_preset,
+                options=options,
+            )
             tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
+                api_key=tlm_api_key,
                 quality_preset=quality_preset,
             )
             options["quality_preset"] = quality_preset

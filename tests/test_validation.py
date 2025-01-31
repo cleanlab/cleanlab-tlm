@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from cleanlab_tlm.errors import TlmBadRequestError, ValidationError
-from cleanlab_tlm.tlm import TLM
+from cleanlab_tlm.tlm import TLM, TLMOptions
 from tests.conftest import make_text_unique
 from tests.constants import (
     CHARACTERS_PER_TOKEN,
@@ -228,12 +228,12 @@ def test_prompt_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> None
     prompt_too_long_index = np.random.randint(0, num_prompts)
     prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
 
-    responses = tlm.try_get_trustworthiness_score(
+    tlm_responses = tlm.try_get_trustworthiness_score(
         prompts,
         responses,
     )
 
-    assert_prompt_too_long_error_score(responses[prompt_too_long_index], prompt_too_long_index)
+    assert_prompt_too_long_error_score(tlm_responses[prompt_too_long_index], prompt_too_long_index)
 
 
 def test_combined_too_long_exception_single_score(tlm: TLM) -> None:
@@ -286,31 +286,31 @@ def test_prompt_and_response_combined_too_long_exception_try_score(tlm: TLM, num
     prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
     responses[combined_too_long_index] = "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
 
-    responses = tlm.try_get_trustworthiness_score(
+    tlm_responses = tlm.try_get_trustworthiness_score(
         prompts,
         responses,
     )
 
     assert_prompt_and_response_combined_too_long_error_score(
-        responses[combined_too_long_index], combined_too_long_index
+        tlm_responses[combined_too_long_index], combined_too_long_index
     )
 
 
-def test_invalid_option_passed() -> None:
+def test_invalid_option_passed(tlm_api_key: str) -> None:
     """Tests that validation error is thrown when an invalid option is passed to the TLM."""
     invalid_option = "invalid_option"
-
     with pytest.raises(
         ValidationError,
         match=f"^Invalid keys in options dictionary: {{'{invalid_option}'}}.*",
     ):
-        TLM(options={invalid_option: "invalid_value"})
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(invalid_option="invalid_value"),  # type: ignore[typeddict-unknown-key]
+        )
 
 
-def test_max_tokens_invalid_option_passed() -> None:
+def test_max_tokens_invalid_option_passed(tlm_api_key: str) -> None:
     """Tests that validation error is thrown when an invalid max_tokens option value is passed to the TLM."""
-    option = "max_tokens"
-    option_value = -1
-
-    with pytest.raises(ValidationError, match=f"Invalid value {option_value}, max_tokens.*"):
-        TLM(options={option: option_value})
+    max_tokens = -1
+    with pytest.raises(ValidationError, match=f"Invalid value {max_tokens}, max_tokens.*"):
+        TLM(api_key=tlm_api_key, options=TLMOptions(max_tokens=max_tokens))
