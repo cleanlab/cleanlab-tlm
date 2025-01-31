@@ -5,8 +5,8 @@ import pytest
 
 from cleanlab_tlm.internal.constants import _VALID_TLM_QUALITY_PRESETS
 from cleanlab_tlm.tlm import TLM
-from tests.tlm.conftest import make_text_unique
-from tests.tlm.constants import (
+from tests.conftest import make_text_unique
+from tests.constants import (
     MODELS_WITH_NO_PERPLEXITY_SCORE,
     TEST_PROMPT,
     TEST_PROMPT_BATCH,
@@ -14,10 +14,10 @@ from tests.tlm.constants import (
     TEST_RESPONSE_BATCH,
     VALID_TLM_MODELS,
 )
-from tests.tlm.test_get_trustworthiness_score import (
+from tests.test_get_trustworthiness_score import (
     is_trustworthiness_score_json_format,
 )
-from tests.tlm.test_prompt import is_tlm_response
+from tests.test_prompt import is_tlm_response
 
 test_prompt_single = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]

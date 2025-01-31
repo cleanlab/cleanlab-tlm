@@ -4,8 +4,8 @@ from typing import Any, Generator
 import pytest
 
 from cleanlab_tlm.tlm import TLM
-from tests.tlm.conftest import make_text_unique
-from tests.tlm.constants import (
+from tests.conftest import make_text_unique
+from tests.constants import (
     TEST_PROMPT,
     TEST_PROMPT_BATCH,
     TEST_RESPONSE,
