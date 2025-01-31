@@ -37,3 +37,5 @@ TLM_REASONING_EFFORT_VALUES: Set[str] = {"none", "low", "medium", "high"}
 TLM_VALID_LOG_OPTIONS: Set[str] = {"perplexity", "explanation"}
 TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: Set[str] = {"perplexity"}
 TLM_VALID_KWARGS: Set[str] = {"constrain_outputs"}
+VALID_RESPONSE_OPTIONS: Set[str] = {"max_tokens"}
+INVALID_SCORE_OPTIONS: Set[str] = {"num_candidate_responses"}

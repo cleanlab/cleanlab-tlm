@@ -6,6 +6,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
+    INVALID_SCORE_OPTIONS,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_REASONING_EFFORT_VALUES,
@@ -13,10 +14,11 @@ from cleanlab_tlm.internal.constants import (
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_KWARGS,
     TLM_VALID_LOG_OPTIONS,
+    VALID_RESPONSE_OPTIONS,
 )
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = (
-    os.environ.get("cleanlab_tlm_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
+    os.environ.get("cleanlab_tlm_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"  # noqa: SIM112
 )
 
 
@@ -71,11 +73,10 @@ def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:
     if isinstance(prompt, str):
         return
 
-    elif isinstance(prompt, Sequence):
-        if any(not isinstance(p, str) for p in prompt):
-            raise ValidationError(
-                "Some items in prompt are of invalid types, all items in the prompt list must be of type str."
-            )
+    if isinstance(prompt, Sequence) and any(not isinstance(p, str) for p in prompt):
+        raise ValidationError(
+            "Some items in prompt are of invalid types, all items in the prompt list must be of type str."
+        )
 
 
 def validate_tlm_try_prompt(prompt: Sequence[str]) -> None:
@@ -84,11 +85,10 @@ def validate_tlm_try_prompt(prompt: Sequence[str]) -> None:
             "Invalid type str, prompt must be a list/iterable of strings."
         )
 
-    elif isinstance(prompt, Sequence):
-        if any(not isinstance(p, str) for p in prompt):
-            raise ValidationError(
-                "Some items in prompt are of invalid types, all items in the prompt list must be of type str."
-            )
+    if isinstance(prompt, Sequence) and any(not isinstance(p, str) for p in prompt):
+        raise ValidationError(
+            "Some items in prompt are of invalid types, all items in the prompt list must be of type str."
+        )
 
 
 def validate_tlm_prompt_response(
@@ -130,7 +130,7 @@ def validate_try_tlm_prompt_response(
             "Invalid type str, prompt must be a list/iterable of strings."
         )
 
-    elif isinstance(prompt, Sequence):
+    if isinstance(prompt, Sequence):
         if len(prompt) != len(response):
             raise ValidationError("Length of the prompt and response lists must match.")
 
@@ -262,9 +262,7 @@ def process_response_and_kwargs(
         for key, val in kwargs_dict.items():
             if key == "perplexity":
                 if isinstance(response, str):
-                    if not (
-                        isinstance(val, (float, int))
-                    ):
+                    if not (isinstance(val, (float, int))):
                         raise ValidationError(
                             f"Invalid type {type(val)}, perplexity should be a float when response is a str."
                         )
@@ -283,9 +281,7 @@ def process_response_and_kwargs(
                         )
 
                     for v in val:
-                        if not (
-                            isinstance(v, (float, int))
-                        ):
+                        if not (isinstance(v, (float, int))):
                             raise ValidationError(
                                 f"Invalid type {type(v)}, perplexity values must be a float"
                             )
@@ -306,13 +302,12 @@ def process_response_and_kwargs(
     combined_response_keys = combined_response.keys()
     combined_response_values_transposed = zip(*combined_response.values())
     return [
-        {key: value for key, value in zip(combined_response_keys, values)}
+        dict(zip(combined_response_keys, values))
         for values in combined_response_values_transposed
     ]
 
 
 def validate_tlm_lite_score_options(score_options: Any) -> None:
-    INVALID_SCORE_OPTIONS = {"num_candidate_responses"}
     invalid_score_keys = set(score_options.keys()).intersection(INVALID_SCORE_OPTIONS)
     if invalid_score_keys:
         raise ValidationError(
@@ -323,7 +318,6 @@ def validate_tlm_lite_score_options(score_options: Any) -> None:
 def get_tlm_lite_response_options(
     score_options: Any, response_model: str
 ) -> Dict[str, Any]:
-    VALID_RESPONSE_OPTIONS = {"max_tokens"}
     response_options = {"model": response_model, "log": ["perplexity"]}
     if score_options is not None:
         for option_key in VALID_RESPONSE_OPTIONS:
