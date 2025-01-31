@@ -33,7 +33,7 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 from cleanlab_tlm.errors import (
     APITimeoutError,
     RateLimitError,
-    TlmBadRequest,
+    TlmBadRequestError,
     TlmServerError,
     ValidationError,
 )
@@ -96,7 +96,7 @@ def handle_tlm_exceptions(
                     retryable=True,
                     response_type=response_type,
                 )
-            except TlmBadRequest as e:
+            except TlmBadRequestError as e:
                 return _handle_exception(
                     e,
                     capture_exceptions,

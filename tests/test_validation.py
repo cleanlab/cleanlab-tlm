@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from cleanlab_tlm.errors import TlmBadRequest, ValidationError
+from cleanlab_tlm.errors import TlmBadRequestError, ValidationError
 from cleanlab_tlm.tlm import TLM
 from tests.test_get_trustworthiness_score import is_tlm_score_response_with_error
 from tests.test_prompt import is_tlm_response_with_error
@@ -112,7 +112,7 @@ def test_prompt_constrain_outputs_wrong_length(tlm: TLM) -> None:
 
 def test_prompt_too_long_exception_single_prompt(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.prompt with a single prompt."""
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.prompt(
             "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN,
         )
@@ -134,7 +134,7 @@ def test_prompt_too_long_exception_batch_prompt(tlm: TLM, num_prompts: int) -> N
         "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
     )
 
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.prompt(prompts)
 
     assert exc_info.value.message.startswith(
@@ -165,7 +165,7 @@ def test_prompt_too_long_exception_try_prompt(tlm: TLM, num_prompts: int) -> Non
 
 def test_response_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when response is too long when calling tlm.get_trustworthiness_score with a single prompt."""
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
             "a",
             "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN,
@@ -189,7 +189,7 @@ def test_response_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> 
         "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
     )
 
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
             prompts,
             responses,
@@ -225,7 +225,7 @@ def test_response_too_long_exception_try_score(tlm: TLM, num_prompts: int) -> No
 
 def test_prompt_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.get_trustworthiness_score with a single prompt."""
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
             "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN,
             "a",
@@ -249,7 +249,7 @@ def test_prompt_too_long_exception_batch_score(tlm: TLM, num_prompts: int) -> No
         "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
     )
 
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
             prompts,
             responses,
@@ -287,7 +287,7 @@ def test_combined_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt + response combined length is too long when calling tlm.get_trustworthiness_score with a single prompt."""
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
 
-    with pytest.raises(TlmBadRequest) as exc_info:
+    with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
             "a" * max_prompt_length * CHARACTERS_PER_TOKEN,
             "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN,

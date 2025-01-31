@@ -14,7 +14,7 @@ class APITimeoutError(HandledError):
     pass
 
 
-class InvalidProjectConfiguration(HandledError):
+class InvalidProjectConfigurationError(HandledError):
     pass
 
 
@@ -24,7 +24,7 @@ class RateLimitError(HandledError):
         self.retry_after = retry_after
 
 
-class TlmBadRequest(HandledError):
+class TlmBadRequestError(HandledError):
     def __init__(self, message: str, retryable: bool):
         self.message = message
         self.retryable = retryable
@@ -36,7 +36,7 @@ class TlmServerError(APIError):
         self.status_code = status_code
 
 
-class TlmPartialSuccess(APIError):
+class TlmPartialSuccessError(APIError):
     """TLM request partially succeeded. Still returns result to user."""
 
 

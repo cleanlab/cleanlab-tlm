@@ -5,7 +5,7 @@ from typing import Optional, Type
 from cleanlab_tlm.errors import (
     HTTP_SERVICE_UNAVAILABLE,
     RateLimitError,
-    TlmPartialSuccess,
+    TlmPartialSuccessError,
     TlmServerError,
 )
 
@@ -66,7 +66,7 @@ class TlmRateHandler:
         ):
             await self._decrease_congestion_window()
 
-        elif isinstance(exc, TlmPartialSuccess):
+        elif isinstance(exc, TlmPartialSuccessError):
             await self._decrease_congestion_window()
             swallow_exception = True
 

@@ -17,10 +17,10 @@ from cleanlab_tlm.errors import (
     HTTP_TOO_MANY_REQUESTS,
     HTTP_UNPROCESSABLE_ENTITY,
     APIError,
-    InvalidProjectConfiguration,
+    InvalidProjectConfigurationError,
     RateLimitError,
-    TlmBadRequest,
-    TlmPartialSuccess,
+    TlmBadRequestError,
+    TlmPartialSuccessError,
     TlmServerError,
 )
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
@@ -64,7 +64,7 @@ def handle_api_error_from_json(
             and isinstance(error, dict)
             and error.get("code", None) == "UNSUPPORTED_PROJECT_CONFIGURATION"
         ):
-            raise InvalidProjectConfiguration(error["description"])
+            raise InvalidProjectConfigurationError(error["description"])
         raise APIError(res_json["error"])
 
     if status_code != HTTP_OK:
@@ -97,7 +97,7 @@ async def handle_tlm_client_error_from_resp(
                 f"Error executing query at index {batch_index}:\n{error_message}"
             )
 
-        raise TlmBadRequest(error_message, retryable)
+        raise TlmBadRequestError(error_message, retryable)
 
 
 async def handle_tlm_api_error_from_resp(
@@ -174,7 +174,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             except RateLimitError as e:
                 # note: we don't increment num_general_retry here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
-            except TlmBadRequest as e:
+            except TlmBadRequestError as e:
                 # dont retry for client-side errors
                 raise e
             except Exception as e:
@@ -249,7 +249,7 @@ async def tlm_prompt(
             await handle_tlm_api_error_from_resp(res, batch_index)
 
             if not res_json.get("deberta_success", True):
-                raise TlmPartialSuccess(
+                raise TlmPartialSuccessError(
                     "Partial failure on deberta call -- slowdown request rate."
                 )
 
