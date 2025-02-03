@@ -47,6 +47,7 @@ extra-dependencies = [
   "mypy>=1.0.0",
   "pytest",
   "pytest-asyncio",
+  "python-dotenv",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --strict --install-types --non-interactive {args:src/cleanlab_tlm tests}"
@@ -54,7 +55,10 @@ check = "mypy --strict --install-types --non-interactive {args:src/cleanlab_tlm 
 allow-direct-references = true
 
 [tool.hatch.envs.hatch-test]
-extra-dependencies = []
+extra-dependencies = [
+  "python-dotenv",
+  "pytest-asyncio",
+]
 
 [tool.hatch.envs.hatch-test.env-vars]
 COVERAGE_FAIL_UNDER = ""

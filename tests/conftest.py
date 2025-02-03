@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 import pytest
+from dotenv import load_dotenv
 
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
 from cleanlab_tlm.internal.constants import (
@@ -16,6 +17,8 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions
+
+load_dotenv()
 
 
 class MissingApiKeyError(ValueError):

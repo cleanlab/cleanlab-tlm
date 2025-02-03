@@ -40,5 +40,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Set env variables
+        run: |
+          echo "TLM_API_KEY=${{ secrets.TLM_API_KEY }}" >> $GITHUB_ENV
       - uses: pypa/hatch@install
       - run: hatch test -v --cover --include python=$(echo ${{ matrix.python }})

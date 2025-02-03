@@ -324,7 +324,7 @@ def test_get_trustworthiness_score_async(tlm_dict: Dict[str, Any], model: str, q
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_try_get_trustworithness_score(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_try_get_trustworthiness_score(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running try_get_trustworthiness_score in the TLM for all quality_presets, model types and batch prompt."""
     print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
     # get TLMs and options dictionary based on parameters
