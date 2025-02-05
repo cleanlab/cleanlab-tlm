@@ -1,4 +1,4 @@
-# Cleanlab Trustworthy Language Model (TLM) [![Build Status](https://github.com/cleanlab/cleanlab-tlm/workflows/CI/badge.svg)](https://github.com/cleanlab/cleanlab-tlm/actions?query=workflow%3ACI) [![PyPI - Version](https://img.shields.io/pypi/v/cleanlab-tlm.svg)](https://pypi.org/project/cleanlab-tlm) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cleanlab-tlm.svg)](https://pypi.org/project/cleanlab-tlm)
+# Cleanlab Trustworthy Language Model (TLM) [![Build Status](https://github.com/cleanlab/cleanlab-tlm/actions/workflows/ci.yml/badge.svg)](https://github.com/cleanlab/cleanlab-tlm/actions/workflows/ci.yml) [![PyPI - Version](https://img.shields.io/pypi/v/cleanlab-tlm.svg)](https://pypi.org/project/cleanlab-tlm) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cleanlab-tlm.svg)](https://pypi.org/project/cleanlab-tlm)
 
 ---
 

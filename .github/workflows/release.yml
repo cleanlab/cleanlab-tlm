@@ -1,0 +1,82 @@
+name: Build and publish package
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  tests:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build package and upload artifacts
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install hatch
+        uses: pypa/hatch@install
+      - name: Check versions match
+        run: |
+          pkg_version=$(hatch version)
+          tag_version=${GITHUB_REF#refs/tags/v}
+          if [ "$pkg_version" != "$tag_version" ]; then
+            echo "Package version ($pkg_version) does not match git tag version ($tag_version)"
+            exit 1
+          fi
+      - name: Build package
+        run: hatch build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanlab-tlm
+          path: dist/*
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cleanlab-tlm
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  upload-release:
+    name: Upload release to GitHub
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Extract release notes
+        id: extract-release-notes
+        uses: ffurrer2/extract-release-notes@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cleanlab-tlm
+          path: dist
+      - name: Upload release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          body: ${{ steps.extract-release-notes.outputs.release_notes }}
