@@ -85,9 +85,10 @@ Automated releases are handled by the [release workflow][release-workflow] which
 4. After the PR is merged into `main`, create a new release tag by running `git tag v<output of hatch version>` (i.e. `git tag v0.0.1`).
 5. Push the tag to the repository by running `git push origin <tag>`.
 6. This will trigger the release workflow which will build the package, create a release on GitHub, and publish the package version to PyPI. The GitHub release notes will be automatically generated from the [changelog].
-   [release-workflow]: .github/workflows/release.yml
-   [hatch-version]: https://hatch.pypa.io/latest/version/#updating
-   [changelog]: CHANGELOG.md
+
+[release-workflow]: .github/workflows/release.yml
+[hatch-version]: https://hatch.pypa.io/latest/version/#updating
+[changelog]: CHANGELOG.md
 
 ## Continuous integration
 
