@@ -106,7 +106,9 @@ xml = "coverage xml"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     "error",
-    "ignore:prompt.*failed.*:UserWarning"
+    "ignore:prompt.*failed.*:UserWarning",  # Expected warnings from TLM error testing
+    "ignore:Please ensure that your SSL certificates are up to date.*:UserWarning",  # SSL cert warning
+    "ignore:Exception ignored in:pytest.PytestUnraisableExceptionWarning"  # Async cleanup warning
 ]
 
 [tool.ruff.lint]
