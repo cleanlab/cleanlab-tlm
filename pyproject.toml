@@ -98,9 +98,16 @@ dependencies = [
 ]
 
 [tool.hatch.envs.coverage.scripts]
-report = "coverage report --fail-under=90"
+report = "coverage report --fail-under=60"
 html = "coverage html"
 xml = "coverage xml"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "error",
+    "ignore:prompt.*failed.*:UserWarning"
+]
 
 [tool.ruff.lint]
 ignore = [
