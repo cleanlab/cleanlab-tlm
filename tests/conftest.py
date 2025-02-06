@@ -12,6 +12,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
+    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
 )
@@ -91,7 +92,9 @@ def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
     add_use_self_reflection = np.random.choice([True, False])
     add_similarity_measure = np.random.choice([True, False])
     add_reasoning_effort = np.random.choice([True, False])
-    add_log_explanation = np.random.choice([True, False])
+    add_log_explanation = (
+        np.random.choice([True, False]) if model not in TLM_MODELS_NOT_SUPPORTING_EXPLANATION else False
+    )
     add_log_perplexity_score = np.random.choice([True, False])
 
     options: Dict[str, Any] = {}
