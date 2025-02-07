@@ -789,7 +789,6 @@ class TLMScore(TypedDict):
 class TLMOptions(TypedDict):
     """Typed dict of advanced configuration options for the Trustworthy Language Model.
     Many of these configurations are determined by the quality preset selected
-    (learn about quality presets in the TLM [initialization method](../studio#method-tlm)).
     Specifying TLMOptions values directly overrides any default values set from the quality preset.
 
     For all options described below, higher settings will lead to longer runtimes and may consume more tokens internally.
@@ -797,7 +796,7 @@ class TLMOptions(TypedDict):
     unless your token/rate limits are increased. If you hit token limit issues, try lower/less expensive TLMOptions
     to be able to run longer prompts/responses, or contact Cleanlab to increase your limits.
 
-    The default values corresponding to each quality preset (specified when instantiating [`Studio.TLM()`](../studio/#method-tlm)) are:
+    The default values corresponding to each quality preset are:
     - **best:** `num_candidate_responses` = 6, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset improves LLM responses.
     - **high:** `num_candidate_responses` = 4, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset improves LLM responses.
     - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
