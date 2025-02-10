@@ -108,7 +108,8 @@ filterwarnings = [
     "error",
     "ignore:prompt.*failed.*:UserWarning",  # Expected warnings from TLM error testing
     "ignore:Please ensure that your SSL certificates are up to date.*:UserWarning",  # SSL cert warning
-    "ignore:Exception ignored in:pytest.PytestUnraisableExceptionWarning"  # Async cleanup warning
+    "ignore:Exception ignored in:pytest.PytestUnraisableExceptionWarning",  # Async cleanup warning
+    "ignore:There is no current event loop:DeprecationWarning",  # Asyncio event loop warning
 ]
 
 [tool.ruff.lint]
