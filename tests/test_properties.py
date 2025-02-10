@@ -79,12 +79,15 @@ def _is_valid_get_trustworthiness_score_response(
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
     assert isinstance(response, dict)
 
+    quality_preset_keys = {"quality_preset", "use_self_reflection"}
+    consistency_sample_keys = {"num_consistency_samples", "use_self_reflection"}
+
     if (
-        ({"quality_preset", "use_self_reflection"}.issubset(options))
+        (quality_preset_keys.issubset(options))
         and not options["use_self_reflection"]
         and options["quality_preset"] == "base"
     ) or (
-        ({"num_consistency_samples", "use_self_reflection"}.issubset(options))
+        (consistency_sample_keys.issubset(options))
         and not options["use_self_reflection"]
         and options["num_consistency_samples"] == 0
     ):
