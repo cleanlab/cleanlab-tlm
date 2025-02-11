@@ -2,11 +2,12 @@
 TLM Lite is a version of the [Trustworthy Language Model (TLM)](../trustworthy_language_model) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 """
 
+import os
 from typing import Dict, List, Optional, Sequence, Union, cast
 
 import numpy as np
 
-from cleanlab_tlm.errors import ValidationError
+from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.internal.validation import (
     get_tlm_lite_response_options,
@@ -53,7 +54,7 @@ class TLMLite:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: Optional[str] = None,
         response_model: str = "gpt-4o",
         quality_preset: TLMQualityPreset = "medium",
         *,
@@ -64,7 +65,9 @@ class TLMLite:
         """
         lazydocs: ignore
         """
-        self._api_key = api_key
+        self._api_key = api_key or os.environ.get("CLEANLAB_TLM_API_KEY")
+        if self._api_key is None:
+            raise MissingApiKeyError
         self._response_model = response_model
 
         if quality_preset not in {"low", "medium"}:

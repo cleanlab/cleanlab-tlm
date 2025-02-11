@@ -18,6 +18,11 @@ class InvalidProjectConfigurationError(HandledError):
     pass
 
 
+class MissingApiKeyError(ValueError):
+    def __str__(self) -> str:
+        return "No API key provided"
+
+
 class RateLimitError(HandledError):
     def __init__(self, message: str, retry_after: int):
         self.message = message
