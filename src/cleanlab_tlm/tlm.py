@@ -7,6 +7,7 @@ Learn how to use TLM via the [quickstart tutorial](/tlm/tutorials/tlm).
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 import warnings
 from functools import wraps
@@ -32,6 +33,7 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 
 from cleanlab_tlm.errors import (
     APITimeoutError,
+    MissingApiKeyError,
     RateLimitError,
     TlmBadRequestError,
     TlmServerError,
@@ -201,7 +203,7 @@ class TLM:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: Optional[str] = None,
         quality_preset: TLMQualityPreset = "medium",
         *,
         options: Optional[TLMOptions] = None,
@@ -211,7 +213,9 @@ class TLM:
         """
         lazydocs: ignore
         """
-        self._api_key = api_key
+        self._api_key = api_key or os.environ.get("CLEANLAB_TLM_API_KEY")
+        if self._api_key is None:
+            raise MissingApiKeyError
 
         if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
             raise ValidationError(

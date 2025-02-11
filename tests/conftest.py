@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from dotenv import load_dotenv
 
+from cleanlab_tlm.errors import MissingApiKeyError
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
 from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
@@ -22,14 +23,9 @@ from cleanlab_tlm.tlm import TLM, TLMOptions
 load_dotenv()
 
 
-class MissingApiKeyError(ValueError):
-    def __str__(self) -> str:
-        return "No API key provided"
-
-
 @pytest.fixture(scope="module")
 def tlm_api_key() -> str:
-    api_key = os.getenv("TLM_API_KEY")
+    api_key = os.environ.get("TLM_API_KEY")
     if api_key is None:
         raise MissingApiKeyError
     return api_key

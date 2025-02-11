@@ -5,13 +5,14 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, List, Optional, Sequence, Union, cast
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab_tlm.errors import TlmNotCalibratedError, ValidationError
+from cleanlab_tlm.errors import MissingApiKeyError, TlmNotCalibratedError, ValidationError
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 
 if TYPE_CHECKING:
@@ -39,7 +40,9 @@ class TLMCalibrated:
                 "Please install it using `pip install scikit-learn` and try again."
             )
 
-        self._api_key = api_key
+        self._api_key = api_key or os.environ.get("CLEANLAB_TLM_API_KEY")
+        if self._api_key is None:
+            raise MissingApiKeyError
 
         if quality_preset not in {"base", "low", "medium"}:
             raise ValidationError(
