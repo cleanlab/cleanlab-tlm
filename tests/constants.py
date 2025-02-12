@@ -30,6 +30,7 @@ excluded_tlm_models: List[str] = [
     "o3-mini",
     "nova-lite",
     "nova-pro",
+    "gpt-4",
 ]
 VALID_TLM_MODELS: List[str] = [model for model in _VALID_TLM_MODELS if model not in excluded_tlm_models]
 MODELS_WITH_NO_PERPLEXITY_SCORE: List[str] = [
