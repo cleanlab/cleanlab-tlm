@@ -20,7 +20,7 @@ class InvalidProjectConfigurationError(HandledError):
 
 class MissingApiKeyError(ValueError):
     def __str__(self) -> str:
-        return "No API key provided"
+        return "No API key provided. Please provide an API key using the `api_key` argument (`TLM(api_key=...)`) or by setting the `CLEANLAB_TLM_API_KEY` environment variable."
 
 
 class RateLimitError(HandledError):
