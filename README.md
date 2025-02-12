@@ -20,7 +20,7 @@ To get started, copy the code below to try your own prompt or score existing pro
 
 ```python
 from cleanlab_tlm import TLM
-tlm = TLM("<YOUR_API_KEY_HERE>", options={"log": ["explanation"], "model": "gpt-4o-mini"}) # GPT, Claude, etc.
+tlm = TLM(api_key="<YOUR_API_KEY_HERE>", options={"log": ["explanation"], "model": "gpt-4o-mini"}) # GPT, Claude, etc.
 out = tlm.prompt("What's the third month of the year alphabetically?")
 print(out)
 ```
