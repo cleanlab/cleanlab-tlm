@@ -45,7 +45,7 @@ class TLMLite:
         options (TLMOptions, optional): a typed dict of advanced configuration options.
             Most of these options only apply to the model scoring  trustworthiness, except for "max_tokens", which applies to the response model as well.
             Specify which model to use for scoring trustworthiness in these options.
-            For more details about the options, see the documentation for [TLMOptions](../trustworthy_language_model/#class-tlmoptions).
+            For more details about the options, see the documentation for [TLMOptions](../tlm/#class-tlmoptions).
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
 
@@ -108,7 +108,7 @@ class TLMLite:
         prompt: Union[str, Sequence[str]],
     ) -> Union[TLMResponse, List[TLMResponse]]:
         """
-        Similar to [`TLM.prompt()`](../trustworthy_language_model/#method-prompt), view documentation there for expected input arguments and outputs.
+        Similar to [`TLM.prompt()`](../tlm/#method-prompt), view documentation there for expected input arguments and outputs.
         """
         prompt_response = self._tlm_response.prompt(prompt)
 
@@ -135,7 +135,7 @@ class TLMLite:
         prompt: Sequence[str],
     ) -> List[TLMResponse]:
         """
-        Similar to [`TLM.try_prompt()`](../trustworthy_language_model/#method-try_prompt), view documentation there for expected input arguments and outputs.
+        Similar to [`TLM.try_prompt()`](../tlm/#method-try_prompt), view documentation there for expected input arguments and outputs.
         """
         prompt_response = self._tlm_response.try_prompt(prompt)
         prompt_succeeded_mask = np.array([res["response"] is not None for res in prompt_response])

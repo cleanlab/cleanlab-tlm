@@ -137,14 +137,14 @@ def validate_tlm_options(options: Any) -> None:
     if not isinstance(options, dict):
         raise ValidationError(
             "options must be a TLMOptions object.\n"
-            "See: https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions"
+            "See: https://help.cleanlab.ai/reference/python/tlm/#class-tlmoptions"
         )
 
     invalid_keys = set(options.keys()) - set(TLMOptions.__annotations__.keys())
     if invalid_keys:
         raise ValidationError(
             f"Invalid keys in options dictionary: {invalid_keys}.\n"
-            "See https://help.cleanlab.ai/reference/python/trustworthy_language_model/#class-tlmoptions for valid options"
+            "See https://help.cleanlab.ai/reference/python/tlm/#class-tlmoptions for valid options"
         )
 
     for option, val in options.items():

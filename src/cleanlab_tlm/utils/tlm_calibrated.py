@@ -74,7 +74,7 @@ class TLMCalibrated:
         using the provided numeric ratings.
 
         Args:
-            tlm_scores (List[TLMScore]): list of [TLMScore](../trustworthy_language_model/#class-tlmscore) object obtained
+            tlm_scores (List[TLMScore]): list of [TLMScore](../tlm/#class-tlmscore) object obtained
                 from a previous `TLM.get_trustworthiness_score()` call
             ratings (Sequence[float]): sequence of numeric ratings corresponding to each prompt-response pair,
                 the length of this sequence must match the length of the `tlm_scores`.
@@ -105,7 +105,7 @@ class TLMCalibrated:
         Gets response and a calibrated trustworthiness score for the given prompts,
         make sure that the model has been calibrated by calling the `.fit()` method before using this method.
 
-        Similar to [`TLM.prompt()`](../trustworthy_language_model/#method-prompt),
+        Similar to [`TLM.prompt()`](../tlm/#method-prompt),
         view documentation there for expected input arguments and outputs.
         """
         try:
@@ -148,7 +148,7 @@ class TLMCalibrated:
         Computes the calibrated trustworthiness score for arbitrary given prompt-response pairs,
         make sure that the model has been calibrated by calling the `.fit()` method before using this method.
 
-        Similar to [`TLM.get_trustworthiness_score()`](../trustworthy_language_model/#method-get_trustworthiness_score),
+        Similar to [`TLM.get_trustworthiness_score()`](../tlm/#method-get_trustworthiness_score),
         view documentation there for expected input arguments and outputs.
         """
         try:
@@ -220,8 +220,8 @@ class TLMCalibrated:
 
 class TLMResponseWithCalibration(TLMResponse):
     """
-    A typed dict similar to [TLMResponse](../trustworthy_language_model/#class-tlmresponse) but containing an extra key `calibrated_score`.
-    View [TLMResponse](../trustworthy_language_model/#class-tlmresponse) for the description of the other keys in this dict.
+    A typed dict similar to [TLMResponse](../tlm/#class-tlmresponse) but containing an extra key `calibrated_score`.
+    View [TLMResponse](../tlm/#class-tlmresponse) for the description of the other keys in this dict.
 
     Attributes:
         calibrated_score (float, optional): score between 0 and 1 that has been calibrated to the provided ratings.
@@ -233,8 +233,8 @@ class TLMResponseWithCalibration(TLMResponse):
 
 class TLMScoreWithCalibration(TLMScore):
     """
-    A typed dict similar to [TLMScore](../trustworthy_language_model/#class-tlmscore) but containing an extra key `calibrated_score`.
-    View [TLMScore](../trustworthy_language_model/#class-tlmscore) for the description of the other keys in this dict.
+    A typed dict similar to [TLMScore](../tlm/#class-tlmscore) but containing an extra key `calibrated_score`.
+    View [TLMScore](../tlm/#class-tlmscore) for the description of the other keys in this dict.
 
     Attributes:
         calibrated_score (float, optional): score between 0 and 1 that has been calibrated to the provided ratings.
