@@ -203,9 +203,9 @@ class TLM:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
         quality_preset: TLMQualityPreset = "medium",
         *,
+        api_key: Optional[str] = None,
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,

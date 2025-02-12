@@ -62,13 +62,13 @@ def tlm_dict(tlm_api_key: str) -> Dict[str, Any]:
             tlm_dict[quality_preset][model] = {}
             options = _get_options_dictionary(model)
             tlm_dict[quality_preset][model]["tlm"] = TLM(
-                api_key=tlm_api_key,
                 quality_preset=quality_preset,
+                api_key=tlm_api_key,
                 options=options,
             )
             tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
-                api_key=tlm_api_key,
                 quality_preset=quality_preset,
+                api_key=tlm_api_key,
             )
             tlm_dict[quality_preset][model]["options"] = options
     return tlm_dict

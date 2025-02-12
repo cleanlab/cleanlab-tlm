@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 class TLMCalibrated:
     def __init__(
         self,
-        api_key: str,
         quality_preset: TLMQualityPreset = "medium",
         *,
+        api_key: Optional[str] = None,
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
@@ -61,8 +61,8 @@ class TLMCalibrated:
         self._rf_model = RandomForestRegressor(monotonic_cst=[1] * self._num_features)
 
         self._tlm = TLM(
-            self._api_key,
             quality_preset=self._quality_preset,
+            api_key=self._api_key,
             options=self._options,
             timeout=self._timeout,
             verbose=self._verbose,

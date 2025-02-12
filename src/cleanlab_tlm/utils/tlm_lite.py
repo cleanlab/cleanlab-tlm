@@ -54,10 +54,10 @@ class TLMLite:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
         response_model: str = "gpt-4o",
         quality_preset: TLMQualityPreset = "medium",
         *,
+        api_key: Optional[str] = None,
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
@@ -88,16 +88,16 @@ class TLMLite:
         self._verbose = verbose
 
         self._tlm_response = TLM(
-            self._api_key,
             quality_preset="base",
+            api_key=self._api_key,
             options=self._response_options,
             timeout=self._timeout,
             verbose=self._verbose,
         )
 
         self._tlm_score = TLM(
-            self._api_key,
             quality_preset=self._score_quality_preset,
+            api_key=self._api_key,
             options=self._score_options,
             timeout=self._timeout,
             verbose=self._verbose,
