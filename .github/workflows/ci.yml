@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
       - uses: pypa/hatch@install
       - run: hatch run types:check
   fmt:
@@ -26,18 +26,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
       - uses: pypa/hatch@install
       - run: hatch fmt --check
-  test:
-    name: Test
+  test-pr-to-main:
+    name: Test (PR to main)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    env:
+      CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pypa/hatch@install
+      - run: hatch test -v --cover --include python=3.12
+  test-push-to-main:
+    name: Test (Push to main)
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     env:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
     strategy:
       matrix:
         python: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-    if: ${{ github.event_name != 'pull_request' || matrix.python == '3.12' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
