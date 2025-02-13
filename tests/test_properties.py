@@ -74,18 +74,19 @@ def _is_valid_prompt_response(
 def _is_valid_get_trustworthiness_score_response(
     response: Dict[str, Any],
     options: Dict[str, Any],
+    quality_preset: str,
     allow_null_trustworthiness_score: bool = False,
 ) -> bool:
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
     assert isinstance(response, dict)
 
-    quality_preset_keys = {"quality_preset", "use_self_reflection"}
+    quality_preset_keys = {"use_self_reflection"}
     consistency_sample_keys = {"num_consistency_samples", "use_self_reflection"}
 
     if (
         (quality_preset_keys.issubset(options))
         and not options["use_self_reflection"]
-        and options["quality_preset"] == "base"
+        and quality_preset == "base"
     ) or (
         (consistency_sample_keys.issubset(options))
         and not options["use_self_reflection"]
@@ -141,12 +142,14 @@ def _test_batch_prompt_response(
 def _test_get_trustworthiness_score_response(
     response: Dict[str, Any],
     options: Dict[str, Any],
+    quality_preset: str,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
     """Property tests the responses of a get_trustworthiness_score based on the options dictionary and returned responses."""
     assert _is_valid_get_trustworthiness_score_response(
         response=response,
         options=options,
+        quality_preset=quality_preset,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 
@@ -154,6 +157,7 @@ def _test_get_trustworthiness_score_response(
 def _test_batch_get_trustworthiness_score_response(
     responses: List[Dict[str, Any]],
     options: Dict[str, Any],
+    quality_preset: str,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
     """Property tests the responses of a batch get_trustworthiness_score based on the options dictionary and returned responses."""
@@ -165,6 +169,7 @@ def _test_batch_get_trustworthiness_score_response(
         _is_valid_get_trustworthiness_score_response(
             response,
             options,
+            quality_preset=quality_preset,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
         for response in responses
@@ -287,12 +292,12 @@ def test_get_trustworthiness_score(tlm_dict: Dict[str, Any], model: str, quality
     # test prompt with single prompt
     response = tlm.get_trustworthiness_score(test_prompt_single, TEST_RESPONSE)
     print("TLM Single Response:", response)
-    _test_get_trustworthiness_score_response(response, options)
+    _test_get_trustworthiness_score_response(response, options, quality_preset)
 
     # test prompt with batch prompt
     responses = tlm_no_options.get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH)
     print("TLM Batch Responses:", responses)
-    _test_batch_get_trustworthiness_score_response(responses, {})
+    _test_batch_get_trustworthiness_score_response(responses, {}, quality_preset)
 
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
@@ -311,7 +316,7 @@ def test_get_trustworthiness_score_async(tlm_dict: Dict[str, Any], model: str, q
     # test prompt with single prompt
     response = asyncio.run(_run_get_trustworthiness_score_async(tlm_no_options, test_prompt_single, TEST_RESPONSE))
     print("TLM Single Response:", response)
-    _test_get_trustworthiness_score_response(response, {})
+    _test_get_trustworthiness_score_response(response, {}, quality_preset)
 
     # test prompt with batch prompt
     responses = asyncio.run(
@@ -322,7 +327,7 @@ def test_get_trustworthiness_score_async(tlm_dict: Dict[str, Any], model: str, q
         )
     )
     print("TLM Batch Responses:", responses)
-    _test_batch_get_trustworthiness_score_response(responses, options)
+    _test_batch_get_trustworthiness_score_response(responses, options, quality_preset)
 
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
@@ -339,4 +344,4 @@ def test_try_get_trustworthiness_score(tlm_dict: Dict[str, Any], model: str, qua
     # test prompt with batch prompt
     responses = tlm.try_get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH)
     print("TLM Batch Responses:", responses)
-    _test_batch_get_trustworthiness_score_response(responses, options)
+    _test_batch_get_trustworthiness_score_response(responses, options, quality_preset)

@@ -25,7 +25,7 @@ load_dotenv()
 
 @pytest.fixture(scope="module")
 def tlm_api_key() -> str:
-    api_key = os.environ.get("TLM_API_KEY")
+    api_key = os.environ.get("CLEANLAB_TLM_API_KEY")
     if api_key is None:
         raise MissingApiKeyError
     return api_key
