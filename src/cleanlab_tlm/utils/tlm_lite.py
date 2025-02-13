@@ -1,5 +1,5 @@
 """
-TLM Lite is a version of the [Trustworthy Language Model (TLM)](../trustworthy_language_model) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
+TLM Lite is a version of the [Trustworthy Language Model (TLM)](../tlm) that enables the use of different LLMs for generating the response and for scoring its trustworthiness.
 """
 
 import os
@@ -40,7 +40,7 @@ class TLMLite:
         quality_preset (TLMQualityPreset, default = "medium"): preset configuration to control the quality of TLM trustworthiness scores vs. runtimes/costs.
             This preset only applies to the model computing the trustworthiness score.
             Supported options are only "medium" or "low", because TLMLite is not intended to improve response accuracy
-            (use the regular [TLM](../trustworthy_language_model) for that).
+            (use the regular [TLM](../tlm) for that).
 
         options (TLMOptions, optional): a typed dict of advanced configuration options.
             Most of these options only apply to the model scoring  trustworthiness, except for "max_tokens", which applies to the response model as well.
