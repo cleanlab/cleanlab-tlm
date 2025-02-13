@@ -33,7 +33,7 @@ jobs:
     name: Test
     runs-on: ubuntu-22.04
     env:
-      TLM_API_KEY: ${{ secrets.TLM_API_KEY }}
+      CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
     strategy:
       matrix:
         python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
