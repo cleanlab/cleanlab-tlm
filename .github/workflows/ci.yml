@@ -42,8 +42,8 @@ jobs:
           python-version: "3.12"
       - uses: pypa/hatch@install
       - run: hatch test -v --cover --include python=3.12
-  test-push-to-main:
-    name: Test (Push to main)
+  test-matrix:
+    name: Test (All Python versions)
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     env:
