@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.1a5] - 2025-02-13
+## [0.0.1a6] - 2025-02-13
+
+### Added
+
+- Fix unit tests and re-enable branch protection
 
 ### Added
 
@@ -26,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pre-release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v0.0.1a5...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v0.0.1a6...HEAD
+[0.0.1a6]: https://github.com/cleanlab/cleanlab-tlm/compare/v0.0.1a5...v0.0.1a6
 [0.0.1a5]: https://github.com/cleanlab/cleanlab-tlm/compare/v0.0.1a4...v0.0.1a5
 [0.0.1a4]: https://github.com/cleanlab/cleanlab-tlm/compare/v0.0.1a3...v0.0.1a4
 [0.0.1a3]: https://github.com/cleanlab/cleanlab-tlm/compare/v0.0.1a2...v0.0.1a3
