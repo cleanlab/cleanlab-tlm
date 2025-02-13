@@ -36,7 +36,18 @@ jobs:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
     strategy:
       matrix:
-        python: ${{ github.event_name == 'pull_request' && ['3.12'] || ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13'] }}
+        include:
+          - python: "3.8"
+            if: github.event_name != 'pull_request'
+          - python: "3.9"
+            if: github.event_name != 'pull_request'
+          - python: "3.10"
+            if: github.event_name != 'pull_request'
+          - python: "3.11"
+            if: github.event_name != 'pull_request'
+          - python: "3.12" # On PRs, only run tests with one version
+          - python: "3.13"
+            if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
