@@ -84,9 +84,7 @@ def _is_valid_get_trustworthiness_score_response(
     consistency_sample_keys = {"num_consistency_samples", "use_self_reflection"}
 
     if (
-        (quality_preset_keys.issubset(options))
-        and not options["use_self_reflection"]
-        and quality_preset == "base"
+        (quality_preset_keys.issubset(options)) and not options["use_self_reflection"] and quality_preset == "base"
     ) or (
         (consistency_sample_keys.issubset(options))
         and not options["use_self_reflection"]
