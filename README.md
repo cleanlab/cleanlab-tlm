@@ -8,6 +8,10 @@ In one line of code, Cleanlab TLM adds real-time evaluation of every response in
 
 This tutorial requires a TLM API key. Get one [here](https://tlm.cleanlab.ai/).
 
+```console
+export CLEANLAB_TLM_API_KEY=<YOUR_API_KEY_HERE>
+```
+
 Install the package:
 
 ```console
@@ -20,7 +24,7 @@ To get started, copy the code below to try your own prompt or score existing pro
 
 ```python
 from cleanlab_tlm import TLM
-tlm = TLM(api_key="<YOUR_API_KEY_HERE>", options={"log": ["explanation"], "model": "gpt-4o-mini"}) # GPT, Claude, etc.
+tlm = TLM(options={"log": ["explanation"], "model": "gpt-4o-mini"}) # GPT, Claude, etc.
 out = tlm.prompt("What's the third month of the year alphabetically?")
 print(out)
 ```
