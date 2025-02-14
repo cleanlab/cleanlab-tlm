@@ -12,7 +12,11 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab_tlm.errors import MissingApiKeyError, TlmNotCalibratedError, ValidationError
+from cleanlab_tlm.errors import (
+    MissingApiKeyError,
+    TlmNotCalibratedError,
+    ValidationError,
+)
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 
 if TYPE_CHECKING:

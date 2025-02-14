@@ -5,7 +5,7 @@ import os
 import ssl
 import time
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, cast
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -246,7 +246,7 @@ async def tlm_prompt(
 async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
-    response: str,
+    response: Dict[str, Any],
     quality_preset: str,
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
@@ -259,7 +259,7 @@ async def tlm_get_confidence_score(
     Args:
         api_key (str): API key for auth
         prompt (str): prompt for TLM to get confidence score for
-        response (str): response for TLM to get confidence score for
+        response (Dict[str, Any]): dictionary containing response and optional metadata
         quality_preset (str): quality preset to use to generate confidence score
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
