@@ -793,6 +793,7 @@ class TLMScore(TypedDict):
 class TLMOptions(TypedDict):
     """Typed dict of advanced configuration options for the Trustworthy Language Model.
     Many of these configurations are determined by the quality preset selected
+    (learn about quality presets in the TLM [initialization method](./tlm/#class-tlm)).
     Specifying TLMOptions values directly overrides any default values set from the quality preset.
 
     For all options described below, higher settings will lead to longer runtimes and may consume more tokens internally.
