@@ -222,13 +222,14 @@ def tlm_prompt_process_and_validate_kwargs(
     prompt: Union[str, Sequence[str]],
     kwargs_dict: Dict[str, Any],
 ) -> None:
-    supported_kwargs = TLM_VALID_PROMPT_KWARGS
-    unsupported_kwargs = set(kwargs_dict.keys()) - supported_kwargs
-    if unsupported_kwargs:
-        raise ValidationError(
-            f"Unsupported keyword arguments: {unsupported_kwargs}. "
-            f"Supported keyword arguments are: {supported_kwargs}"
-        )
+    if not SKIP_VALIDATE_TLM_OPTIONS:
+        supported_kwargs = TLM_VALID_PROMPT_KWARGS
+        unsupported_kwargs = set(kwargs_dict.keys()) - supported_kwargs
+        if unsupported_kwargs:
+            raise ValidationError(
+                f"Unsupported keyword arguments: {unsupported_kwargs}. "
+                f"Supported keyword arguments are: {supported_kwargs}"
+            )
 
     process_and_validate_kwargs_constrain_outputs(prompt=prompt, kwargs_dict=kwargs_dict)
 
@@ -269,7 +270,7 @@ def tlm_score_process_response_and_kwargs(
                         if v is not None and not 0 <= v <= 1:
                             raise ValidationError("Perplexity values must be between 0 and 1")
                 else:
-                    raise ValidationError(f"Invalid type {type(val)}, perplexity must be either a sequence or a float")
+                    raise ValidationError(f"Invalid type {type(response)}, response must be either a sequence or a str")
     # format responses and kwargs into the appropriate formats
     combined_response = {"response": response, **kwargs_dict}
     if isinstance(response, str):

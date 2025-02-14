@@ -259,7 +259,7 @@ async def tlm_get_confidence_score(
     Args:
         api_key (str): API key for auth
         prompt (str): prompt for TLM to get confidence score for
-        response (str): response for TLM to get confidence score for
+        response (Dict[str, Any]): dictionary containing response and optional metadata
         quality_preset (str): quality preset to use to generate confidence score
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
