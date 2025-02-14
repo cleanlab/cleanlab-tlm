@@ -16,21 +16,15 @@ test_prompt = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
-def is_trustworthiness_score_json_format(
-    response: Any, allow_null_trustworthiness_score: bool = False
-) -> bool:
+def is_trustworthiness_score_json_format(response: Any, allow_null_trustworthiness_score: bool = False) -> bool:
     """Returns True if the response is a trustworthiness score in JSON format with valid range."""
     return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
         and (
-            (
-                allow_null_trustworthiness_score
-                and response["trustworthiness_score"] is None
-            )
+            (allow_null_trustworthiness_score and response["trustworthiness_score"] is None)
             or (
-                isinstance(response["trustworthiness_score"], float)
-                and 0.0 <= response["trustworthiness_score"] <= 1.0
+                isinstance(response["trustworthiness_score"], float) and 0.0 <= response["trustworthiness_score"] <= 1.0
             )
         )
     )
@@ -80,9 +74,7 @@ def test_single_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
     - No exceptions are raised
     """
     # act -- run a single get_trustworthiness_score
-    response = tlm.get_trustworthiness_score(
-        test_prompt, TEST_RESPONSE, constrain_outputs=[TEST_RESPONSE]
-    )
+    response = tlm.get_trustworthiness_score(test_prompt, TEST_RESPONSE, constrain_outputs=[TEST_RESPONSE])
 
     # assert
     # - response is not None

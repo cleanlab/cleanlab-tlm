@@ -143,9 +143,7 @@ def _handle_exception(
             else "Retrying will not help. Please address the issue described in the error message before attempting again."
         )
         error_message = str(e.message) if hasattr(e, "message") else str(e)
-        warning_message = (
-            f"prompt[{batch_index}] failed. {retry_message} Error: {error_message}"
-        )
+        warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {error_message}"
         warnings.warn(warning_message)
 
         error_log = {"error": {"message": error_message, "retryable": retryable}}
@@ -296,9 +294,7 @@ class TLM:
                 for batch_index, (prompt, constrain_output) in enumerate(
                     zip(
                         prompts,
-                        constrain_outputs
-                        if constrain_outputs
-                        else [None] * len(prompts),
+                        constrain_outputs if constrain_outputs else [None] * len(prompts),
                     )
                 )
             ],
@@ -349,9 +345,7 @@ class TLM:
                     capture_exceptions=capture_exceptions,
                     batch_index=batch_index,
                 )
-                for batch_index, (prompt, response) in enumerate(
-                    zip(prompts, responses)
-                )
+                for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
             ],
             per_batch_timeout,
         )
@@ -619,9 +613,7 @@ class TLM:
                 For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(
-            prompt, response, kwargs
-        )
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
 
         if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
@@ -640,9 +632,7 @@ class TLM:
         assert isinstance(processed_response, Sequence)
 
         return self._event_loop.run_until_complete(
-            self._batch_get_trustworthiness_score(
-                prompt, processed_response, capture_exceptions=False
-            )
+            self._batch_get_trustworthiness_score(prompt, processed_response, capture_exceptions=False)
         )
 
     def try_get_trustworthiness_score(
@@ -676,9 +666,7 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(
-            prompt, response, kwargs
-        )
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
 
         assert isinstance(processed_response, list)
 
@@ -716,9 +704,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(
-            prompt, response, kwargs
-        )
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(processed_response, dict):
@@ -734,9 +720,7 @@ class TLM:
             assert isinstance(prompt, Sequence)
             assert isinstance(processed_response, Sequence)
 
-            return await self._batch_get_trustworthiness_score(
-                prompt, processed_response, capture_exceptions=False
-            )
+            return await self._batch_get_trustworthiness_score(prompt, processed_response, capture_exceptions=False)
 
     @handle_tlm_exceptions("TLMScore")
     async def _get_trustworthiness_score_async(

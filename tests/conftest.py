@@ -39,9 +39,7 @@ def tlm(tlm_api_key: str) -> TLM:
         return TLM(api_key=tlm_api_key)
     except Exception as e:
         environment = os.environ.get("CLEANLAB_API_BASE_URL")
-        pytest.skip(
-            f"Failed to create TLM: {e}. Check your API key and environment: ({environment})."
-        )
+        pytest.skip(f"Failed to create TLM: {e}. Check your API key and environment: ({environment}).")
 
 
 @pytest.fixture(scope="module")
@@ -91,9 +89,7 @@ def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
     add_similarity_measure = np.random.choice([True, False])
     add_reasoning_effort = np.random.choice([True, False])
     add_log_explanation = (
-        np.random.choice([True, False])
-        if model not in TLM_MODELS_NOT_SUPPORTING_EXPLANATION
-        else False
+        np.random.choice([True, False]) if model not in TLM_MODELS_NOT_SUPPORTING_EXPLANATION else False
     )
     add_log_perplexity_score = np.random.choice([True, False])
 
@@ -103,9 +99,7 @@ def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
         options["model"] = model
 
     if add_max_tokens:
-        max_tokens_limit = _TLM_MAX_TOKEN_RANGE.get(
-            model or _TLM_DEFAULT_MODEL, _TLM_MAX_TOKEN_RANGE["default"]
-        )[1]
+        max_tokens_limit = _TLM_MAX_TOKEN_RANGE.get(model or _TLM_DEFAULT_MODEL, _TLM_MAX_TOKEN_RANGE["default"])[1]
         options["max_tokens"] = int(np.random.randint(64, max_tokens_limit))
     if add_use_self_reflection:
         options["use_self_reflection"] = random.choice([True, False])

@@ -34,9 +34,7 @@ base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api"
 tlm_base_url = f"{base_url}/v0/trustworthy_llm"
 
 
-def _construct_headers(
-    api_key: Optional[str], content_type: Optional[str] = "application/json"
-) -> JSONDict:
+def _construct_headers(api_key: Optional[str], content_type: Optional[str] = "application/json") -> JSONDict:
     retval = {}
     if api_key:
         retval["Authorization"] = f"bearer {api_key}"
@@ -51,12 +49,8 @@ def handle_api_error(res: requests.Response) -> None:
     handle_api_error_from_json(res.json(), res.status_code)
 
 
-def handle_api_error_from_json(
-    res_json: JSONDict, status_code: Optional[int] = None
-) -> None:
-    if (
-        "code" in res_json and "description" in res_json
-    ):  # AuthError or UserQuotaError format
+def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = None) -> None:
+    if "code" in res_json and "description" in res_json:  # AuthError or UserQuotaError format
         if res_json["code"] == "user_soft_quota_exceeded":
             pass  # soft quota limit is going away soon, so ignore it
         else:
@@ -85,9 +79,7 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         )
 
 
-async def handle_tlm_client_error_from_resp(
-    resp: aiohttp.ClientResponse, batch_index: Optional[int]
-) -> None:
+async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse, batch_index: Optional[int]) -> None:
     """Catches 4XX (client error) errors."""
     if 400 <= resp.status < 500:  # noqa: PLR2004
         try:
@@ -95,41 +87,35 @@ async def handle_tlm_client_error_from_resp(
             error_message = res_json["error"]
             retryable = False
         except Exception:
-            error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+            error_message = (
+                "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+            )
             retryable = True
         if batch_index is not None:
-            error_message = (
-                f"Error executing query at index {batch_index}:\n{error_message}"
-            )
+            error_message = f"Error executing query at index {batch_index}:\n{error_message}"
 
         raise TlmBadRequestError(error_message, retryable)
 
 
-async def handle_tlm_api_error_from_resp(
-    resp: aiohttp.ClientResponse, batch_index: Optional[int]
-) -> None:
+async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse, batch_index: Optional[int]) -> None:
     """Catches 5XX (server error) errors."""
     if 500 <= resp.status < 600:  # noqa: PLR2004
         try:
             res_json = await resp.json()
             error_message = res_json["error"]
         except Exception:
-            error_message = "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+            error_message = (
+                "TLM query failed. Please try again and contact support@cleanlab.ai if the problem persists."
+            )
 
         if batch_index is not None:
-            error_message = (
-                f"Error executing query at index {batch_index}:\n{error_message}"
-            )
+            error_message = f"Error executing query at index {batch_index}:\n{error_message}"
 
         raise TlmServerError(error_message, resp.status)
 
 
-def poll_progress(
-    progress_id: str, request_function: Callable[[str], JSONDict], description: str
-) -> JSONDict:
-    with tqdm(
-        total=1, desc=description, bar_format="{desc}: {percentage:3.0f}%|{bar}|"
-    ) as pbar:
+def poll_progress(progress_id: str, request_function: Callable[[str], JSONDict], description: str) -> JSONDict:
+    with tqdm(total=1, desc=description, bar_format="{desc}: {percentage:3.0f}%|{bar}|") as pbar:
         res = request_function(progress_id)
         while res["status"] != "complete":
             if res["status"] == "error":
@@ -155,10 +141,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
         num_general_retry = 0
         num_connection_error_retry = 0
 
-        while (
-            num_general_retry <= max_general_retries
-            and num_connection_error_retry <= max_connection_error_retries
-        ):
+        while num_general_retry <= max_general_retries and num_connection_error_retry <= max_connection_error_retries:
             await asyncio.sleep(sleep_time)
             try:
                 return await func(*args, **kwargs)
@@ -169,9 +152,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
                 raise
             except aiohttp.client_exceptions.ClientConnectorError as e:
                 if num_connection_error_retry == (max_connection_error_retries // 2):
-                    warnings.warn(
-                        f"Connection error after {num_connection_error_retry} retries. Retrying..."
-                    )
+                    warnings.warn(f"Connection error after {num_connection_error_retry} retries. Retrying...")
                 sleep_time = min(2**num_connection_error_retry, 60)
                 # note: we have a different counter for connection errors, because we want to retry connection errors more times
                 num_connection_error_retry += 1
@@ -193,9 +174,7 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
                 -1,
             )
 
-        raise APIError(
-            f"TLM failed after {num_general_retry} attempts. {error_message}", -1
-        )
+        raise APIError(f"TLM failed after {num_general_retry} attempts. {error_message}", -1)
 
     return wrapper
 
@@ -254,9 +233,7 @@ async def tlm_prompt(
             await handle_tlm_api_error_from_resp(res, batch_index)
 
             if not res_json.get("deberta_success", True):
-                raise TlmPartialSuccessError(
-                    "Partial failure on deberta call -- slowdown request rate."
-                )
+                raise TlmPartialSuccessError("Partial failure on deberta call -- slowdown request rate.")
 
     finally:
         if local_scoped_client:
