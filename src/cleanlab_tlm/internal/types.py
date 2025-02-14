@@ -1,5 +1,5 @@
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 TLMQualityPreset = Literal["best", "high", "medium", "low", "base"]
 
-JSONDict = Dict[str, Any]
+JSONDict = dict[str, Any]

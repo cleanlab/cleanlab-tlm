@@ -10,16 +10,13 @@ import asyncio
 import os
 import sys
 import warnings
+from collections.abc import Coroutine, Sequence
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Coroutine,
-    Dict,
-    List,
     Optional,
-    Sequence,
     Union,
     cast,
 )
@@ -264,17 +261,17 @@ class TLM:
         self,
         prompts: Sequence[str],
         capture_exceptions: bool = False,
-        constrain_outputs: Optional[Sequence[Optional[List[str]]]] = None,
-    ) -> List[TLMResponse]:
+        constrain_outputs: Optional[Sequence[Optional[list[str]]]] = None,
+    ) -> list[TLMResponse]:
         """Run a batch of prompts through TLM and get responses/scores for each prompt in the batch. The list returned will have the same length as the input list.
 
         Args:
-            prompts (List[str]): list of prompts to run
+            prompts (list[str]): list of prompts to run
             capture_exceptions (bool): if ``True``, the returned list will contain [TLMResponse](#class-tlmresponse) objects with error messages and retryability information in place of the response for any errors or timeout when processing a particular prompt from the batch.
                 If ``False``, this entire method will raise an exception if TLM fails to produce a result for any prompt in the batch.
 
         Returns:
-            List[TLMResponse]: TLM responses/scores for each prompt (in supplied order)
+            list[TLMResponse]: TLM responses/scores for each prompt (in supplied order)
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -302,16 +299,16 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(List[TLMResponse], tlm_responses)
+            return cast(list[TLMResponse], tlm_responses)
 
-        return cast(List[TLMResponse], tlm_responses)
+        return cast(list[TLMResponse], tlm_responses)
 
     async def _batch_get_trustworthiness_score(
         self,
         prompts: Sequence[str],
-        responses: Sequence[Dict[str, Any]],
+        responses: Sequence[dict[str, Any]],
         capture_exceptions: bool = False,
-    ) -> List[TLMScore]:
+    ) -> list[TLMScore]:
         """Run batch of TLM get trustworthiness score.
 
         capture_exceptions behavior:
@@ -328,7 +325,7 @@ class TLM:
             capture_exceptions (bool): if True, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the score for any errors or timeout when processing a particular prompt from the batch.
 
         Returns:
-            List[TLMScore]: TLM trustworthiness score for each prompt (in supplied order).
+            list[TLMScore]: TLM trustworthiness score for each prompt (in supplied order).
         """
         if capture_exceptions:
             per_query_timeout, per_batch_timeout = self._timeout, None
@@ -351,9 +348,9 @@ class TLM:
         )
 
         if capture_exceptions:
-            return cast(List[TLMScore], tlm_responses)
+            return cast(list[TLMScore], tlm_responses)
 
-        return cast(List[TLMScore], tlm_responses)
+        return cast(list[TLMScore], tlm_responses)
 
     async def _batch_async(
         self,
@@ -363,7 +360,7 @@ class TLM:
         """Runs batch of TLM queries.
 
         Args:
-            tlm_coroutines (List[Coroutine[None, None, Union[TLMResponse, TLMScore]]]): list of query coroutines to run, returning [TLMResponse](#class-tlmresponse) or [TLMScore](#class-tlmscore)
+            tlm_coroutines (list[Coroutine[None, None, Union[TLMResponse, TLMScore]]]): list of query coroutines to run, returning [TLMResponse](#class-tlmresponse) or [TLMScore](#class-tlmscore)
             batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
 
         Returns:
@@ -402,7 +399,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         /,
         **kwargs: Any,
-    ) -> Union[TLMResponse, List[TLMResponse]]:
+    ) -> Union[TLMResponse, list[TLMResponse]]:
         """
         Gets response and trustworthiness score for any text input.
 
@@ -418,7 +415,7 @@ class TLM:
                 If `constrain_outputs` is a list of strings, the response returned for every prompt will be constrained to match one of these values. The last entry in this list is additionally treated as the output to fall back to if the raw LLM output does not resemble any of the categories (for instance, this could be an Other category, or it could be the category you'd prefer to return whenever the LLM is unsure).
                 If you run a list of multiple prompts simultaneously and want to differently constrain each of their outputs, then specify `constrain_outputs` as a list of lists of strings (one list for each prompt).
         Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse | list[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
                 Use it if you want strict error handling and immediate notification of any exceptions/timeouts.
@@ -446,7 +443,7 @@ class TLM:
                 prompt,
                 capture_exceptions=False,
                 constrain_outputs=cast(
-                    Optional[List[Optional[List[str]]]],
+                    Optional[list[Optional[list[str]]]],
                     kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
                 ),
             ),
@@ -457,7 +454,7 @@ class TLM:
         prompt: Sequence[str],
         /,
         **kwargs: Any,
-    ) -> List[TLMResponse]:
+    ) -> list[TLMResponse]:
         """
         Gets response and trustworthiness score for any batch of prompts, handling any failures (errors or timeouts).
 
@@ -471,7 +468,7 @@ class TLM:
             prompt (Sequence[str]): list of multiple prompts for the TLM
             kwargs: Optional keyword arguments, the same as for the [`prompt()`](#method-prompt) method.
         Returns:
-            List[TLMResponse]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
+            list[TLMResponse]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
                 The returned list will always have the same length as the input list.
                 In case of TLM failure on any prompt (due to timeouts or other errors),
                 the return list will include a [TLMResponse](#class-tlmresponse) with an error message and retryability information instead of the usual TLMResponse for that failed prompt.
@@ -487,7 +484,7 @@ class TLM:
                 prompt,
                 capture_exceptions=True,
                 constrain_outputs=cast(
-                    Optional[List[Optional[List[str]]]],
+                    Optional[list[Optional[list[str]]]],
                     kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
                 ),
             ),
@@ -498,7 +495,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         /,
         **kwargs: Any,
-    ) -> Union[TLMResponse, List[TLMResponse]]:
+    ) -> Union[TLMResponse, list[TLMResponse]]:
         """
         Asynchronously get response and trustworthiness score for any text input from TLM.
         This method is similar to the [`prompt()`](#method-prompt) method but operates asynchronously,
@@ -512,7 +509,7 @@ class TLM:
             prompt (str | Sequence[str]): prompt (or list of multiple prompts) for the TLM
             kwargs: Optional keyword arguments, the same as for the [`prompt()`](#method-prompt) method.
         Returns:
-            TLMResponse | List[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TLMResponse | list[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
@@ -534,7 +531,7 @@ class TLM:
                 prompt,
                 capture_exceptions=False,
                 constrain_outputs=cast(
-                    Optional[List[Optional[List[str]]]],
+                    Optional[list[Optional[list[str]]]],
                     kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
                 ),
             )
@@ -547,7 +544,7 @@ class TLM:
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,  # noqa: ARG002
         batch_index: Optional[int] = None,
-        constrain_outputs: Optional[List[str]] = None,
+        constrain_outputs: Optional[list[str]] = None,
     ) -> TLMResponse:
         """
         Private asynchronous method to get response and trustworthiness score from TLM.
@@ -592,7 +589,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
         **kwargs: Any,
-    ) -> Union[TLMScore, List[TLMScore]]:
+    ) -> Union[TLMScore, list[TLMScore]]:
         """Computes trustworthiness score for arbitrary given prompt-response pairs.
 
         Args:
@@ -601,7 +598,7 @@ class TLM:
                 These can be from any LLM or human-written responses.
             kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
         Returns:
-            TLMScore | List[TLMScore]: If a single prompt/response pair was passed in, method returns a [TLMScore](#class-tlmscore) object containing the trustworthiness score and optional log dictionary keys.
+            TLMScore | list[TLMScore]: If a single prompt/response pair was passed in, method returns a [TLMScore](#class-tlmscore) object containing the trustworthiness score and optional log dictionary keys.
 
                 If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and optional log dictionary keys for each prompt-response pair passed in.
 
@@ -640,7 +637,7 @@ class TLM:
         prompt: Sequence[str],
         response: Sequence[str],
         **kwargs: Any,
-    ) -> List[TLMScore]:
+    ) -> list[TLMScore]:
         """Gets trustworthiness score for batches of many prompt-response pairs.
 
         The list returned will have the same length as the input list, if TLM hits any
@@ -655,7 +652,7 @@ class TLM:
             response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
             kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
         Returns:
-            List[TLMScore]: If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and the optional log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information instead.
+            list[TLMScore]: If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and the optional log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information instead.
 
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
                 The returned list will always have the same length as the input list.
@@ -683,7 +680,7 @@ class TLM:
         prompt: Union[str, Sequence[str]],
         response: Union[str, Sequence[str]],
         **kwargs: Any,
-    ) -> Union[TLMScore, List[TLMScore]]:
+    ) -> Union[TLMScore, list[TLMScore]]:
         """Asynchronously gets trustworthiness score for prompt-response pairs.
         This method is similar to the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
@@ -697,7 +694,7 @@ class TLM:
             response (str | Sequence[str]): response (or list of responses) corresponding to the input prompts
             kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
         Returns:
-            TLMScore | List[TLMScore]: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score) or a [TLMScore](#class-tlmscore) object containing both the trustworthiness score and log dictionary keys.
+            TLMScore | list[TLMScore]: If a single prompt/response pair was passed in, method returns either a float (representing the output trustworthiness score) or a [TLMScore](#class-tlmscore) object containing both the trustworthiness score and log dictionary keys.
 
                 If a list of prompt/responses was passed in, method returns a list of floats representing the trustworthiness score or a list of [TLMScore](#class-tlmscore) objects each containing both the trustworthiness score and log dictionary keys for each prompt-response pair passed in.
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
@@ -726,7 +723,7 @@ class TLM:
     async def _get_trustworthiness_score_async(
         self,
         prompt: str,
-        response: Dict[str, Any],
+        response: dict[str, Any],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         capture_exceptions: bool = False,  # noqa: ARG002
@@ -786,7 +783,7 @@ class TLMResponse(TypedDict):
 
     response: Optional[str]
     trustworthiness_score: Optional[float]
-    log: NotRequired[Dict[str, Any]]
+    log: NotRequired[dict[str, Any]]
 
 
 class TLMScore(TypedDict):
@@ -800,7 +797,7 @@ class TLMScore(TypedDict):
     """
 
     trustworthiness_score: Optional[float]
-    log: NotRequired[Dict[str, Any]]
+    log: NotRequired[dict[str, Any]]
 
 
 class TLMOptions(TypedDict):
@@ -865,10 +862,10 @@ class TLMOptions(TypedDict):
         when considering alternative possible responses and double-checking responses.
         Higher efforts here may produce better TLM trustworthiness scores and LLM responses. Reduce this value to improve latency/costs.
 
-        log (List[str], default = []): optionally specify additional logs or metadata that TLM should return.
+        log (list[str], default = []): optionally specify additional logs or metadata that TLM should return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
 
-        custom_eval_criteria (List[Dict[str, Any]], default = []): optionally specify custom evalution criteria.
+        custom_eval_criteria (list[dict[str, Any]], default = []): optionally specify custom evalution criteria.
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: Name of the evaluation criteria.
         - criteria: Instructions specifying the evaluation criteria. Currently, only one custom evaluation criteria at a time is supported.
@@ -881,8 +878,8 @@ class TLMOptions(TypedDict):
     use_self_reflection: NotRequired[bool]
     similarity_measure: NotRequired[str]
     reasoning_effort: NotRequired[str]
-    log: NotRequired[List[str]]
-    custom_eval_criteria: NotRequired[List[Dict[str, Any]]]
+    log: NotRequired[list[str]]
+    custom_eval_criteria: NotRequired[list[dict[str, Any]]]
 
 
 def is_notebook() -> bool:

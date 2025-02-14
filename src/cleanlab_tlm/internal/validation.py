@@ -1,5 +1,6 @@
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Optional, Union
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
@@ -175,7 +176,7 @@ def validate_tlm_options(options: Any) -> None:
 
 def process_and_validate_kwargs_constrain_outputs(
     prompt: Union[str, Sequence[str]],
-    kwargs_dict: Dict[str, Any],
+    kwargs_dict: dict[str, Any],
     response: Optional[Union[str, Sequence[str]]] = None,
 ) -> None:
     constrain_outputs = kwargs_dict.get("constrain_outputs")
@@ -220,7 +221,7 @@ def process_and_validate_kwargs_constrain_outputs(
 
 def tlm_prompt_process_and_validate_kwargs(
     prompt: Union[str, Sequence[str]],
-    kwargs_dict: Dict[str, Any],
+    kwargs_dict: dict[str, Any],
 ) -> None:
     if not SKIP_VALIDATE_TLM_OPTIONS:
         supported_kwargs = TLM_VALID_PROMPT_KWARGS
@@ -237,8 +238,8 @@ def tlm_prompt_process_and_validate_kwargs(
 def tlm_score_process_response_and_kwargs(
     prompt: Union[str, Sequence[str]],
     response: Union[str, Sequence[str]],
-    kwargs_dict: Dict[str, Any],
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    kwargs_dict: dict[str, Any],
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
     process_and_validate_kwargs_constrain_outputs(prompt=prompt, kwargs_dict=kwargs_dict, response=response)
 
     if not SKIP_VALIDATE_TLM_OPTIONS:
@@ -290,7 +291,7 @@ def validate_tlm_lite_score_options(score_options: Any) -> None:
         )
 
 
-def get_tlm_lite_response_options(score_options: Any, response_model: str) -> Dict[str, Any]:
+def get_tlm_lite_response_options(score_options: Any, response_model: str) -> dict[str, Any]:
     response_options = {"model": response_model, "log": ["perplexity"]}
     if score_options is not None:
         for option_key in VALID_RESPONSE_OPTIONS:

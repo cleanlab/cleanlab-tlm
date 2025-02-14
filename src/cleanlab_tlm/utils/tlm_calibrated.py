@@ -6,7 +6,7 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, List, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -20,6 +20,8 @@ from cleanlab_tlm.errors import (
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from cleanlab_tlm.internal.types import TLMQualityPreset
 
 
@@ -72,13 +74,13 @@ class TLMCalibrated:
             verbose=self._verbose,
         )
 
-    def fit(self, tlm_scores: List[TLMScore], ratings: Sequence[float]) -> None:
+    def fit(self, tlm_scores: list[TLMScore], ratings: Sequence[float]) -> None:
         """
         Callibrate the model using TLM scores obtained from a previous `TLM.get_trustworthiness_score()` call
         using the provided numeric ratings.
 
         Args:
-            tlm_scores (List[TLMScore]): list of [TLMScore](../tlm/#class-tlmscore) object obtained
+            tlm_scores (list[TLMScore]): list of [TLMScore](../tlm/#class-tlmscore) object obtained
                 from a previous `TLM.get_trustworthiness_score()` call
             ratings (Sequence[float]): sequence of numeric ratings corresponding to each prompt-response pair,
                 the length of this sequence must match the length of the `tlm_scores`.
@@ -104,7 +106,7 @@ class TLMCalibrated:
 
     def prompt(
         self, prompt: Union[str, Sequence[str]]
-    ) -> Union[TLMResponseWithCalibration, List[TLMResponseWithCalibration]]:
+    ) -> Union[TLMResponseWithCalibration, list[TLMResponseWithCalibration]]:
         """
         Gets response and a calibrated trustworthiness score for the given prompts,
         make sure that the model has been calibrated by calling the `.fit()` method before using this method.
@@ -143,11 +145,11 @@ class TLMCalibrated:
         if is_single_query:
             return cast(TLMResponseWithCalibration, tlm_response_df.to_dict(orient="records")[0])
 
-        return cast(List[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records"))
+        return cast(list[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records"))
 
     def get_trustworthiness_score(
         self, prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]
-    ) -> Union[TLMScoreWithCalibration, List[TLMScoreWithCalibration]]:
+    ) -> Union[TLMScoreWithCalibration, list[TLMScoreWithCalibration]]:
         """
         Computes the calibrated trustworthiness score for arbitrary given prompt-response pairs,
         make sure that the model has been calibrated by calling the `.fit()` method before using this method.
@@ -186,7 +188,7 @@ class TLMCalibrated:
         if is_single_query:
             return cast(TLMScoreWithCalibration, tlm_scores_df.to_dict(orient="records")[0])
 
-        return cast(List[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records"))
+        return cast(list[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records"))
 
     def _extract_tlm_scores(self, tlm_scores_df: pd.DataFrame) -> npt.NDArray[np.float64]:
         """

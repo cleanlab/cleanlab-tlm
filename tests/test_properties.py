@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 import pytest
 
@@ -23,7 +23,7 @@ test_prompt_single = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
-def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
+def _test_log(response: dict[str, Any], options: dict[str, Any]) -> None:
     """Tests the log dictionary in the response based on the options dictionary."""
     if "log" in options:
         print("Testing log:", options["log"], end="")
@@ -40,7 +40,7 @@ def _test_log(response: Dict[str, Any], options: Dict[str, Any]) -> None:
         print("... PASSED.")
 
 
-def _test_log_batch(responses: List[Dict[str, Any]], options: Dict[str, Any]) -> None:
+def _test_log_batch(responses: list[dict[str, Any]], options: dict[str, Any]) -> None:
     """Tests the log dictionary in the batch response based on the options dictionary."""
     for response in responses:
         if response is not None:
@@ -48,8 +48,8 @@ def _test_log_batch(responses: List[Dict[str, Any]], options: Dict[str, Any]) ->
 
 
 def _is_valid_prompt_response(
-    response: Dict[str, Any],
-    options: Dict[str, Any],
+    response: dict[str, Any],
+    options: dict[str, Any],
     allow_none_response: bool = False,
     allow_null_trustworthiness_score: bool = False,
 ) -> bool:
@@ -72,8 +72,8 @@ def _is_valid_prompt_response(
 
 
 def _is_valid_get_trustworthiness_score_response(
-    response: Dict[str, Any],
-    options: Dict[str, Any],
+    response: dict[str, Any],
+    options: dict[str, Any],
     quality_preset: str,
     allow_null_trustworthiness_score: bool = False,
 ) -> bool:
@@ -99,8 +99,8 @@ def _is_valid_get_trustworthiness_score_response(
 
 
 def _test_prompt_response(
-    response: Dict[str, Any],
-    options: Dict[str, Any],
+    response: dict[str, Any],
+    options: dict[str, Any],
     allow_none_response: bool = False,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
@@ -114,8 +114,8 @@ def _test_prompt_response(
 
 
 def _test_batch_prompt_response(
-    responses: List[Dict[str, Any]],
-    options: Dict[str, Any],
+    responses: list[dict[str, Any]],
+    options: dict[str, Any],
     allow_none_response: bool = False,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
@@ -138,8 +138,8 @@ def _test_batch_prompt_response(
 
 
 def _test_get_trustworthiness_score_response(
-    response: Dict[str, Any],
-    options: Dict[str, Any],
+    response: dict[str, Any],
+    options: dict[str, Any],
     quality_preset: str,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
@@ -153,8 +153,8 @@ def _test_get_trustworthiness_score_response(
 
 
 def _test_batch_get_trustworthiness_score_response(
-    responses: List[Dict[str, Any]],
-    options: Dict[str, Any],
+    responses: list[dict[str, Any]],
+    options: dict[str, Any],
     quality_preset: str,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
@@ -177,14 +177,14 @@ def _test_batch_get_trustworthiness_score_response(
 
 
 @pytest.mark.asyncio(scope="function")
-async def _run_prompt_async(tlm: TLM, prompt: Union[List[str], str]) -> Any:
+async def _run_prompt_async(tlm: TLM, prompt: Union[list[str], str]) -> Any:
     """Runs tlm.prompt() asynchronously."""
     return await tlm.prompt_async(prompt)
 
 
 @pytest.mark.asyncio(scope="function")
 async def _run_get_trustworthiness_score_async(
-    tlm: TLM, prompt: Union[List[str], str], response: Union[List[str], str]
+    tlm: TLM, prompt: Union[list[str], str], response: Union[list[str], str]
 ) -> Any:
     """Runs tlm.get_trustworthiness_score asynchronously."""
     return await tlm.get_trustworthiness_score_async(prompt, response)
@@ -192,7 +192,7 @@ async def _run_get_trustworthiness_score_async(
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt in the TLM for all quality_presets, model types and single/batch prompt."""
     print("Testing with prompt:", test_prompt_single)
     print("Testing with batch prompt:", test_prompt_batch)
@@ -225,7 +225,7 @@ def test_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> No
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_prompt_async(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running a prompt_async in the TLM for all quality_presets, model types and single/batch prompt."""
     print("Testing with prompt:", test_prompt_single)
     print("Testing with batch prompt:", test_prompt_batch)
@@ -254,7 +254,7 @@ def test_prompt_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str)
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_try_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running try_prompt in the TLM for all quality_presets, model types batch prompt."""
     print("Testing with batch prompt:", test_prompt_batch)
     # get TLM and options dictionary based on parameters
@@ -276,7 +276,7 @@ def test_try_prompt(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_get_trustworthiness_score(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_get_trustworthiness_score(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running get_trustworthiness_score in the TLM for all quality_presets, model types and single/batch prompt."""
     print("Testing with prompt/response:", test_prompt_single, TEST_RESPONSE)
     print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
@@ -300,7 +300,7 @@ def test_get_trustworthiness_score(tlm_dict: Dict[str, Any], model: str, quality
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_get_trustworthiness_score_async(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_get_trustworthiness_score_async(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running get_trustworthiness_score_async in the TLM for all quality_presets, model types and single/batch prompt."""
     print("Testing with prompt/response:", test_prompt_single, TEST_RESPONSE)
     print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
@@ -330,7 +330,7 @@ def test_get_trustworthiness_score_async(tlm_dict: Dict[str, Any], model: str, q
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_try_get_trustworthiness_score(tlm_dict: Dict[str, Any], model: str, quality_preset: str) -> None:
+def test_try_get_trustworthiness_score(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
     """Tests running try_get_trustworthiness_score in the TLM for all quality_presets, model types and batch prompt."""
     print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
     # get TLMs and options dictionary based on parameters

@@ -1,7 +1,7 @@
 import os
 import random
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import numpy as np
 import pytest
@@ -43,7 +43,7 @@ def tlm(tlm_api_key: str) -> TLM:
 
 
 @pytest.fixture(scope="module")
-def tlm_dict(tlm_api_key: str) -> Dict[str, Any]:
+def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
     """Creates a dictionary of initialized tlm objects for each quality preset and model to be reused throughout the test.
     Save randomly created options dictionary for each tlm object as well.
 
@@ -55,7 +55,7 @@ def tlm_dict(tlm_api_key: str) -> Dict[str, Any]:
     and to give signal if the function is not working for a specific set of options or overall.
     """
 
-    tlm_dict: Dict[str, Any] = {}
+    tlm_dict: dict[str, Any] = {}
     for quality_preset in TLMQualityPreset.__args__:  # type: ignore
         tlm_dict[quality_preset] = {}
         for model in _VALID_TLM_MODELS:
@@ -93,7 +93,7 @@ def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
     )
     add_log_perplexity_score = np.random.choice([True, False])
 
-    options: Dict[str, Any] = {}
+    options: dict[str, Any] = {}
 
     if model is not None:
         options["model"] = model

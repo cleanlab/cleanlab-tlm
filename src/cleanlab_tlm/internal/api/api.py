@@ -5,7 +5,7 @@ import os
 import ssl
 import time
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -188,7 +188,7 @@ async def tlm_prompt(
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
     batch_index: Optional[int] = None,
-    constrain_outputs: Optional[List[str]] = None,
+    constrain_outputs: Optional[list[str]] = None,
 ) -> JSONDict:
     """
     Prompt Trustworthy Language Model with a question, and get back its answer along with a confidence score
@@ -246,7 +246,7 @@ async def tlm_prompt(
 async def tlm_get_confidence_score(
     api_key: str,
     prompt: str,
-    response: Dict[str, Any],
+    response: dict[str, Any],
     quality_preset: str,
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
