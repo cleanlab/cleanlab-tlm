@@ -16,15 +16,21 @@ test_prompt = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
-def is_trustworthiness_score_json_format(response: Any, allow_null_trustworthiness_score: bool = False) -> bool:
+def is_trustworthiness_score_json_format(
+    response: Any, allow_null_trustworthiness_score: bool = False
+) -> bool:
     """Returns True if the response is a trustworthiness score in JSON format with valid range."""
     return (
         isinstance(response, dict)
         and "trustworthiness_score" in response
         and (
-            (allow_null_trustworthiness_score and response["trustworthiness_score"] is None)
+            (
+                allow_null_trustworthiness_score
+                and response["trustworthiness_score"] is None
+            )
             or (
-                isinstance(response["trustworthiness_score"], float) and 0.0 <= response["trustworthiness_score"] <= 1.0
+                isinstance(response["trustworthiness_score"], float)
+                and 0.0 <= response["trustworthiness_score"] <= 1.0
             )
         )
     )
@@ -64,6 +70,48 @@ def test_single_get_trustworthiness_score(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert is_trustworthiness_score_json_format(response)
+
+
+def test_single_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a single get_trustworthiness_score in the TLM with constrain_outputs.
+    Expected:
+    - TLM should return a single response
+    - Response should be non-None
+    - No exceptions are raised
+    """
+    # act -- run a single get_trustworthiness_score
+    response = tlm.get_trustworthiness_score(
+        test_prompt, TEST_RESPONSE, constrain_outputs=[TEST_RESPONSE]
+    )
+
+    # assert
+    # - response is not None
+    # - a single response of type TLMResponse is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert is_trustworthiness_score_json_format(response)
+
+
+def test_batch_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a batch get_trustworthiness_score in the TLM with constrain_outputs.
+    Expected:
+    - TLM should return a list of responses
+    - Responses should be non-None
+    - No exceptions are raised
+    - Each response should be of type TLMResponse
+    """
+    # act -- run a batch get_trustworthiness_score
+    response = tlm.get_trustworthiness_score(
+        test_prompt_batch, TEST_RESPONSE_BATCH, constrain_outputs=TEST_RESPONSE_BATCH
+    )
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_trustworthiness_score_json_format(r) for r in response)
 
 
 def test_batch_get_trustworthiness_score(tlm: TLM) -> None:
@@ -120,6 +168,29 @@ def test_batch_try_get_trustworthiness_score(tlm: TLM) -> None:
     response = tlm.try_get_trustworthiness_score(
         test_prompt_batch,
         TEST_RESPONSE_BATCH,
+    )
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse or None is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_trustworthiness_score_json_format(r) for r in response)
+
+
+def test_batch_try_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a batch try get_trustworthiness_score in the TLM with constrain_outputs.
+    Expected:
+    - TLM should return a list of responses
+    - Responses will be of type TLMResponse
+    - No exceptions are raised
+    """
+    # act -- run a batch get_trustworthiness_score
+    response = tlm.try_get_trustworthiness_score(
+        test_prompt_batch,
+        TEST_RESPONSE_BATCH,
+        constrain_outputs=TEST_RESPONSE_BATCH,
     )
 
     # assert

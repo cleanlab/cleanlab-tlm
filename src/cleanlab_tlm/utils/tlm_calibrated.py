@@ -12,7 +12,11 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from cleanlab_tlm.errors import MissingApiKeyError, TlmNotCalibratedError, ValidationError
+from cleanlab_tlm.errors import (
+    MissingApiKeyError,
+    TlmNotCalibratedError,
+    ValidationError,
+)
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 
 if TYPE_CHECKING:
@@ -54,7 +58,9 @@ class TLMCalibrated:
         self._timeout = timeout if timeout is not None and timeout > 0 else None
         self._verbose = verbose
 
-        custom_eval_criteria_list = self._options.get("custom_eval_criteria", []) if self._options else []
+        custom_eval_criteria_list = (
+            self._options.get("custom_eval_criteria", []) if self._options else []
+        )
 
         # number of custom eval critera + 1 to account for the default TLM trustworthiness score
         self._num_features = len(custom_eval_criteria_list) + 1
@@ -80,7 +86,9 @@ class TLMCalibrated:
                 the length of this sequence must match the length of the `tlm_scores`.
         """
         if len(tlm_scores) != len(ratings):
-            raise ValidationError("The list of ratings must be of the same length as the list of TLM scores.")
+            raise ValidationError(
+                "The list of ratings must be of the same length as the list of TLM scores."
+            )
 
         tlm_scores_df = pd.DataFrame(tlm_scores)
         extracted_scores = self._extract_tlm_scores(tlm_scores_df)
@@ -94,7 +102,9 @@ class TLMCalibrated:
 
         # using pandas so that NaN values are handled correctly
         ratings_series = pd.Series(ratings)
-        ratings_normalized = (ratings_series - ratings_series.min()) / (ratings_series.max() - ratings_series.min())
+        ratings_normalized = (ratings_series - ratings_series.min()) / (
+            ratings_series.max() - ratings_series.min()
+        )
 
         self._rf_model.fit(extracted_scores, ratings_normalized.values)
 
@@ -137,9 +147,13 @@ class TLMCalibrated:
         tlm_response_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
-            return cast(TLMResponseWithCalibration, tlm_response_df.to_dict(orient="records")[0])
+            return cast(
+                TLMResponseWithCalibration, tlm_response_df.to_dict(orient="records")[0]
+            )
 
-        return cast(List[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records"))
+        return cast(
+            List[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records")
+        )
 
     def get_trustworthiness_score(
         self, prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]
@@ -180,11 +194,17 @@ class TLMCalibrated:
         tlm_scores_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
-            return cast(TLMScoreWithCalibration, tlm_scores_df.to_dict(orient="records")[0])
+            return cast(
+                TLMScoreWithCalibration, tlm_scores_df.to_dict(orient="records")[0]
+            )
 
-        return cast(List[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records"))
+        return cast(
+            List[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records")
+        )
 
-    def _extract_tlm_scores(self, tlm_scores_df: pd.DataFrame) -> npt.NDArray[np.float64]:
+    def _extract_tlm_scores(
+        self, tlm_scores_df: pd.DataFrame
+    ) -> npt.NDArray[np.float64]:
         """
         Transform a DataFrame containing TLMScore objects into a 2D numpy array,
         where each column represents different scores including trustworthiness score and any custom evaluation criteria.
@@ -202,7 +222,11 @@ class TLMCalibrated:
         if tlm_log is not None and "custom_eval_criteria" in tlm_log.iloc[0]:
             custom_eval_scores = np.array(
                 tlm_scores_df["log"]
-                .apply(lambda x: [criteria["score"] for criteria in x["custom_eval_criteria"]])
+                .apply(
+                    lambda x: [
+                        criteria["score"] for criteria in x["custom_eval_criteria"]
+                    ]
+                )
                 .tolist()
             )
             all_scores = np.hstack(
@@ -213,7 +237,9 @@ class TLMCalibrated:
             )
         # otherwise use the TLM trustworthiness score as the only feature
         else:
-            all_scores = tlm_scores_df["trustworthiness_score"].to_numpy().reshape(-1, 1)
+            all_scores = (
+                tlm_scores_df["trustworthiness_score"].to_numpy().reshape(-1, 1)
+            )
 
         return all_scores
 

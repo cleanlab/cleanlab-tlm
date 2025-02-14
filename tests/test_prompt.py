@@ -27,14 +27,21 @@ def is_tlm_response(
     if response is None:
         return allow_none_response
 
-    if isinstance(response, dict) and "response" in response and "trustworthiness_score" in response:
+    if (
+        isinstance(response, dict)
+        and "response" in response
+        and "trustworthiness_score" in response
+    ):
         trustworthiness_score = response["trustworthiness_score"]
 
         # check if trustworthiness score is allowed to be none
         if trustworthiness_score is None:
             return allow_null_trustworthiness_score
 
-        return isinstance(trustworthiness_score, float) and 0.0 <= trustworthiness_score <= 1.0
+        return (
+            isinstance(trustworthiness_score, float)
+            and 0.0 <= trustworthiness_score <= 1.0
+        )
 
     return False
 
