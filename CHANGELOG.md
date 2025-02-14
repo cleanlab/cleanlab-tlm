@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.1] - 2025-02-13
+## [1.0.2] - 2025-02-14
 
 ### Fixed
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.0...v1.0.1
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/cleanlab/cleanlab-tlm/releases/tag/v1.0.1
 [1.0.0]: https://github.com/cleanlab/cleanlab-tlm/releases/tag/v1.0.0
