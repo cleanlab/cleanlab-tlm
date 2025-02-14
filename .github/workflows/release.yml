@@ -10,6 +10,7 @@ concurrency:
 jobs:
   tests:
     uses: ./.github/workflows/ci.yml
+    secrets: inherit
 
   build:
     name: Build package and upload artifacts
