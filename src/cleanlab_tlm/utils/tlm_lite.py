@@ -28,9 +28,7 @@ class TLMLite:
     TLMLite should be used if you want to use a better model to generate responses but want to get cheaper and quicker trustworthiness score
     evaluations by using smaller models.
 
-    Possible arguments for `TLMLite()` are documented below.
-
-    Most of the input arguments for this class are similar to those for TLM, major differences will be described below.
+    Possible arguments for `TLMLite()` are documented below. Most of the input arguments for this class are similar to those for TLM, major differences will be described below.
 
     Args:
         response_model (str): LLM used to produce the response to the given prompt.
