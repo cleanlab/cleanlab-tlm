@@ -3,7 +3,8 @@ TLM Lite is a version of the [Trustworthy Language Model (TLM)](../tlm) that ena
 """
 
 import os
-from typing import Dict, List, Optional, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Optional, Union, cast
 
 import numpy as np
 
@@ -104,7 +105,7 @@ class TLMLite:
     def prompt(
         self,
         prompt: Union[str, Sequence[str]],
-    ) -> Union[TLMResponse, List[TLMResponse]]:
+    ) -> Union[TLMResponse, list[TLMResponse]]:
         """
         Similar to [`TLM.prompt()`](../tlm/#method-prompt), view documentation there for expected input arguments and outputs.
         """
@@ -115,7 +116,7 @@ class TLMLite:
             and isinstance(prompt_response, list)
             and all(r["response"] is not None for r in prompt_response)
         ):
-            response = cast(List[str], [r["response"] for r in prompt_response])
+            response = cast(list[str], [r["response"] for r in prompt_response])
             perplexity = [r["log"]["perplexity"] for r in prompt_response]
             return self._batch_score(prompt, response, perplexity)
 
@@ -131,7 +132,7 @@ class TLMLite:
     def try_prompt(
         self,
         prompt: Sequence[str],
-    ) -> List[TLMResponse]:
+    ) -> list[TLMResponse]:
         """
         Similar to [`TLM.try_prompt()`](../tlm/#method-try_prompt), view documentation there for expected input arguments and outputs.
         """
@@ -152,7 +153,7 @@ class TLMLite:
         tlm_response = np.array(prompt_response)
         tlm_response[prompt_succeeded_mask] = np.array(score_response_succeeded)
 
-        return cast(List[TLMResponse], tlm_response.tolist())
+        return cast(list[TLMResponse], tlm_response.tolist())
 
     def _score(
         self,
@@ -182,7 +183,7 @@ class TLMLite:
         prompt: Sequence[str],
         response: Sequence[str],
         perplexity: Sequence[Optional[float]],
-    ) -> List[TLMResponse]:
+    ) -> list[TLMResponse]:
         """
         Private method to get trustworthiness score for a batch of examples and process the outputs into TLMResponse dictionaries.
 
@@ -191,7 +192,7 @@ class TLMLite:
             response: list of responses corresponding to the input prompt
             perplexity: list of perplexity scores of the response (given by LLM)
         Returns:
-            List[TLMResponse]: list of [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score
+            list[TLMResponse]: list of [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score
         """
         score_response = self._tlm_score.get_trustworthiness_score(prompt, response, perplexity=perplexity)
 
@@ -201,7 +202,7 @@ class TLMLite:
         if not all(isinstance(score, dict) for score in score_response):
             raise TypeError("score_response has invalid type")
 
-        score_response = cast(List[TLMScore], score_response)
+        score_response = cast(list[TLMScore], score_response)
         return [{"response": res, **score} for res, score in zip(response, score_response)]
 
     def _try_batch_score(
@@ -209,7 +210,7 @@ class TLMLite:
         prompt: Sequence[str],
         response: Sequence[str],
         perplexity: Sequence[Optional[float]],
-    ) -> List[TLMResponse]:
+    ) -> list[TLMResponse]:
         """
         Private method to get trustworthiness score for a batch of examples and process the outputs into TLMResponse dictionaries,
         handling any failures (errors of timeouts) by returning None in place of the failures.
@@ -219,7 +220,7 @@ class TLMLite:
             response: list of responses corresponding to the input prompt
             perplexity: list of perplexity scores of the response (given by LLM)
         Returns:
-            List[TLMResponse]: list of [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            list[TLMResponse]: list of [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 In case of any failures, the return list will contain None in place of the TLM response for that example.
         """
         score_response = self._tlm_score.try_get_trustworthiness_score(prompt, response, perplexity=perplexity)
@@ -231,7 +232,7 @@ class TLMLite:
 
         return [{"response": res, **score} if score else None for res, score in zip(response, score_response)]
 
-    def get_model_names(self) -> Dict[str, str]:
+    def get_model_names(self) -> dict[str, str]:
         """Returns the underlying LLMs used to generate responses and score their trustworthiness."""
         return {
             "response_model": self._tlm_response.get_model_name(),

@@ -1,6 +1,6 @@
 import asyncio
 from types import TracebackType
-from typing import Optional, Type
+from typing import Optional
 
 from cleanlab_tlm.errors import (
     HTTP_SERVICE_UNAVAILABLE,
@@ -43,7 +43,7 @@ class TlmRateHandler:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc: Optional[BaseException],
         traceback_type: Optional[TracebackType],
     ) -> bool:

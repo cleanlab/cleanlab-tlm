@@ -63,7 +63,7 @@ extra-dependencies = [
 COVERAGE_FAIL_UNDER = ""
 
 [tool.hatch.envs.hatch-test.overrides]
-matrix.python.env-vars = [ { key = "COVERAGE_FAIL_UNDER", value = "--fail-under=60", if = [ "3.13" ] } ]
+matrix.python.env-vars = [ { key = "COVERAGE_FAIL_UNDER", value = "--fail-under=60", if = [ "3.12" ] } ]
 
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
