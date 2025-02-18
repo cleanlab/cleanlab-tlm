@@ -3,9 +3,19 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'src/cleanlab_tlm/__about__.py'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'src/cleanlab_tlm/__about__.py'
   workflow_call:
 
 jobs:
