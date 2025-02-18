@@ -29,45 +29,22 @@ jobs:
           python-version: "3.12"
       - uses: pypa/hatch@install
       - run: hatch fmt --check
-  test-single-python:
-    name: Test (single Python version)
-    # Only run single Python version for PRs and direct pushes to main
-    if: github.event_name != 'workflow_call'
+
+  tests:
+    name: Tests
     runs-on: ubuntu-22.04
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - 'src/cleanlab_tlm/__about__.py'
-    env:
-      CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: pypa/hatch@install
-      - run: hatch test -v --cover --include python=3.12
-  test-matrix:
-    name: Test (All Python versions)
-    # Only run the full matrix when called from the release workflow (release.yml)
-    # This ensures comprehensive testing before publishing to PyPI
-    if: github.event_name == 'workflow_call'
-    runs-on: ubuntu-22.04
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - 'src/cleanlab_tlm/__about__.py'
     env:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
     strategy:
       matrix:
-        python: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        # Only run the full matrix when called from the release workflow (release.yml)
+        # This ensures comprehensive testing before publishing to PyPI
+        python: ${{ github.event_name != 'workflow_call' && fromJSON('["3.12"]') || fromJSON('["3.9", "3.10", "3.11", "3.12", "3.13"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - uses: pypa/hatch@install
-      - run: hatch test -v --cover --include python=$(echo ${{ matrix.python }})
+      - name: Run tests with coverage
+        run: hatch test -v --cover --include python=${{ matrix.python }}
