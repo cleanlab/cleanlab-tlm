@@ -3,19 +3,9 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - 'src/cleanlab_tlm/__about__.py'
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - 'src/cleanlab_tlm/__about__.py'
   workflow_call:
 
 jobs:
@@ -44,6 +34,11 @@ jobs:
     # Only run single Python version for PRs and direct pushes to main
     if: github.event_name != 'workflow_call'
     runs-on: ubuntu-22.04
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'src/cleanlab_tlm/__about__.py'
     env:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
     steps:
@@ -59,6 +54,11 @@ jobs:
     # This ensures comprehensive testing before publishing to PyPI
     if: github.event_name == 'workflow_call'
     runs-on: ubuntu-22.04
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'src/cleanlab_tlm/__about__.py'
     env:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
     strategy:
