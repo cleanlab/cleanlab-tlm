@@ -6,7 +6,7 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast, Dict, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -21,8 +21,94 @@ from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-
     from cleanlab_tlm.internal.types import TLMQualityPreset
+
+def _get_skops():
+    """Lazy import for skops to avoid unnecessary dependency."""
+    try:
+        import skops.io
+        return skops.io
+    except ImportError:
+        raise ImportError(
+            "The skops package is required for model serialization. "
+            "Please install it with: pip install skops"
+        )
+
+def save_tlm_calibrated_state(model: 'TLMCalibrated', custom_eval_options: Dict[str, Any], filename: str) -> None:
+    """Save fitted TLMCalibrated model state to file.
+    
+    Args:
+        model: A fitted TLMCalibrated model instance
+        custom_eval_options: Dictionary containing custom evaluation options
+        filename: Path where the model state will be saved
+    
+    Raises:
+        sklearn.exceptions.NotFittedError: If the model has not been fitted
+        ImportError: If skops package is not installed
+    """
+    try:
+        from sklearn.utils.validation import check_is_fitted
+    except ImportError:
+        raise ImportError(
+            "Cannot import scikit-learn which is required to use TLMCalibrated. "
+            "Please install it using `pip install scikit-learn` and try again."
+        )
+    
+    # Verify model is fitted
+    check_is_fitted(model._rf_model)
+    
+    # Capture essential state
+    state = {
+        'options': custom_eval_options,
+        'rf_state': {attr: getattr(model._rf_model, attr, None) 
+                    for attr in ['n_features_in_', 'n_outputs_', 'estimators_', 'monotonic_cst_']},
+        'train_scores': getattr(model, '_train_scores', None),
+        'train_labels': getattr(model, '_train_labels', None)
+    }
+    
+    # Get skops and save state
+    skops = _get_skops()
+    with open(filename, 'wb') as f:
+        f.write(skops.dumps(state))
+
+def load_tlm_calibrated_state(filename: str) -> 'TLMCalibrated':
+    """Load and reconstruct TLMCalibrated model from file.
+    
+    Args:
+        filename: Path to the saved model state file
+    
+    Returns:
+        A reconstructed TLMCalibrated model with the saved state
+        
+    Raises:
+        FileNotFoundError: If the specified file does not exist
+        ImportError: If skops package is not installed
+    """
+    # Get skops for loading
+    skops = _get_skops()
+    
+    # Load state
+    try:
+        with open(filename, 'rb') as f:
+            state = skops.loads(f.read())
+    except FileNotFoundError:
+        raise FileNotFoundError(f"No saved model state found at: {filename}")
+    
+    # Create new model
+    model = TLMCalibrated(options=state['options'])
+    
+    # Restore RF model attributes
+    for attr, value in state['rf_state'].items():
+        if value is not None:
+            setattr(model._rf_model, attr, value)
+    
+    # Restore training data if available
+    if state.get('train_scores') is not None:
+        model._train_scores = state['train_scores']
+    if state.get('train_labels') is not None:
+        model._train_labels = state['train_labels']
+    
+    return model
 
 
 class TLMCalibrated:
