@@ -62,7 +62,7 @@ jobs:
 
           # Get commit message based on event type
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            commit_msg=$(git log -1 --pretty=%B)
+            commit_msg=$(git log --format=%B -n 1 ${{ github.event.pull_request.head.sha }})
           else
             commit_msg="${{ github.event.head_commit.message }}"
           fi
