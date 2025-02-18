@@ -42,9 +42,48 @@ jobs:
         python: ${{ github.event_name != 'workflow_call' && fromJSON('["3.12"]') || fromJSON('["3.9", "3.10", "3.11", "3.12", "3.13"]') }}
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code-changes:
+              - 'src/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - '.github/workflows/**'
+      - name: Check skip tests for admins
+        id: skip-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            commit_sha="${{ github.event.pull_request.head.sha }}"
+          else
+            commit_sha="${{ github.sha }}"
+          fi
+          commit_msg=$(gh api repos/${{ github.repository }}/commits/$commit_sha | jq -r '.commit.message')
+          is_admin=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission | jq -r '.permission')
+          
+          if [[ "$commit_msg" =~ .*\[skip[-_]tests?\].* ]] && [[ "$is_admin" == "admin" ]]; then
+            echo "Skip condition met - skipping tests"
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "Skip condition not met - running tests"
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+          fi
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - uses: pypa/hatch@install
+      
+      - name: Skip tests for non-code changes
+        if: steps.filter.outputs.code-changes == 'false'
+        run: echo "Skipping tests for non-code changes"
+      
+      - name: Skip tests for skip-tests tag
+        if: steps.skip-check.outputs.skip_tests == 'true'
+        run: echo "Skipping tests for skip tests commit tag"
+      
       - name: Run tests with coverage
+        if: steps.filter.outputs.code-changes == 'true' && steps.skip-check.outputs.skip_tests == 'false'
         run: hatch test -v --cover --include python=${{ matrix.python }}
