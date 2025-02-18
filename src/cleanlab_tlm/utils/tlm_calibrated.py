@@ -44,7 +44,7 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', custom_eval_options: Dict[
     
     Raises:
         sklearn.exceptions.NotFittedError: If the model has not been fitted
-        ImportError: If skops package is not installed
+        ImportError: If skops or sklearn package is not installed
     """
     try:
         from sklearn.utils.validation import check_is_fitted
