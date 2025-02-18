@@ -56,11 +56,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Debug output
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+          
           is_admin=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission | jq -r '.permission')
-          if [[ "${{ github.event.head_commit.message }}" =~ ^.*\[skip[-_]tests?\].*$ ]] && \
+          echo "Permission level: $is_admin"
+          
+          if [[ "${{ github.event.head_commit.message }}" =~ .*\[skip[-_]tests?\].* ]] && \
              ([[ "${{ github.event_name }}" == "push" ]] || [[ "$is_admin" == "admin" ]]); then
+            echo "Skip condition met - skipping tests"
             echo "skip_tests=true" >> $GITHUB_OUTPUT
           else
+            echo "Skip condition not met - running tests"
             echo "skip_tests=false" >> $GITHUB_OUTPUT
           fi
       - uses: actions/setup-python@v5
