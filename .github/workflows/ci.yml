@@ -39,7 +39,7 @@ jobs:
       matrix:
         # Only run the full matrix when called from the release workflow (release.yml)
         # This ensures comprehensive testing before publishing to PyPI
-        python: ${{ github.event_name != 'workflow_call' && ['3.12'] || ['3.9', '3.10', '3.11', '3.12', '3.13'] }}
+        python: ${{ github.event_name != 'workflow_call' && fromJSON('["3.12"]') || fromJSON('["3.9", "3.10", "3.11", "3.12", "3.13"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
