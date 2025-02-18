@@ -51,30 +51,20 @@ jobs:
               - 'tests/**'
               - 'pyproject.toml'
               - '.github/workflows/**'
-      - name: Check skip CI
+      - name: Check skip tests for admins
         id: skip-check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Debug output
-          echo "Actor: ${{ github.actor }}"
-          echo "Event: ${{ github.event_name }}"
-
-          # Get commit message using GitHub API
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             commit_sha="${{ github.event.pull_request.head.sha }}"
           else
             commit_sha="${{ github.sha }}"
           fi
-          
           commit_msg=$(gh api repos/${{ github.repository }}/commits/$commit_sha | jq -r '.commit.message')
-          echo "Commit message: $commit_msg"
-          
           is_admin=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission | jq -r '.permission')
-          echo "Permission level: $is_admin"
           
-          if [[ "$commit_msg" =~ .*\[skip[-_]tests?\].* ]] && \
-             ([[ "${{ github.event_name }}" == "push" ]] || [[ "$is_admin" == "admin" ]]); then
+          if [[ "$commit_msg" =~ .*\[skip[-_]tests?\].* ]] && [[ "$is_admin" == "admin" ]]; then
             echo "Skip condition met - skipping tests"
             echo "skip_tests=true" >> $GITHUB_OUTPUT
           else
