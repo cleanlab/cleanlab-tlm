@@ -29,9 +29,10 @@ jobs:
           python-version: "3.12"
       - uses: pypa/hatch@install
       - run: hatch fmt --check
-  test-pr-to-main:
-    name: Test (PR to main)
-    if: github.event_name == 'pull_request'
+  test-single-python:
+    name: Test (single Python version)
+    # Only run single Python version for PRs and direct pushes to main
+    if: github.event_name != 'workflow_call'
     runs-on: ubuntu-22.04
     env:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
@@ -44,7 +45,9 @@ jobs:
       - run: hatch test -v --cover --include python=3.12
   test-matrix:
     name: Test (All Python versions)
-    if: github.event_name != 'pull_request'
+    # Only run the full matrix when called from the release workflow (release.yml)
+    # This ensures comprehensive testing before publishing to PyPI
+    if: github.event_name == 'workflow_call'
     runs-on: ubuntu-22.04
     env:
       CLEANLAB_TLM_API_KEY: ${{ secrets.CLEANLAB_TLM_API_KEY }}
