@@ -97,4 +97,4 @@ jobs:
       - name: Run tests with coverage
         if: steps.filter.outputs.code-changes == 'true' && steps.skip-check.outputs.skip_tests == 'false'
         # run: hatch test -v --cover --include python=${{ matrix.python }}
-        run: echo "Running tests for code changes" # TODO: remove this once verified that filters are working.
+        run: echo "Running tests for code changes" # TODO: remove this once verified that filters are working
