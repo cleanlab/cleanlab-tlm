@@ -59,20 +59,12 @@ jobs:
           # Debug output
           echo "Actor: ${{ github.actor }}"
           echo "Event: ${{ github.event_name }}"
-          
-          # Get commit message based on event type
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            commit_msg="${{ github.event.pull_request.head.sha }}"
-            commit_msg=$(git log -1 --pretty=%B "$commit_msg")
-          else
-            commit_msg="${{ github.event.head_commit.message }}"
-          fi
-          echo "Commit message: $commit_msg"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
           
           is_admin=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission | jq -r '.permission')
           echo "Permission level: $is_admin"
           
-          if [[ "$commit_msg" =~ .*\[skip[-_]tests?\].* ]] && \
+          if [[ "${{ github.event.head_commit.message }}" =~ .*\[skip[-_]tests?\].* ]] && \
              ([[ "${{ github.event_name }}" == "push" ]] || [[ "$is_admin" == "admin" ]]); then
             echo "Skip condition met - skipping tests"
             echo "skip_tests=true" >> $GITHUB_OUTPUT
