@@ -47,7 +47,8 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', custom_eval_options: Dict[
         ImportError: If skops or sklearn package is not installed
     """
     try:
-        from sklearn.utils.validation import check_is_fitted
+        from sklearn.utils.validation import check_is_fitted  # type: ignore
+        from sklearn.exceptions import NotFittedError  # type: ignore
     except ImportError:
         raise ImportError(
             "Cannot import scikit-learn which is required to use TLMCalibrated. "
@@ -55,7 +56,12 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', custom_eval_options: Dict[
         )
     
     # Verify model is fitted
-    check_is_fitted(model._rf_model)
+    try:
+        check_is_fitted(model._rf_model)
+    except NotFittedError:
+        raise TlmNotCalibratedError(
+            "TLMCalibrated has to be calibrated before prompting new data, use the .fit() method to calibrate the model."
+        )
     
     # Capture essential state
     state = {
