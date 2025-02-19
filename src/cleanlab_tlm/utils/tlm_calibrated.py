@@ -99,19 +99,22 @@ def load_tlm_calibrated_state(filename: str) -> 'TLMCalibrated':
     except FileNotFoundError:
         raise FileNotFoundError(f"No saved model state found at: {filename}")
     
-    # Create new model
-    model = TLMCalibrated(options=state['options'])
+    # Create new model with saved parameters
+    model = TLMCalibrated(
+        quality_preset=state.get('quality_preset', 'medium'),
+        options=state.get('options'),
+        timeout=state.get('timeout'),
+        verbose=state.get('verbose')
+    )
+    
+    # Set num_features if it exists
+    if state.get('num_features') is not None:
+        model._num_features = state['num_features']
     
     # Restore RF model attributes
     for attr, value in state['rf_state'].items():
         if value is not None:
             setattr(model._rf_model, attr, value)
-    
-    # Restore training data if available
-    if state.get('train_scores') is not None:
-        model._train_scores = state['train_scores']
-    if state.get('train_labels') is not None:
-        model._train_labels = state['train_labels']
     
     return model
 
