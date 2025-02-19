@@ -274,7 +274,7 @@ class TLMScoreWithCalibration(TLMScore):
 def _get_skops() -> Any:
     """Lazy import for skops to avoid unnecessary dependency."""
     try:
-        import skops.io  # type: ignore[import]
+        import skops.io  
 
         return skops.io
     except ImportError:
@@ -296,8 +296,8 @@ def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
         ImportError: If skops or sklearn package is not installed
     """
     try:
-        from sklearn.exceptions import NotFittedError  # type: ignore[import]
-        from sklearn.utils.validation import check_is_fitted  # type: ignore[import]
+        from sklearn.exceptions import NotFittedError  
+        from sklearn.utils.validation import check_is_fitted  
     except ImportError:
         raise ImportError(
             "Cannot import scikit-learn which is required to use TLMCalibrated. "
