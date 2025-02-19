@@ -255,7 +255,7 @@ def _get_skops() -> Any:
         import skops.io  # type: ignore[import-not-found]
     except ImportError:
         raise ImportError(
-            "The skops package is required for model serialization. " "Please install it with: pip install skops"
+            "The skops package is required for model serialization. Please install it with: pip install skops"
         )
 
     return skops.io
