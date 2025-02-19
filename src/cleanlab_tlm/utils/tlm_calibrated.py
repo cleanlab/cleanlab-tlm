@@ -6,8 +6,8 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 from __future__ import annotations
 
 import os
-from typing import Any, Optional, Union, cast
 import typing
+from typing import Any, cast, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -135,8 +135,8 @@ class TLMCalibrated:
             raise TlmNotCalibratedError(
                 "TLMCalibrated has to be calibrated before prompting new data, use the .fit() method to calibrate the model."
             )
-
-        tlm_response = self._tlm.prompt(prompt)
+        else:
+            tlm_response = self._tlm.prompt(prompt)
 
         is_single_query = isinstance(tlm_response, dict)
         if is_single_query:
@@ -164,7 +164,7 @@ class TLMCalibrated:
         Computes the calibrated trustworthiness score for arbitrary given prompt-response pairs,
         make sure that the model has been calibrated by calling the `.fit()` method before using this method.
 
-        Similar to [`TLM.get_trustworthiness_score()`](../tlm/#method-get_trustworthiness_score),
+        Similar to [`TLM.get_trustworthiness_score()`](../tlm/#method-get-trustworthiness_score),
         view documentation there for expected input arguments and outputs.
         """
         try:
@@ -296,7 +296,7 @@ def save_tlm_calibrated_state(model: TLMCalibrated, filename: str) -> None:
         )
 
     # Verify model is fitted
-    rf_model = getattr(model, "_rf_model")
+    rf_model = model._rf_model
     try:
         check_is_fitted(rf_model)
     except NotFittedError:
@@ -304,22 +304,27 @@ def save_tlm_calibrated_state(model: TLMCalibrated, filename: str) -> None:
             "TLMCalibrated has to be calibrated before the model can be saved, use the .fit() method to calibrate the model."
         )
 
-    # Capture essential state using getattr to access private members
+    # Capture essential state using direct attribute access
     state = {
-        "options": getattr(model, "_options"),
+        "options": model._options,
         "rf_state": {
-            attr: getattr(rf_model, attr, None)
-            for attr in [
-                "n_features_in_",
-                "n_outputs_",
-                "estimators_",
-                "monotonic_cst_",
-            ]
+            "n_features_in_": (
+                rf_model.n_features_in_ if hasattr(rf_model, "n_features_in_") else None
+            ),
+            "n_outputs_": (
+                rf_model.n_outputs_ if hasattr(rf_model, "n_outputs_") else None
+            ),
+            "estimators_": (
+                rf_model.estimators_ if hasattr(rf_model, "estimators_") else None
+            ),
+            "monotonic_cst_": (
+                rf_model.monotonic_cst_ if hasattr(rf_model, "monotonic_cst_") else None
+            ),
         },
-        "quality_preset": getattr(model, "_quality_preset"),
-        "timeout": getattr(model, "_timeout"),
-        "verbose": getattr(model, "_verbose"),
-        "num_features": getattr(model, "_num_features"),
+        "quality_preset": model._quality_preset,
+        "timeout": model._timeout,
+        "verbose": model._verbose,
+        "num_features": model._num_features,
     }
 
     # Get skops and save state
@@ -359,14 +364,14 @@ def load_tlm_calibrated_state(filename: str) -> TLMCalibrated:
         verbose=state.get("verbose"),
     )
 
-    # Use getattr and setattr to avoid direct private attribute access
+    # Restore num_features directly
     if state.get("num_features") is not None:
-        setattr(model, "_num_features", state["num_features"])
+        model._num_features = state["num_features"]
 
     # Restore RF model attributes
+    rf_model = model._rf_model
     for attr, value in state["rf_state"].items():
         if value is not None:
-            rf_model = getattr(model, "_rf_model")
             setattr(rf_model, attr, value)
 
     return model
