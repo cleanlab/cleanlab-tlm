@@ -305,7 +305,7 @@ def load_tlm_calibrated_state(filename: str) -> TLMCalibrated:
     """Load and reconstruct TLMCalibrated model from file.
 
     Args:
-        filename: Path to the saved model state file
+        filename (str): Path to the saved model state file
 
     Returns:
         TLMCalibrated: A reconstructed TLMCalibrated model with the saved state
