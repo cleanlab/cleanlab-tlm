@@ -265,8 +265,8 @@ def save_tlm_calibrated_state(model: TLMCalibrated, filename: str) -> None:
     """Save fitted TLMCalibrated model state to file.
 
     Args:
-        model: A fitted TLMCalibrated model instance
-        filename: Path where the model state will be saved
+        model (TLMCalibrated): A fitted TLMCalibrated model instance
+        filename (str): Path where the model state will be saved
 
     Raises:
         sklearn.exceptions.NotFittedError: If the model has not been fitted
