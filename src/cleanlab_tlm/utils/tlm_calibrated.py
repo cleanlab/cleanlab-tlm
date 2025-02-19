@@ -24,11 +24,10 @@ if TYPE_CHECKING:
     from cleanlab_tlm.internal.types import TLMQualityPreset
 
 
-def _get_skops():
+def _get_skops() -> Any:
     """Lazy import for skops to avoid unnecessary dependency."""
     try:
-        import skops.io
-
+        import skops.io  # type: ignore
         return skops.io
     except ImportError:
         raise ImportError(
