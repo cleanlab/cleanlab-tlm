@@ -159,7 +159,7 @@ def _handle_exception(
         raise ValueError(f"Unsupported response type: {response_type}")
 
     if len(e.args) > 0:
-        additional_message = "Consider using `TLM.try_prompt()` or `TLM.try_get_trustworthiness_score()` to gracefully handle errors and preserve partial results. For big datasets, consider also running it on multiple smaller batches."
+        additional_message = "Consider using `TLM.try_prompt()` or `TLM.try_get_trustworthiness_score()` to gracefully handle errors and preserve partial results. For large datasets, consider also running it on multiple smaller batches."
         new_args = (str(e.args[0]) + "\n" + additional_message,) + e.args[1:]
         raise type(e)(*new_args)
 
