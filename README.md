@@ -42,7 +42,7 @@ TLM returns a dictionary containing `response`, `trustworthiness_score`, and any
 ## Why TLM?
 
 - **Trustworthiness Scores**: Each response comes with a trustworthiness score, helping you [reliably](https://cleanlab.ai/blog/trustworthy-language-model/) gauge the likelihood of hallucinations.
-- **Higher accuracy**: Rigorous [benchmarks](https://cleanlab.ai/blog/trustworthy-language-model/) show TLM consistently produces more accurate results than other LLMs like GPT 4 / 4o and Claude.
+- **Higher accuracy**: Rigorous [benchmarks](https://cleanlab.ai/blog/trustworthy-language-model/) show TLM consistently produces more accurate results than other LLMs like o3/o1, GPT 4o, and Claude.
 - **Scalable API**: Designed to handle large datasets, TLM is suitable for most enterprise applications, including data extraction, tagging/labeling, Q&A (RAG), and more.
 
 ## Documentation
