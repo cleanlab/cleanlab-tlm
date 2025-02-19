@@ -308,7 +308,7 @@ def load_tlm_calibrated_state(filename: str) -> TLMCalibrated:
         filename: Path to the saved model state file
 
     Returns:
-        A reconstructed TLMCalibrated model with the saved state
+        TLMCalibrated: A reconstructed TLMCalibrated model with the saved state
 
     Raises:
         FileNotFoundError: If the specified file does not exist
