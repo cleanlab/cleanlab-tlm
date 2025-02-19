@@ -153,7 +153,7 @@ class TLMCalibrated:
         Computes the calibrated trustworthiness score for arbitrary given prompt-response pairs,
         make sure that the model has been calibrated by calling the `.fit()` method before using this method.
 
-        Similar to [`TLM.get_trustworthiness_score()`](../tlm/#method-get-trustworthiness_score),
+        Similar to [`TLM.get_trustworthiness_score()`](../tlm/#method-get_trustworthiness_score),
         view documentation there for expected input arguments and outputs.
         """
         try:
