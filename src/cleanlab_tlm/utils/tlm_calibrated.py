@@ -23,10 +23,12 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from cleanlab_tlm.internal.types import TLMQualityPreset
 
+
 def _get_skops():
     """Lazy import for skops to avoid unnecessary dependency."""
     try:
         import skops.io
+
         return skops.io
     except ImportError:
         raise ImportError(
@@ -34,13 +36,14 @@ def _get_skops():
             "Please install it with: pip install skops"
         )
 
-def save_tlm_calibrated_state(model: 'TLMCalibrated', filename: str) -> None:
+
+def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
     """Save fitted TLMCalibrated model state to file.
-    
+
     Args:
         model: A fitted TLMCalibrated model instance
         filename: Path where the model state will be saved
-    
+
     Raises:
         sklearn.exceptions.NotFittedError: If the model has not been fitted
         ImportError: If skops or sklearn package is not installed
@@ -53,7 +56,7 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', filename: str) -> None:
             "Cannot import scikit-learn which is required to use TLMCalibrated. "
             "Please install it using `pip install scikit-learn` and try again."
         )
-    
+
     # Verify model is fitted
     try:
         check_is_fitted(model._rf_model)
@@ -61,63 +64,71 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', filename: str) -> None:
         raise TlmNotCalibratedError(
             "TLMCalibrated has to be calibrated before prompting new data, use the .fit() method to calibrate the model."
         )
-    
+
     # Capture essential state
     state = {
-        'options': model._options,
-        'rf_state': {attr: getattr(model._rf_model, attr, None) 
-                    for attr in ['n_features_in_', 'n_outputs_', 'estimators_', 'monotonic_cst_']},
-        'quality_preset': model._quality_preset,
-        'timeout': model._timeout,
-        'verbose': model._verbose,
-        'num_features': model._num_features
+        "options": model._options,
+        "rf_state": {
+            attr: getattr(model._rf_model, attr, None)
+            for attr in [
+                "n_features_in_",
+                "n_outputs_",
+                "estimators_",
+                "monotonic_cst_",
+            ]
+        },
+        "quality_preset": model._quality_preset,
+        "timeout": model._timeout,
+        "verbose": model._verbose,
+        "num_features": model._num_features,
     }
-    
+
     # Get skops and save state
     skops = _get_skops()
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         f.write(skops.dumps(state))
 
-def load_tlm_calibrated_state(filename: str) -> 'TLMCalibrated':
+
+def load_tlm_calibrated_state(filename: str) -> "TLMCalibrated":
     """Load and reconstruct TLMCalibrated model from file.
-    
+
     Args:
         filename: Path to the saved model state file
-    
+
     Returns:
         A reconstructed TLMCalibrated model with the saved state
-        
+
     Raises:
         FileNotFoundError: If the specified file does not exist
         ImportError: If skops package is not installed
     """
     # Get skops for loading
     skops = _get_skops()
-    
+
     # Load state
     try:
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             state = skops.loads(f.read())
     except FileNotFoundError:
         raise FileNotFoundError(f"No saved model state found at: {filename}")
-    
+
     # Create new model with saved parameters
     model = TLMCalibrated(
-        quality_preset=state.get('quality_preset', 'medium'),
-        options=state.get('options'),
-        timeout=state.get('timeout'),
-        verbose=state.get('verbose')
+        quality_preset=state.get("quality_preset", "medium"),
+        options=state.get("options"),
+        timeout=state.get("timeout"),
+        verbose=state.get("verbose"),
     )
-    
+
     # Set num_features if it exists
-    if state.get('num_features') is not None:
-        model._num_features = state['num_features']
-    
+    if state.get("num_features") is not None:
+        model._num_features = state["num_features"]
+
     # Restore RF model attributes
-    for attr, value in state['rf_state'].items():
+    for attr, value in state["rf_state"].items():
         if value is not None:
             setattr(model._rf_model, attr, value)
-    
+
     return model
 
 
@@ -156,7 +167,9 @@ class TLMCalibrated:
         self._timeout = timeout if timeout is not None and timeout > 0 else None
         self._verbose = verbose
 
-        custom_eval_criteria_list = self._options.get("custom_eval_criteria", []) if self._options else []
+        custom_eval_criteria_list = (
+            self._options.get("custom_eval_criteria", []) if self._options else []
+        )
 
         # number of custom eval critera + 1 to account for the default TLM trustworthiness score
         self._num_features = len(custom_eval_criteria_list) + 1
@@ -182,7 +195,9 @@ class TLMCalibrated:
                 the length of this sequence must match the length of the `tlm_scores`.
         """
         if len(tlm_scores) != len(ratings):
-            raise ValidationError("The list of ratings must be of the same length as the list of TLM scores.")
+            raise ValidationError(
+                "The list of ratings must be of the same length as the list of TLM scores."
+            )
 
         tlm_scores_df = pd.DataFrame(tlm_scores)
         extracted_scores = self._extract_tlm_scores(tlm_scores_df)
@@ -196,7 +211,9 @@ class TLMCalibrated:
 
         # using pandas so that NaN values are handled correctly
         ratings_series = pd.Series(ratings)
-        ratings_normalized = (ratings_series - ratings_series.min()) / (ratings_series.max() - ratings_series.min())
+        ratings_normalized = (ratings_series - ratings_series.min()) / (
+            ratings_series.max() - ratings_series.min()
+        )
 
         self._rf_model.fit(extracted_scores, ratings_normalized.values)
 
@@ -239,9 +256,13 @@ class TLMCalibrated:
         tlm_response_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
-            return cast(TLMResponseWithCalibration, tlm_response_df.to_dict(orient="records")[0])
+            return cast(
+                TLMResponseWithCalibration, tlm_response_df.to_dict(orient="records")[0]
+            )
 
-        return cast(list[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records"))
+        return cast(
+            list[TLMResponseWithCalibration], tlm_response_df.to_dict(orient="records")
+        )
 
     def get_trustworthiness_score(
         self, prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]
@@ -282,11 +303,17 @@ class TLMCalibrated:
         tlm_scores_df["calibrated_score"] = self._rf_model.predict(extracted_scores)
 
         if is_single_query:
-            return cast(TLMScoreWithCalibration, tlm_scores_df.to_dict(orient="records")[0])
+            return cast(
+                TLMScoreWithCalibration, tlm_scores_df.to_dict(orient="records")[0]
+            )
 
-        return cast(list[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records"))
+        return cast(
+            list[TLMScoreWithCalibration], tlm_scores_df.to_dict(orient="records")
+        )
 
-    def _extract_tlm_scores(self, tlm_scores_df: pd.DataFrame) -> npt.NDArray[np.float64]:
+    def _extract_tlm_scores(
+        self, tlm_scores_df: pd.DataFrame
+    ) -> npt.NDArray[np.float64]:
         """
         Transform a DataFrame containing TLMScore objects into a 2D numpy array,
         where each column represents different scores including trustworthiness score and any custom evaluation criteria.
@@ -304,7 +331,11 @@ class TLMCalibrated:
         if tlm_log is not None and "custom_eval_criteria" in tlm_log.iloc[0]:
             custom_eval_scores = np.array(
                 tlm_scores_df["log"]
-                .apply(lambda x: [criteria["score"] for criteria in x["custom_eval_criteria"]])
+                .apply(
+                    lambda x: [
+                        criteria["score"] for criteria in x["custom_eval_criteria"]
+                    ]
+                )
                 .tolist()
             )
             all_scores = np.hstack(
@@ -315,7 +346,9 @@ class TLMCalibrated:
             )
         # otherwise use the TLM trustworthiness score as the only feature
         else:
-            all_scores = tlm_scores_df["trustworthiness_score"].to_numpy().reshape(-1, 1)
+            all_scores = (
+                tlm_scores_df["trustworthiness_score"].to_numpy().reshape(-1, 1)
+            )
 
         return all_scores
 
