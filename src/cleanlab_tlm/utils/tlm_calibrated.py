@@ -296,8 +296,8 @@ def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
         ImportError: If skops or sklearn package is not installed
     """
     try:
-        from sklearn.utils.validation import check_is_fitted  # type: ignore
-        from sklearn.exceptions import NotFittedError  # type: ignore
+        from sklearn.utils.validation import check_is_fitted  
+        from sklearn.exceptions import NotFittedError  
     except ImportError:
         raise ImportError(
             "Cannot import scikit-learn which is required to use TLMCalibrated. "
