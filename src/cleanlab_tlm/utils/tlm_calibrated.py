@@ -129,8 +129,7 @@ class TLMCalibrated:
             raise TlmNotCalibratedError(
                 "TLMCalibrated has to be calibrated before prompting new data, use the .fit() method to calibrate the model."
             )
-        else:
-            tlm_response = self._tlm.prompt(prompt)
+        tlm_response = self._tlm.prompt(prompt)
 
         is_single_query = isinstance(tlm_response, dict)
         if is_single_query:
