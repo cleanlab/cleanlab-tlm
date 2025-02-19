@@ -61,7 +61,7 @@ def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
         check_is_fitted(model._rf_model)
     except NotFittedError:
         raise TlmNotCalibratedError(
-            "TLMCalibrated has to be calibrated before the model can be save, use the .fit() method to calibrate the model."
+            "TLMCalibrated has to be calibrated before the model can be saved, use the .fit() method to calibrate the model."
         )
 
     # Capture essential state
