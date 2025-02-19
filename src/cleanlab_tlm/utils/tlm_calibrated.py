@@ -34,12 +34,11 @@ def _get_skops():
             "Please install it with: pip install skops"
         )
 
-def save_tlm_calibrated_state(model: 'TLMCalibrated', custom_eval_options: Dict[str, Any], filename: str) -> None:
+def save_tlm_calibrated_state(model: 'TLMCalibrated', filename: str) -> None:
     """Save fitted TLMCalibrated model state to file.
     
     Args:
         model: A fitted TLMCalibrated model instance
-        custom_eval_options: Dictionary containing custom evaluation options
         filename: Path where the model state will be saved
     
     Raises:
@@ -65,7 +64,7 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', custom_eval_options: Dict[
     
     # Capture essential state
     state = {
-        'options': custom_eval_options,
+        'options': model._options,
         'rf_state': {attr: getattr(model._rf_model, attr, None) 
                     for attr in ['n_features_in_', 'n_outputs_', 'estimators_', 'monotonic_cst_']},
         'train_scores': getattr(model, '_train_scores', None),
