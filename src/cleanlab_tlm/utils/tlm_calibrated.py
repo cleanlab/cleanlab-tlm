@@ -6,7 +6,7 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional, Union, cast, Any  
+from typing import TYPE_CHECKING, Optional, Union, cast, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -22,113 +22,6 @@ from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from cleanlab_tlm.internal.types import TLMQualityPreset
-
-
-def _get_skops() -> Any:
-    """Lazy import for skops to avoid unnecessary dependency."""
-    try:
-        import skops.io  # type: ignore
-        return skops.io
-    except ImportError:
-        raise ImportError(
-            "The skops package is required for model serialization. "
-            "Please install it with: pip install skops"
-        )
-
-
-def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
-    """Save fitted TLMCalibrated model state to file.
-
-    Args:
-        model: A fitted TLMCalibrated model instance
-        filename: Path where the model state will be saved
-
-    Raises:
-        sklearn.exceptions.NotFittedError: If the model has not been fitted
-        ImportError: If skops or sklearn package is not installed
-    """
-    try:
-        from sklearn.utils.validation import check_is_fitted  # type: ignore
-        from sklearn.exceptions import NotFittedError  # type: ignore
-    except ImportError:
-        raise ImportError(
-            "Cannot import scikit-learn which is required to use TLMCalibrated. "
-            "Please install it using `pip install scikit-learn` and try again."
-        )
-
-    # Verify model is fitted
-    try:
-        check_is_fitted(model._rf_model)
-    except NotFittedError:
-        raise TlmNotCalibratedError(
-            "TLMCalibrated has to be calibrated before the model can be saved, use the .fit() method to calibrate the model."
-        )
-
-    # Capture essential state
-    state = {
-        "options": model._options,
-        "rf_state": {
-            attr: getattr(model._rf_model, attr, None)
-            for attr in [
-                "n_features_in_",
-                "n_outputs_",
-                "estimators_",
-                "monotonic_cst_",
-            ]
-        },
-        "quality_preset": model._quality_preset,
-        "timeout": model._timeout,
-        "verbose": model._verbose,
-        "num_features": model._num_features,
-    }
-
-    # Get skops and save state
-    skops = _get_skops()
-    with open(filename, "wb") as f:
-        f.write(skops.dumps(state))
-
-
-def load_tlm_calibrated_state(filename: str) -> "TLMCalibrated":
-    """Load and reconstruct TLMCalibrated model from file.
-
-    Args:
-        filename: Path to the saved model state file
-
-    Returns:
-        A reconstructed TLMCalibrated model with the saved state
-
-    Raises:
-        FileNotFoundError: If the specified file does not exist
-        ImportError: If skops package is not installed
-    """
-    # Get skops for loading
-    skops = _get_skops()
-
-    # Load state
-    try:
-        with open(filename, "rb") as f:
-            state = skops.loads(f.read())
-    except FileNotFoundError:
-        raise FileNotFoundError(f"No saved model state found at: {filename}")
-
-    # Create new model with saved parameters
-    model = TLMCalibrated(
-        quality_preset=state.get("quality_preset", "medium"),
-        options=state.get("options"),
-        timeout=state.get("timeout"),
-        verbose=state.get("verbose"),
-    )
-
-    # Set num_features if it exists
-    if state.get("num_features") is not None:
-        model._num_features = state["num_features"]
-
-    # Restore RF model attributes
-    for attr, value in state["rf_state"].items():
-        if value is not None:
-            setattr(model._rf_model, attr, value)
-
-    return model
 
 
 class TLMCalibrated:
@@ -227,8 +120,8 @@ class TLMCalibrated:
         view documentation there for expected input arguments and outputs.
         """
         try:
-            from sklearn.exceptions import NotFittedError  
-            from sklearn.utils.validation import check_is_fitted  
+            from sklearn.exceptions import NotFittedError
+            from sklearn.utils.validation import check_is_fitted
         except ImportError:
             raise ImportError(
                 "Cannot import scikit-learn which is required to use TLMCalibrated. "
@@ -376,3 +269,111 @@ class TLMScoreWithCalibration(TLMScore):
     """
 
     calibrated_score: Optional[float]
+
+
+def _get_skops() -> Any:
+    """Lazy import for skops to avoid unnecessary dependency."""
+    try:
+        import skops.io  # type: ignore
+
+        return skops.io
+    except ImportError:
+        raise ImportError(
+            "The skops package is required for model serialization. "
+            "Please install it with: pip install skops"
+        )
+
+
+def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
+    """Save fitted TLMCalibrated model state to file.
+
+    Args:
+        model: A fitted TLMCalibrated model instance
+        filename: Path where the model state will be saved
+
+    Raises:
+        sklearn.exceptions.NotFittedError: If the model has not been fitted
+        ImportError: If skops or sklearn package is not installed
+    """
+    try:
+        from sklearn.utils.validation import check_is_fitted  # type: ignore
+        from sklearn.exceptions import NotFittedError  # type: ignore
+    except ImportError:
+        raise ImportError(
+            "Cannot import scikit-learn which is required to use TLMCalibrated. "
+            "Please install it using `pip install scikit-learn` and try again."
+        )
+
+    # Verify model is fitted
+    try:
+        check_is_fitted(model._rf_model)
+    except NotFittedError:
+        raise TlmNotCalibratedError(
+            "TLMCalibrated has to be calibrated before the model can be saved, use the .fit() method to calibrate the model."
+        )
+
+    # Capture essential state
+    state = {
+        "options": model._options,
+        "rf_state": {
+            attr: getattr(model._rf_model, attr, None)
+            for attr in [
+                "n_features_in_",
+                "n_outputs_",
+                "estimators_",
+                "monotonic_cst_",
+            ]
+        },
+        "quality_preset": model._quality_preset,
+        "timeout": model._timeout,
+        "verbose": model._verbose,
+        "num_features": model._num_features,
+    }
+
+    # Get skops and save state
+    skops = _get_skops()
+    with open(filename, "wb") as f:
+        f.write(skops.dumps(state))
+
+
+def load_tlm_calibrated_state(filename: str) -> "TLMCalibrated":
+    """Load and reconstruct TLMCalibrated model from file.
+
+    Args:
+        filename: Path to the saved model state file
+
+    Returns:
+        A reconstructed TLMCalibrated model with the saved state
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist
+        ImportError: If skops package is not installed
+    """
+    # Get skops for loading
+    skops = _get_skops()
+
+    # Load state
+    try:
+        with open(filename, "rb") as f:
+            state = skops.loads(f.read())
+    except FileNotFoundError:
+        raise FileNotFoundError(f"No saved model state found at: {filename}")
+
+    # Create new model with saved parameters
+    model = TLMCalibrated(
+        quality_preset=state.get("quality_preset", "medium"),
+        options=state.get("options"),
+        timeout=state.get("timeout"),
+        verbose=state.get("verbose"),
+    )
+
+    # Set num_features if it exists
+    if state.get("num_features") is not None:
+        model._num_features = state["num_features"]
+
+    # Restore RF model attributes
+    for attr, value in state["rf_state"].items():
+        if value is not None:
+            setattr(model._rf_model, attr, value)
+
+    return model
