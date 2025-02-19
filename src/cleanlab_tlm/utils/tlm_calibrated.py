@@ -67,8 +67,10 @@ def save_tlm_calibrated_state(model: 'TLMCalibrated', filename: str) -> None:
         'options': model._options,
         'rf_state': {attr: getattr(model._rf_model, attr, None) 
                     for attr in ['n_features_in_', 'n_outputs_', 'estimators_', 'monotonic_cst_']},
-        'train_scores': getattr(model, '_train_scores', None),
-        'train_labels': getattr(model, '_train_labels', None)
+        'quality_preset': model._quality_preset,
+        'timeout': model._timeout,
+        'verbose': model._verbose,
+        'num_features': model._num_features
     }
     
     # Get skops and save state
