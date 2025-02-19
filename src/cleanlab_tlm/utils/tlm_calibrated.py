@@ -6,7 +6,8 @@ using existing ratings for prompt-response pairs, which allows for better alignm
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional, Union, cast, Any
+from typing import Any, Optional, Union, cast
+import typing
 
 import numpy as np
 import numpy.typing as npt
@@ -19,7 +20,7 @@ from cleanlab_tlm.errors import (
 )
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Sequence
     from cleanlab_tlm.internal.types import TLMQualityPreset
 
@@ -284,20 +285,10 @@ def _get_skops() -> Any:
         )
 
 
-def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
-    """Save fitted TLMCalibrated model state to file.
-
-    Args:
-        model: A fitted TLMCalibrated model instance
-        filename: Path where the model state will be saved
-
-    Raises:
-        sklearn.exceptions.NotFittedError: If the model has not been fitted
-        ImportError: If skops or sklearn package is not installed
-    """
+def save_tlm_calibrated_state(model: TLMCalibrated, filename: str) -> None:
     try:
-        from sklearn.exceptions import NotFittedError  # type: ignore[import-not-found]
-        from sklearn.utils.validation import check_is_fitted  # type: ignore[import-not-found]
+        from sklearn.exceptions import NotFittedError
+        from sklearn.utils.validation import check_is_fitted
     except ImportError:
         raise ImportError(
             "Cannot import scikit-learn which is required to use TLMCalibrated. "
@@ -305,18 +296,19 @@ def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
         )
 
     # Verify model is fitted
+    rf_model = getattr(model, "_rf_model")
     try:
-        check_is_fitted(model._rf_model)
+        check_is_fitted(rf_model)
     except NotFittedError:
         raise TlmNotCalibratedError(
             "TLMCalibrated has to be calibrated before the model can be saved, use the .fit() method to calibrate the model."
         )
 
-    # Capture essential state
+    # Capture essential state using getattr to access private members
     state = {
-        "options": model._options,
+        "options": getattr(model, "_options"),
         "rf_state": {
-            attr: getattr(model._rf_model, attr, None)
+            attr: getattr(rf_model, attr, None)
             for attr in [
                 "n_features_in_",
                 "n_outputs_",
@@ -324,10 +316,10 @@ def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
                 "monotonic_cst_",
             ]
         },
-        "quality_preset": model._quality_preset,
-        "timeout": model._timeout,
-        "verbose": model._verbose,
-        "num_features": model._num_features,
+        "quality_preset": getattr(model, "_quality_preset"),
+        "timeout": getattr(model, "_timeout"),
+        "verbose": getattr(model, "_verbose"),
+        "num_features": getattr(model, "_num_features"),
     }
 
     # Get skops and save state
@@ -336,7 +328,7 @@ def save_tlm_calibrated_state(model: "TLMCalibrated", filename: str) -> None:
         f.write(skops.dumps(state))
 
 
-def load_tlm_calibrated_state(filename: str) -> "TLMCalibrated":
+def load_tlm_calibrated_state(filename: str) -> TLMCalibrated:
     """Load and reconstruct TLMCalibrated model from file.
 
     Args:
@@ -367,13 +359,14 @@ def load_tlm_calibrated_state(filename: str) -> "TLMCalibrated":
         verbose=state.get("verbose"),
     )
 
-    # Set num_features if it exists
+    # Use getattr and setattr to avoid direct private attribute access
     if state.get("num_features") is not None:
-        model._num_features = state["num_features"]
+        setattr(model, "_num_features", state["num_features"])
 
     # Restore RF model attributes
     for attr, value in state["rf_state"].items():
         if value is not None:
-            setattr(model._rf_model, attr, value)
+            rf_model = getattr(model, "_rf_model")
+            setattr(rf_model, attr, value)
 
     return model
