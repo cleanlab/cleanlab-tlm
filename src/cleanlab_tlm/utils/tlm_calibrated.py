@@ -262,6 +262,16 @@ def _get_skops() -> Any:
 
 
 def save_tlm_calibrated_state(model: TLMCalibrated, filename: str) -> None:
+    """Save fitted TLMCalibrated model state to file.
+
+    Args:
+        model: A fitted TLMCalibrated model instance
+        filename: Path where the model state will be saved
+
+    Raises:
+        sklearn.exceptions.NotFittedError: If the model has not been fitted
+        ImportError: If skops or sklearn package is not installed
+    """
     try:
         from sklearn.exceptions import NotFittedError
         from sklearn.utils.validation import check_is_fitted
