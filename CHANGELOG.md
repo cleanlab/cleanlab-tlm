@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-02-19
+
+### Added
+
+- Add helper functions for saving/loading fitted TLMCalibration objects
+- Add better error message for non-try TLM methods
+
 ## [1.0.2] - 2025-02-14
+
+### Added
+
+- Add constraint outputs options to get_trustworthiness_score
+
+## [1.0.1] - 2025-02-13
 
 ### Fixed
 
