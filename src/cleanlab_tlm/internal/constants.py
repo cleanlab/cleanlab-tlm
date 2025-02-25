@@ -33,7 +33,12 @@ _TLM_MAX_TOKEN_RANGE: dict[str, tuple[int, int]] = {  # model: (min, max)
 TLM_CONSTRAIN_OUTPUTS_KEY: str = "constrain_outputs"
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: tuple[int, int] = (0, 20)  # (min, max)
-TLM_SIMILARITY_MEASURES: set[str] = {"semantic", "string"}
+TLM_SIMILARITY_MEASURES: set[str] = {
+    "semantic",
+    "string",
+    "embedding",
+    "embedding_large",
+}
 TLM_REASONING_EFFORT_VALUES: set[str] = {"none", "low", "medium", "high"}
 TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation"}
 TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: set[str] = {

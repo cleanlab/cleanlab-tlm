@@ -859,9 +859,10 @@ class TLMOptions(TypedDict):
         Self-reflection helps quantify aleatoric uncertainty associated with challenging prompts
         and catches answers that are obviously incorrect/bad.
 
-        similarity_measure ({"semantic", "string"}, default = "semantic"): how the trustworthiness scoring algorithm measures
+        similarity_measure ({"semantic", "string", "embedding", "embedding_large"}, default = "semantic"): how the trustworthiness scoring algorithm measures
         similarity between sampled responses considered by the model in the consistency assessment.
-        Supported similarity measures include "semantic" (based on natural language inference) and "string" (based on character/word overlap).
+        Supported similarity measures include "semantic" (based on natural language inference), "string" (based on character/word overlap),
+        "embedding" (based on embedding similarity), and "embedding_large" (based on embedding similarity with a larger embedding model).
         Set this to "string" to improve latency/costs.
 
         reasoning_effort ({"none", "low", "medium", "high"}, default = "high"): how much the LLM can reason (number of thinking tokens)
