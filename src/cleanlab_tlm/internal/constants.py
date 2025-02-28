@@ -4,6 +4,7 @@ _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"
 _VALID_TLM_MODELS: list[str] = [
     "gpt-3.5-turbo-16k",
     "gpt-4",
+    "gpt-4.5-preview",
     "gpt-4o",
     "gpt-4o-mini",
     "o1-preview",
