@@ -6,6 +6,7 @@ _VALID_TLM_MODELS: list[str] = [
     "gpt-4",
     "gpt-4.5-preview",
     "gpt-4o",
+    "gpt-4o-2024-11-20",
     "gpt-4o-mini",
     "o1-preview",
     "o1",
