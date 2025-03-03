@@ -430,3 +430,270 @@ def test_max_tokens_invalid_option_passed(tlm_api_key: str) -> None:
     max_tokens = -1
     with pytest.raises(ValidationError, match=f"Invalid value {max_tokens}, max_tokens.*"):
         TLM(api_key=tlm_api_key, options=TLMOptions(max_tokens=max_tokens))
+
+
+def test_validate_rag_inputs_prompt_and_form_prompt_together() -> None:
+    """Tests that ValidationError is raised when both prompt and form_prompt are provided."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    def form_prompt_func(query: str, context: str) -> str:
+        return f"Query: {query}\nContext: {context}"
+
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context="test context",
+            prompt="test prompt",
+            form_prompt=form_prompt_func,
+            is_generate=True,
+        )
+
+    assert "prompt' and 'form_prompt' cannot be provided at the same time" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_batch_not_supported() -> None:
+    """Tests that NotImplementedError is raised when batch inputs are provided."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    with pytest.raises(NotImplementedError) as exc_info:
+        validate_rag_inputs(query=["query1", "query2"], context="test context", is_generate=True)
+
+    assert "Batch processing is not yet supported" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_generate_missing_required_params() -> None:
+    """Tests that ValidationError is raised when required parameters are missing for generate."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Missing context
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(query="test query", context=None, is_generate=True)  # type: ignore
+
+    assert "Both 'query' and 'context' are required parameters" in str(exc_info.value)
+
+    # Missing query
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(query=None, context="test context", is_generate=True)  # type: ignore
+
+    assert "Both 'query' and 'context' are required parameters" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_score_missing_required_params() -> None:
+    """Tests that ValidationError is raised when required parameters are missing for score."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Missing response
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(query="test query", context="test context", is_generate=False)
+
+    assert "'response' is a required parameter" in str(exc_info.value)
+
+    # Missing query and context when prompt is not provided
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(query=None, context=None, response="test response", is_generate=False)  # type: ignore
+
+    assert "Either 'prompt' or both 'query' and 'context' must be provided" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_form_prompt_missing_params() -> None:
+    """Tests that ValidationError is raised when form_prompt is provided but query or context is missing."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    def form_prompt_func(query: str, context: str) -> str:
+        return f"Query: {query}\nContext: {context}"
+
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(query=None, context=None, form_prompt=form_prompt_func, is_generate=True)  # type: ignore
+
+    # The function first checks for required parameters before checking form_prompt specifics
+    assert "Both 'query' and 'context' are required parameters" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_invalid_param_types() -> None:
+    """Tests that ValidationError is raised when parameters have invalid types."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=123,  # type: ignore
+            context="test context",
+            is_generate=True,
+        )
+
+    assert "'query' must be a string" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_with_evals() -> None:
+    """Tests that ValidationError is raised when required inputs for evaluations are missing."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    class MockEval:
+        def __init__(
+            self,
+            name: str,
+            query_identifier: bool = False,
+            context_identifier: bool = False,
+            response_identifier: bool = False,
+        ):
+            self.name = name
+            self.query_identifier = query_identifier
+            self.context_identifier = context_identifier
+            self.response_identifier = response_identifier
+
+    # For this test, we need to provide the required parameters first to reach the eval validation
+    # Test missing response for eval that requires it (score mode)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context="test context",
+            prompt="test prompt",
+            response=None,  # Missing response
+            evals=[MockEval("test_eval", response_identifier=True)],
+            is_generate=False,
+        )
+
+    assert "'response' is a required parameter" in str(exc_info.value)
+
+    # Let's test a successful case to ensure the validation passes when all requirements are met
+    result = validate_rag_inputs(
+        prompt="test prompt",
+        query="test query",
+        context="test context",
+        response="test response",
+        evals=[MockEval("test_eval", query_identifier=True, context_identifier=True, response_identifier=True)],
+        is_generate=False,
+    )
+
+    assert result == "test prompt"
+
+
+def test_validate_rag_inputs_successful_generate() -> None:
+    """Tests that validate_rag_inputs returns the formatted prompt when validation succeeds for generate."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Test with direct prompt
+    result = validate_rag_inputs(query="test query", context="test context", prompt="test prompt", is_generate=True)
+
+    assert result == "test prompt"
+
+    # Test with form_prompt function
+    def form_prompt_func(query: str, context: str) -> str:
+        return f"Query: {query}\nContext: {context}"
+
+    result = validate_rag_inputs(
+        query="test query", context="test context", form_prompt=form_prompt_func, is_generate=True
+    )
+
+    assert result == "Query: test query\nContext: test context"
+
+
+def test_validate_rag_inputs_successful_score() -> None:
+    """Tests that validate_rag_inputs returns the formatted prompt when validation succeeds for score."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Test with direct prompt
+    result = validate_rag_inputs(
+        query="test query", context="test context", response="test response", prompt="test prompt", is_generate=False
+    )
+
+    assert result == "test prompt"
+
+    # Test with form_prompt function
+    def form_prompt_func(query: str, context: str) -> str:
+        return f"Query: {query}\nContext: {context}"
+
+    result = validate_rag_inputs(
+        query="test query",
+        context="test context",
+        response="test response",
+        form_prompt=form_prompt_func,
+        is_generate=False,
+    )
+
+    assert result == "Query: test query\nContext: test context"
+
+
+def test_custom_eval_criteria_validation(tlm_api_key: str) -> None:
+    """Tests validation of custom_eval_criteria."""
+    # Valid custom_eval_criteria
+    valid_criteria = [{"name": "test_criteria", "criteria": "This is a test criteria"}]
+
+    # Should work fine
+    tlm = TLM(api_key=tlm_api_key, options=TLMOptions(custom_eval_criteria=valid_criteria))
+    assert tlm is not None
+
+    # Invalid: not a list
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type.*custom_eval_criteria must be a list of dictionaries.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria="not a list"),  # type: ignore
+        )
+
+    # Invalid: item not a dictionary
+    with pytest.raises(
+        ValidationError,
+        match="^Item 0 in custom_eval_criteria is not a dictionary.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria=["not a dict"]),  # type: ignore
+        )
+
+    # Invalid: missing name
+    with pytest.raises(
+        ValidationError,
+        match="^Missing required key 'name' in custom_eval_criteria item 0.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria=[{"criteria": "test"}]),
+        )
+
+    # Invalid: missing criteria
+    with pytest.raises(
+        ValidationError,
+        match="^Missing required key 'criteria' in custom_eval_criteria item 0.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria=[{"name": "test"}]),
+        )
+
+    # Invalid: name not a string
+    with pytest.raises(
+        ValidationError,
+        match="^'name' in custom_eval_criteria item 0 must be a string.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria=[{"name": 123, "criteria": "test"}]),
+        )
+
+    # Invalid: criteria not a string
+    with pytest.raises(
+        ValidationError,
+        match="^'criteria' in custom_eval_criteria item 0 must be a string.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria=[{"name": "test", "criteria": 123}]),
+        )
+
+
+def test_validate_tlm_options_support_custom_eval_criteria() -> None:
+    """Tests that validate_tlm_options correctly handles support_custom_eval_criteria parameter."""
+    from cleanlab_tlm.internal.validation import validate_tlm_options
+
+    # Valid options with support_custom_eval_criteria=True
+    options = {"custom_eval_criteria": [{"name": "test", "criteria": "test criteria"}]}
+    validate_tlm_options(options, support_custom_eval_criteria=True)
+
+    # Invalid options with support_custom_eval_criteria=False
+    with pytest.raises(
+        ValidationError,
+        match="^custom_eval_criteria is not supported for this class$",
+    ):
+        validate_tlm_options(options, support_custom_eval_criteria=False)

@@ -13,3 +13,8 @@ class Task(str, Enum):
 
 
 JSONDict = dict[str, Any]
+
+
+# Simple type alias for use in exception_handling.py
+# This avoids circular imports while still providing type information
+TLMResult = dict[str, Any]

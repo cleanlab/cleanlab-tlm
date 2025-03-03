@@ -1,8 +1,10 @@
-from cleanlab_tlm.internal.types import Task
+from cleanlab_tlm.internal.types import Task, TLMQualityPreset
 
 # TLM constants
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
+_VALID_TLM_QUALITY_PRESETS_RAG: list[str] = ["medium", "low", "base"]
+_DEFAULT_TLM_QUALITY_PRESET: TLMQualityPreset = "medium"
 _VALID_TLM_MODELS: list[str] = [
     "gpt-3.5-turbo-16k",
     "gpt-4",
@@ -63,3 +65,24 @@ TLM_MODELS_NOT_SUPPORTING_EXPLANATION: set[str] = {
 }
 VALID_RESPONSE_OPTIONS: set[str] = {"max_tokens"}
 INVALID_SCORE_OPTIONS: set[str] = {"num_candidate_responses"}
+
+# API request and response field constants
+_TLM_RESPONSE_KEY: str = "response"
+_TLM_TRUSTWORTHINESS_KEY: str = "trustworthiness"
+_TLM_QUALITY_KEY: str = "quality"
+_TLM_OPTIONS_KEY: str = "options"
+_TLM_USER_ID_KEY: str = "user_id"
+_TLM_CLIENT_ID_KEY: str = "client_id"
+_TLM_PROMPT_KEY: str = "prompt"
+_TLM_QUERY_KEY: str = "query"
+_TLM_CONTEXT_KEY: str = "context"
+_TLM_EVALS_KEY: str = "evals"
+_TLM_DEBERTA_SUCCESS_KEY: str = "deberta_success"
+_TLM_TASK_KEY: str = "task"
+
+# Evaluation-related constants
+_TLM_EVAL_NAME_KEY: str = "name"
+_TLM_EVAL_CRITERIA_KEY: str = "criteria"
+_TLM_EVAL_QUERY_IDENTIFIER_KEY: str = "query_identifier"
+_TLM_EVAL_CONTEXT_IDENTIFIER_KEY: str = "context_identifier"
+_TLM_EVAL_RESPONSE_IDENTIFIER_KEY: str = "response_identifier"
