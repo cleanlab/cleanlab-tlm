@@ -5,10 +5,12 @@ import os
 import ssl
 import time
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+from collections import OrderedDict
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 import aiohttp
 import aiohttp.client_exceptions
+import requests
 from tqdm import tqdm
 
 from cleanlab_tlm.errors import (
@@ -25,13 +27,13 @@ from cleanlab_tlm.errors import (
 from cleanlab_tlm.internal.types import JSONDict
 
 if TYPE_CHECKING:
-    import requests
-
     from cleanlab_tlm.internal.concurrency import TlmRateHandler
+    from cleanlab_tlm.utils.tlm_rag import Eval
 
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 tlm_base_url = f"{base_url}/v0/trustworthy_llm"
+tlm_rag_base_url = f"{base_url}/v1/rag_trustworthy_llm"
 
 
 def _construct_headers(api_key: Optional[str], content_type: Optional[str] = "application/json") -> JSONDict:
@@ -304,3 +306,169 @@ async def tlm_get_confidence_score(
             await client_session.close()
 
     return cast(JSONDict, res_json)
+
+
+# @tlm_retry
+async def tlm_rag_generate(
+    api_key: str,
+    prompt: str,
+    quality_preset: str,
+    options: Optional[JSONDict],
+    rate_handler: TlmRateHandler,
+    client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
+    constrain_outputs: Optional[list[str]] = None,
+    query: Optional[str] = None,
+    context: Optional[str] = None,
+    system_prompt: Optional[str] = None,
+    fallback_response: Optional[str] = None,
+    evals: Optional[list[dict[str, Union[str, dict[str, str]]]]] = None,
+) -> JSONDict:
+    """
+    """
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    try:
+        async with rate_handler:
+            base_url = os.environ.get("CLEANLAB_API_TLM_RAG_BASE_URL", tlm_rag_base_url)
+            res = await client_session.post(
+                f"{base_url}/generate",
+                json={
+                    "prompt": prompt,
+                    "query": query,
+                    "context": context,
+                    "system_prompt": system_prompt,
+                    "fallback_response": fallback_response,
+                    "evals": [{
+                        "name": eval.name,
+                        "criteria": eval.criteria,
+                        "query_identifier": eval.query_identifier,
+                        "context_identifier": eval.context_identifier,
+                        "response_identifier": eval.response_identifier
+                    } for eval in evals] if evals else None,
+                    "quality": quality_preset,
+                    "options": options or {},
+                    "user_id": api_key,
+                    "client_id": api_key,
+                    "constrain_outputs": constrain_outputs,
+                },
+                headers=_construct_headers(api_key),
+            )
+
+            res_json = await res.json()
+
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
+
+            if not res_json.get("deberta_success", True):
+                raise TlmPartialSuccessError("Partial failure on deberta call -- slowdown request rate.")
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
+    # Create an ordered dictionary with the specified key order
+    ordered_res = OrderedDict()
+
+    # First add "response" if it exists
+    if "response" in res_json:
+        ordered_res["response"] = res_json["response"]
+
+    # Then add "trustworthiness_score" if it exists
+    if "trustworthiness" in res_json:
+        ordered_res["trustworthiness"] = res_json["trustworthiness"]
+
+    # Add any eval-related keys in their original order
+    for eval in evals:
+        if eval.name not in ["response", "trustworthiness"]:
+            ordered_res[eval.name] = res_json[eval.name]
+
+    return cast(JSONDict, ordered_res)
+
+
+# @tlm_retry
+async def tlm_rag_score(
+    api_key: str,
+    response: str,
+    prompt: str,
+    quality_preset: str,
+    options: Optional[JSONDict],
+    rate_handler: TlmRateHandler,
+    client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
+    constrain_outputs: Optional[list[str]] = None,
+    query: Optional[str] = None,
+    context: Optional[str] = None,
+    system_prompt: Optional[str] = None,
+    fallback_response: Optional[str] = None,
+    evals: Optional[list[Eval]] = None,
+) -> JSONDict:
+    """
+    """
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    try:
+        async with rate_handler:
+            base_url = os.environ.get("CLEANLAB_API_TLM_RAG_BASE_URL", tlm_rag_base_url)
+            res = await client_session.post(
+                f"{base_url}/score",
+                json={
+                    "response": response,
+                    "prompt": prompt,
+                    "query": query,
+                    "context": context,
+                    "system_prompt": system_prompt,
+                    "fallback_response": fallback_response,
+                    "evals": [{
+                        "name": eval.name,
+                        "criteria": eval.criteria,
+                        "query_identifier": eval.query_identifier,
+                        "context_identifier": eval.context_identifier,
+                        "response_identifier": eval.response_identifier
+                    } for eval in evals] if evals else None,
+                    "quality": quality_preset,
+                    "options": options or {},
+                    "user_id": api_key,
+                    "client_id": api_key,
+                    "constrain_outputs": constrain_outputs,
+                },
+                headers=_construct_headers(api_key),
+            )
+
+            res_json = await res.json()
+
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
+
+            if not res_json.get("deberta_success", True):
+                raise TlmPartialSuccessError("Partial failure on deberta call -- slowdown request rate.")
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
+    # Create an ordered dictionary with the specified key order
+    ordered_res = OrderedDict()
+
+    # First add "response" if it exists
+    if "response" in res_json:
+        ordered_res["response"] = res_json["response"]
+
+    # Then add "trustworthiness_score" if it exists
+    if "trustworthiness" in res_json:
+        ordered_res["trustworthiness"] = res_json["trustworthiness"]
+
+    # Add any eval-related keys in their original order
+    for eval in evals:
+        if eval.name not in ["response", "trustworthiness"]:
+            ordered_res[eval.name] = res_json[eval.name]
+
+    return cast(JSONDict, ordered_res)
