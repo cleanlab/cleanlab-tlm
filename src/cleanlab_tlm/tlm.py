@@ -13,6 +13,7 @@ import warnings
 from collections.abc import Coroutine, Sequence
 from functools import wraps
 from typing import (
+    # lazydocs: ignore
     TYPE_CHECKING,
     Any,
     Callable,
@@ -39,10 +40,10 @@ from cleanlab_tlm.errors import (
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
 from cleanlab_tlm.internal.constants import (
+    _TLM_CONSTRAIN_OUTPUTS_KEY,
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
-    TLM_CONSTRAIN_OUTPUTS_KEY,
 )
 from cleanlab_tlm.internal.validation import (
     tlm_prompt_process_and_validate_kwargs,
@@ -439,7 +440,7 @@ class TLM:
                         prompt,
                         timeout=self._timeout,
                         capture_exceptions=False,
-                        constrain_outputs=kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
+                        constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                     ),
                 ),
             )
@@ -450,7 +451,7 @@ class TLM:
                 capture_exceptions=False,
                 constrain_outputs=cast(
                     Optional[list[Optional[list[str]]]],
-                    kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
+                    kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                 ),
             ),
         )
@@ -491,7 +492,7 @@ class TLM:
                 capture_exceptions=True,
                 constrain_outputs=cast(
                     Optional[list[Optional[list[str]]]],
-                    kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
+                    kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                 ),
             ),
         )
@@ -529,7 +530,7 @@ class TLM:
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
-                    constrain_outputs=kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
+                    constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                 )
                 return cast(TLMResponse, tlm_response)
 
@@ -538,7 +539,7 @@ class TLM:
                 capture_exceptions=False,
                 constrain_outputs=cast(
                     Optional[list[Optional[list[str]]]],
-                    kwargs.get(TLM_CONSTRAIN_OUTPUTS_KEY),
+                    kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                 ),
             )
 
