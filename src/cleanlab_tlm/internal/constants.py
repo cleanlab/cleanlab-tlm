@@ -32,7 +32,7 @@ _TLM_MAX_TOKEN_RANGE: dict[str, tuple[int, int]] = {  # model: (min, max)
     "claude-3.5-sonnet": (64, 512),
     "nova-micro": (64, 512),
 }
-TLM_CONSTRAIN_OUTPUTS_KEY: str = "constrain_outputs"
+_TLM_CONSTRAIN_OUTPUTS_KEY: str = "constrain_outputs"
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: tuple[int, int] = (0, 20)  # (min, max)
 TLM_SIMILARITY_MEASURES: set[str] = {
@@ -45,9 +45,9 @@ TLM_REASONING_EFFORT_VALUES: set[str] = {"none", "low", "medium", "high"}
 TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation"}
 TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: set[str] = {
     "perplexity",
-    TLM_CONSTRAIN_OUTPUTS_KEY,
+    _TLM_CONSTRAIN_OUTPUTS_KEY,
 }
-TLM_VALID_PROMPT_KWARGS: set[str] = {TLM_CONSTRAIN_OUTPUTS_KEY}
+TLM_VALID_PROMPT_KWARGS: set[str] = {_TLM_CONSTRAIN_OUTPUTS_KEY}
 TLM_MODELS_NOT_SUPPORTING_EXPLANATION: set[str] = {
     "o1-mini",
     "o1-preview",
