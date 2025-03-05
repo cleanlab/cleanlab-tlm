@@ -184,6 +184,7 @@ async def tlm_prompt(
     api_key: str,
     prompt: str,
     quality_preset: str,
+    task: str,
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
@@ -197,6 +198,7 @@ async def tlm_prompt(
         api_key (str): API key for auth
         prompt (str): prompt for TLM to respond to
         quality_preset (str): quality preset to use to generate response
+        task (str): task type for evaluation
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
@@ -218,6 +220,7 @@ async def tlm_prompt(
                 json={
                     "prompt": prompt,
                     "quality": quality_preset,
+                    "task": task,
                     "options": options or {},
                     "user_id": api_key,
                     "client_id": api_key,
@@ -248,6 +251,7 @@ async def tlm_get_confidence_score(
     prompt: str,
     response: dict[str, Any],
     quality_preset: str,
+    task: str,
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
@@ -261,6 +265,7 @@ async def tlm_get_confidence_score(
         prompt (str): prompt for TLM to get confidence score for
         response (Dict[str, Any]): dictionary containing response and optional metadata
         quality_preset (str): quality preset to use to generate confidence score
+        task (str): task type for evaluation
         options (JSONDict): additional parameters for TLM
         rate_handler (TlmRateHandler): concurrency handler used to manage TLM request rate
         client_session (aiohttp.ClientSession): client session used to issue TLM request
@@ -282,6 +287,7 @@ async def tlm_get_confidence_score(
                     "prompt": prompt,
                     "response": response,
                     "quality": quality_preset,
+                    "task": task,
                     "options": options or {},
                 },
                 headers=_construct_headers(api_key),
