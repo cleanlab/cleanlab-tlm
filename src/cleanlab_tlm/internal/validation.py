@@ -14,6 +14,7 @@ from cleanlab_tlm.internal.constants import (
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
+    TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_LOG_OPTIONS,
     TLM_VALID_PROMPT_KWARGS,
@@ -181,12 +182,15 @@ def process_and_validate_kwargs_constrain_outputs(
     kwargs_dict: dict[str, Any],
     response: Optional[Union[str, Sequence[str]]] = None,
 ) -> None:
-    if task == "classification" and _TLM_CONSTRAIN_OUTPUTS_KEY not in kwargs_dict:
-        raise ValidationError("constrain_outputs must be provided for classification tasks")
-
     constrain_outputs = kwargs_dict.get(_TLM_CONSTRAIN_OUTPUTS_KEY)
     if constrain_outputs is None:
+        if task == "classification":
+            raise ValidationError("constrain_outputs must be provided for classification tasks")
+
         return
+
+    if task not in TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS:
+        raise ValidationError("constrain_outputs is only supported for classification tasks")
 
     if isinstance(prompt, str):
         if not isinstance(constrain_outputs, list) or not all(isinstance(s, str) for s in constrain_outputs):

@@ -24,6 +24,7 @@ _VALID_TLM_MODELS: list[str] = [
 ]
 _TLM_DEFAULT_MODEL: str = "gpt-4o-mini"
 _VALID_TLM_TASKS: set[str] = {"default", "classification", "code_generation"}
+TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS: set[str] = {"default", "classification"}
 _TLM_MAX_RETRIES: int = 3  # TODO: finalize this number
 _TLM_MAX_TOKEN_RANGE: dict[str, tuple[int, int]] = {  # model: (min, max)
     "default": (64, 4096),

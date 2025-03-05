@@ -13,6 +13,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
+    _VALID_TLM_TASKS,
     TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
@@ -60,14 +61,17 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
         tlm_dict[quality_preset] = {}
         for model in _VALID_TLM_MODELS:
             tlm_dict[quality_preset][model] = {}
+            task = random.choice(list(_VALID_TLM_TASKS))
             options = _get_options_dictionary(model)
             tlm_dict[quality_preset][model]["tlm"] = TLM(
                 quality_preset=quality_preset,
+                task=task,
                 api_key=tlm_api_key,
                 options=options,
             )
             tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
                 quality_preset=quality_preset,
+                task=task,
                 api_key=tlm_api_key,
             )
             tlm_dict[quality_preset][model]["options"] = options
