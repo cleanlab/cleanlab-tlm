@@ -308,18 +308,20 @@ def test_get_trustworthiness_score(tlm_dict: dict[str, Any], model: str, quality
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    tlm_no_options_kwargs = {}
-    if tlm_no_options._task == "classification":
-        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
-    response = tlm_no_options.get_trustworthiness_score(test_prompt_single, TEST_RESPONSE, **tlm_no_options_kwargs)
+    tlm_kwargs = {}
+    if tlm._task == "classification":
+        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
+    response = tlm.get_trustworthiness_score(test_prompt_single, TEST_RESPONSE, **tlm_kwargs)
     print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, options, quality_preset)
 
     # test prompt with batch prompt
-    tlm_kwargs = {}
-    if tlm._task == "classification":
-        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
-    responses = tlm.get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH, **tlm_kwargs)
+    tlm_no_options_kwargs = {}
+    if tlm_no_options._task == "classification":
+        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
+    responses = tlm_no_options.get_trustworthiness_score(
+        test_prompt_batch, TEST_RESPONSE_BATCH, **tlm_no_options_kwargs
+    )
     print("TLM Batch Responses:", responses)
     _test_batch_get_trustworthiness_score_response(responses, {}, quality_preset)
 
