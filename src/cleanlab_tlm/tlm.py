@@ -876,7 +876,7 @@ class TLMOptions(TypedDict):
         custom_eval_criteria (list[dict[str, Any]], default = []): optionally specify custom evalution criteria.
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: Name of the evaluation criteria.
-        - criteria: Instructions specifying the evaluation criteria. Currently, only one custom evaluation criteria at a time is supported.
+        - criteria: Instructions specifying the evaluation criteria.
     """
 
     model: NotRequired[str]
