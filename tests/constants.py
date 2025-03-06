@@ -8,6 +8,8 @@ TEST_PROMPT_BATCH: list[str] = [
     "What is the capital of Ukraine?",
 ]
 TEST_RESPONSE_BATCH: list[str] = ["Paris", "Kyiv"]
+TEST_CONSTRAIN_OUTPUTS_BINARY = ["Paris", "Kyiv"]
+TEST_CONSTRAIN_OUTPUTS = ["Paris", "Kyiv", "London", "New York"]
 
 # Test validation tests for TLM
 MAX_PROMPT_LENGTH_TOKENS: int = 70_000

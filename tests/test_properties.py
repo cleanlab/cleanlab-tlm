@@ -8,6 +8,8 @@ from cleanlab_tlm.tlm import TLM
 from tests.conftest import make_text_unique
 from tests.constants import (
     MODELS_WITH_NO_PERPLEXITY_SCORE,
+    TEST_CONSTRAIN_OUTPUTS,
+    TEST_CONSTRAIN_OUTPUTS_BINARY,
     TEST_PROMPT,
     TEST_PROMPT_BATCH,
     TEST_RESPONSE,
@@ -177,17 +179,20 @@ def _test_batch_get_trustworthiness_score_response(
 
 
 @pytest.mark.asyncio(scope="function")
-async def _run_prompt_async(tlm: TLM, prompt: Union[list[str], str]) -> Any:
+async def _run_prompt_async(tlm: TLM, prompt: Union[list[str], str], **kwargs: Any) -> Any:
     """Runs tlm.prompt() asynchronously."""
-    return await tlm.prompt_async(prompt)
+    return await tlm.prompt_async(prompt, **kwargs)
 
 
 @pytest.mark.asyncio(scope="function")
 async def _run_get_trustworthiness_score_async(
-    tlm: TLM, prompt: Union[list[str], str], response: Union[list[str], str]
+    tlm: TLM,
+    prompt: Union[list[str], str],
+    response: Union[list[str], str],
+    **kwargs: Any,
 ) -> Any:
     """Runs tlm.get_trustworthiness_score asynchronously."""
-    return await tlm.get_trustworthiness_score_async(prompt, response)
+    return await tlm.get_trustworthiness_score_async(prompt, response, **kwargs)
 
 
 @pytest.mark.parametrize("model", VALID_TLM_MODELS)
@@ -205,7 +210,10 @@ def test_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> No
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = tlm_no_options.prompt(test_prompt_single)
+    tlm_no_options_kwargs = {}
+    if tlm_no_options._task == "classification":
+        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
+    response = tlm_no_options.prompt(test_prompt_single, **tlm_no_options_kwargs)
     print("TLM Single Response:", response)
     _test_prompt_response(
         response,
@@ -214,7 +222,10 @@ def test_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> No
     )
 
     # test prompt with batch prompt
-    responses = tlm.prompt(test_prompt_batch)
+    tlm_kwargs = {}
+    if tlm._task == "classification":
+        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
+    responses = tlm.prompt(test_prompt_batch, **tlm_kwargs)
     print("TLM Batch Responses:", responses)
     _test_batch_prompt_response(
         responses,
@@ -238,12 +249,18 @@ def test_prompt_async(tlm_dict: dict[str, Any], model: str, quality_preset: str)
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = asyncio.run(_run_prompt_async(tlm_no_options, test_prompt_single))
+    tlm_no_options_kwargs = {}
+    if tlm_no_options._task == "classification":
+        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
+    response = asyncio.run(_run_prompt_async(tlm_no_options, test_prompt_single, **tlm_no_options_kwargs))
     print("TLM Single Response:", response)
     _test_prompt_response(response, {}, allow_null_trustworthiness_score=allow_null_trustworthiness_score)
 
     # test prompt with batch prompt
-    responses = asyncio.run(_run_prompt_async(tlm, test_prompt_batch))
+    tlm_kwargs = {}
+    if tlm._task == "classification":
+        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
+    responses = asyncio.run(_run_prompt_async(tlm, test_prompt_batch, **tlm_kwargs))
     print("TLM Batch Responses:", responses)
     _test_batch_prompt_response(
         responses,
@@ -264,7 +281,10 @@ def test_try_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -
     print("TLM Options for run: None.")
 
     # test prompt with batch prompt
-    responses = tlm_no_options.try_prompt(test_prompt_batch)
+    tlm_no_options_kwargs = {}
+    if tlm_no_options._task == "classification":
+        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
+    responses = tlm_no_options.try_prompt(test_prompt_batch, **tlm_no_options_kwargs)
     print("TLM Batch Responses:", responses)
     _test_batch_prompt_response(
         responses,
@@ -288,12 +308,18 @@ def test_get_trustworthiness_score(tlm_dict: dict[str, Any], model: str, quality
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = tlm.get_trustworthiness_score(test_prompt_single, TEST_RESPONSE)
+    tlm_no_options_kwargs = {}
+    if tlm_no_options._task == "classification":
+        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
+    response = tlm_no_options.get_trustworthiness_score(test_prompt_single, TEST_RESPONSE, **tlm_no_options_kwargs)
     print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, options, quality_preset)
 
     # test prompt with batch prompt
-    responses = tlm_no_options.get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH)
+    tlm_kwargs = {}
+    if tlm._task == "classification":
+        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
+    responses = tlm.get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH, **tlm_kwargs)
     print("TLM Batch Responses:", responses)
     _test_batch_get_trustworthiness_score_response(responses, {}, quality_preset)
 
@@ -312,16 +338,25 @@ def test_get_trustworthiness_score_async(tlm_dict: dict[str, Any], model: str, q
     print("TLM Options for run:", options)
 
     # test prompt with single prompt
-    response = asyncio.run(_run_get_trustworthiness_score_async(tlm_no_options, test_prompt_single, TEST_RESPONSE))
+    tlm_no_options_kwargs = {}
+    if tlm_no_options._task == "classification":
+        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
+    response = asyncio.run(
+        _run_get_trustworthiness_score_async(tlm_no_options, test_prompt_single, TEST_RESPONSE, **tlm_no_options_kwargs)
+    )
     print("TLM Single Response:", response)
     _test_get_trustworthiness_score_response(response, {}, quality_preset)
 
     # test prompt with batch prompt
+    tlm_kwargs = {}
+    if tlm._task == "classification":
+        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
     responses = asyncio.run(
         _run_get_trustworthiness_score_async(
             tlm,
             test_prompt_batch,
             TEST_RESPONSE_BATCH,
+            **tlm_kwargs,
         )
     )
     print("TLM Batch Responses:", responses)
@@ -340,6 +375,9 @@ def test_try_get_trustworthiness_score(tlm_dict: dict[str, Any], model: str, qua
     print("TLM Options for run:", options)
 
     # test prompt with batch prompt
-    responses = tlm.try_get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH)
+    tlm_kwargs = {}
+    if tlm._task == "classification":
+        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
+    responses = tlm.try_get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH, **tlm_kwargs)
     print("TLM Batch Responses:", responses)
     _test_batch_get_trustworthiness_score_response(responses, options, quality_preset)
