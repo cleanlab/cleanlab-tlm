@@ -195,7 +195,7 @@ class TLM:
         task ({"default", "classification", "code_generation"}, default = "default"): determines which scoring flow/methodology to use for evaluating the trustworthiness of the response.
             - "default": use for general tasks such as QA, summarization, etc.
             - "classification": use for classification tasks, where the response is a categorical prediction. \
-                Note that `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods for classification tasks.
+                When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
             - "code_generation": use for code generation tasks.
 
         options (TLMOptions, optional): a typed dict of advanced configurations you can optionally specify.
