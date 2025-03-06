@@ -20,6 +20,7 @@ from cleanlab_tlm.internal.constants import (
     TLM_VALID_PROMPT_KWARGS,
     VALID_RESPONSE_OPTIONS,
 )
+from cleanlab_tlm.internal.types import Task
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 
@@ -178,13 +179,13 @@ def validate_tlm_options(options: Any) -> None:
 
 def process_and_validate_kwargs_constrain_outputs(
     prompt: Union[str, Sequence[str]],
-    task: str,
+    task: Task,
     kwargs_dict: dict[str, Any],
     response: Optional[Union[str, Sequence[str]]] = None,
 ) -> None:
     constrain_outputs = kwargs_dict.get(_TLM_CONSTRAIN_OUTPUTS_KEY)
     if constrain_outputs is None:
-        if task == "classification":
+        if task == Task.CLASSIFICATION:
             raise ValidationError("constrain_outputs must be provided for classification tasks")
 
         return
@@ -230,7 +231,7 @@ def process_and_validate_kwargs_constrain_outputs(
 
 def tlm_prompt_process_and_validate_kwargs(
     prompt: Union[str, Sequence[str]],
-    task: str,
+    task: Task,
     kwargs_dict: dict[str, Any],
 ) -> None:
     if not SKIP_VALIDATE_TLM_OPTIONS:
@@ -248,7 +249,7 @@ def tlm_prompt_process_and_validate_kwargs(
 def tlm_score_process_response_and_kwargs(
     prompt: Union[str, Sequence[str]],
     response: Union[str, Sequence[str]],
-    task: str,
+    task: Task,
     kwargs_dict: dict[str, Any],
 ) -> Union[dict[str, Any], list[dict[str, Any]]]:
     process_and_validate_kwargs_constrain_outputs(prompt=prompt, task=task, kwargs_dict=kwargs_dict, response=response)

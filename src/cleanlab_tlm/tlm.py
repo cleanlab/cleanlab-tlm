@@ -46,6 +46,7 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
     _VALID_TLM_TASKS,
 )
+from cleanlab_tlm.internal.types import Task
 from cleanlab_tlm.internal.validation import (
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
@@ -252,7 +253,7 @@ class TLM:
         self._options = {"model": _TLM_DEFAULT_MODEL, **options_dict}
 
         self._quality_preset = quality_preset
-        self._task = task
+        self._task = Task(task)
 
         if timeout is not None and not (isinstance(timeout, (float, int))):
             raise ValidationError("timeout must be a integer or float value")
@@ -583,7 +584,7 @@ class TLM:
                 self._api_key,
                 prompt,
                 self._quality_preset,
-                self._task,
+                self._task.value,
                 self._options,
                 self._rate_handler,
                 client_session,
@@ -767,7 +768,7 @@ class TLM:
                 prompt,
                 response,
                 self._quality_preset,
-                self._task,
+                self._task.value,
                 self._options,
                 self._rate_handler,
                 client_session,
