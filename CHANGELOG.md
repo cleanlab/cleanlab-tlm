@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8] - 2025-03-06
+
+### Added
+
+- Custom evaluation supports multiple criteria
+- Add support for `task` argument during TLM initialization
+
 ## [1.0.6] - 2025-03-03
 
 ### Added
@@ -49,7 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.8...HEAD
+[1.0.8]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.7...v1.0.8
 [1.0.6]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.3...v1.0.4
