@@ -4,6 +4,10 @@ import numpy as np
 import pytest
 
 from cleanlab_tlm.errors import TlmBadRequestError, ValidationError
+from cleanlab_tlm.internal.constants import (
+    _VALID_TLM_TASKS,
+    TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
+)
 from cleanlab_tlm.tlm import TLM, TLMOptions
 from tests.conftest import make_text_unique
 from tests.constants import (
@@ -87,6 +91,35 @@ def test_prompt_constrain_outputs_wrong_length(tlm: TLM) -> None:
     assert str(exc_info.value).startswith("constrain_outputs must have same length as prompt")
 
 
+def test_prompt_not_providing_constrain_outputs_for_classification_task(
+    tlm_api_key: str,
+) -> None:
+    """Tests that validation error is raised when constrain_outputs is not provided for classification tasks."""
+    tlm_classification = TLM(api_key=tlm_api_key, task="classification")
+    with pytest.raises(ValidationError) as exc_info:
+        tlm_classification.prompt(
+            "test prompt",
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must be provided for classification tasks")
+
+
+@pytest.mark.parametrize("task", _VALID_TLM_TASKS - TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS)
+def test_prompt_providing_constrain_outputs_for_non_classification_task(
+    tlm_api_key: str,
+    task: str,
+) -> None:
+    """Tests that validation error is raised when constrain_outputs is provided for non-classification tasks."""
+    tlm = TLM(api_key=tlm_api_key, task=task)
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.prompt(
+            "test prompt",
+            constrain_outputs="test constrain outputs",
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs is only supported for classification tasks")
+
+
 def test_scoring_constrain_outputs_wrong_type_single_prompt(tlm: TLM) -> None:
     """Tests that validation error is raised when constrain_outputs is not a list of strings when prompt is a string."""
     with pytest.raises(ValidationError) as exc_info:
@@ -109,6 +142,37 @@ def test_scoring_constrain_outputs_wrong_length(tlm: TLM) -> None:
         )
 
     assert str(exc_info.value).startswith("constrain_outputs must have same length as prompt")
+
+
+def test_scoring_not_providing_constrain_outputs_for_classification_task(
+    tlm_api_key: str,
+) -> None:
+    """Tests that validation error is raised when constrain_outputs is not provided for classification tasks."""
+    tlm_classification = TLM(api_key=tlm_api_key, task="classification")
+    with pytest.raises(ValidationError) as exc_info:
+        tlm_classification.get_trustworthiness_score(
+            "test prompt",
+            "test response",
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs must be provided for classification tasks")
+
+
+@pytest.mark.parametrize("task", _VALID_TLM_TASKS - TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS)
+def test_scoring_providing_constrain_outputs_for_non_classification_task(
+    tlm_api_key: str,
+    task: str,
+) -> None:
+    """Tests that validation error is raised when constrain_outputs is provided for non-classification tasks."""
+    tlm = TLM(api_key=tlm_api_key, task=task)
+    with pytest.raises(ValidationError) as exc_info:
+        tlm.get_trustworthiness_score(
+            "test prompt",
+            "test response",
+            constrain_outputs="test constrain outputs",
+        )
+
+    assert str(exc_info.value).startswith("constrain_outputs is only supported for classification tasks")
 
 
 def test_scoring_response_not_in_constrain_outputs(tlm: TLM) -> None:

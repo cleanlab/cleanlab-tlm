@@ -44,7 +44,9 @@ from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
+    _VALID_TLM_TASKS,
 )
+from cleanlab_tlm.internal.types import Task
 from cleanlab_tlm.internal.validation import (
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
@@ -191,6 +193,12 @@ class TLM:
             Avoid "best" or "high" presets if you just want trustworthiness scores (i.e. are using `tlm.get_trustworthiness_score()` rather than `tlm.prompt()`).
             These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
+        task ({"default", "classification", "code_generation"}, default = "default"): determines which scoring flow/methodology to use for evaluating the trustworthiness of the response.
+            - "default": use for general tasks such as QA, summarization, etc.
+            - "classification": use for classification tasks, where the response is a categorical prediction. \
+                When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
+            - "code_generation": use for code generation tasks.
+
         options (TLMOptions, optional): a typed dict of advanced configurations you can optionally specify.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
         "similarity_measure", "reasoning_effort", "log", "custom_eval_criteria".
@@ -210,6 +218,7 @@ class TLM:
         self,
         quality_preset: TLMQualityPreset = "medium",
         *,
+        task: str = "default",
         api_key: Optional[str] = None,
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
@@ -227,6 +236,9 @@ class TLM:
                 f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
             )
 
+        if task not in _VALID_TLM_TASKS:
+            raise ValidationError(f"Invalid task {task} -- must be one of {_VALID_TLM_TASKS}")
+
         self._return_log = False
 
         options_dict = options or {}
@@ -241,6 +253,7 @@ class TLM:
         self._options = {"model": _TLM_DEFAULT_MODEL, **options_dict}
 
         self._quality_preset = quality_preset
+        self._task = Task(task)
 
         if timeout is not None and not (isinstance(timeout, (float, int))):
             raise ValidationError("timeout must be a integer or float value")
@@ -431,7 +444,7 @@ class TLM:
                 Use the [`try_prompt()`](#method-try_prompt) method instead and run it on multiple smaller batches.
         """
         validate_tlm_prompt(prompt)
-        tlm_prompt_process_and_validate_kwargs(prompt, kwargs)
+        tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
         if isinstance(prompt, str):
             return cast(
                 TLMResponse,
@@ -484,7 +497,7 @@ class TLM:
                 use [`prompt()`](#method-prompt) instead.
         """
         validate_tlm_try_prompt(prompt)
-        tlm_prompt_process_and_validate_kwargs(prompt, kwargs)
+        tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
 
         return self._event_loop.run_until_complete(
             self._batch_prompt(
@@ -521,7 +534,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt(prompt)
-        tlm_prompt_process_and_validate_kwargs(prompt, kwargs)
+        tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
@@ -571,6 +584,7 @@ class TLM:
                 self._api_key,
                 prompt,
                 self._quality_preset,
+                self._task.value,
                 self._options,
                 self._rate_handler,
                 client_session,
@@ -617,7 +631,7 @@ class TLM:
                 For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
 
         if isinstance(prompt, str) and isinstance(processed_response, dict):
             return cast(
@@ -670,7 +684,7 @@ class TLM:
                 use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
         validate_try_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
 
         assert isinstance(processed_response, list)
 
@@ -708,7 +722,7 @@ class TLM:
                 This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
         """
         validate_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(prompt, response, kwargs)
+        processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(processed_response, dict):
@@ -754,6 +768,7 @@ class TLM:
                 prompt,
                 response,
                 self._quality_preset,
+                self._task.value,
                 self._options,
                 self._rate_handler,
                 client_session,

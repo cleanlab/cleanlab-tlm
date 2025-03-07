@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
+    _TLM_CONSTRAIN_OUTPUTS_KEY,
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
@@ -13,11 +14,13 @@ from cleanlab_tlm.internal.constants import (
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
+    TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
     TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS,
     TLM_VALID_LOG_OPTIONS,
     TLM_VALID_PROMPT_KWARGS,
     VALID_RESPONSE_OPTIONS,
 )
+from cleanlab_tlm.internal.types import Task
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 
@@ -176,12 +179,19 @@ def validate_tlm_options(options: Any) -> None:
 
 def process_and_validate_kwargs_constrain_outputs(
     prompt: Union[str, Sequence[str]],
+    task: Task,
     kwargs_dict: dict[str, Any],
     response: Optional[Union[str, Sequence[str]]] = None,
 ) -> None:
-    constrain_outputs = kwargs_dict.get("constrain_outputs")
+    constrain_outputs = kwargs_dict.get(_TLM_CONSTRAIN_OUTPUTS_KEY)
     if constrain_outputs is None:
+        if task == Task.CLASSIFICATION:
+            raise ValidationError("constrain_outputs must be provided for classification tasks")
+
         return
+
+    if task not in TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS:
+        raise ValidationError("constrain_outputs is only supported for classification tasks")
 
     if isinstance(prompt, str):
         if not isinstance(constrain_outputs, list) or not all(isinstance(s, str) for s in constrain_outputs):
@@ -216,11 +226,12 @@ def process_and_validate_kwargs_constrain_outputs(
                         f"Response '{resp}' at index {i} must be one of the constraint outputs: {constraints}"
                     )
 
-    kwargs_dict["constrain_outputs"] = constrain_outputs
+    kwargs_dict[_TLM_CONSTRAIN_OUTPUTS_KEY] = constrain_outputs
 
 
 def tlm_prompt_process_and_validate_kwargs(
     prompt: Union[str, Sequence[str]],
+    task: Task,
     kwargs_dict: dict[str, Any],
 ) -> None:
     if not SKIP_VALIDATE_TLM_OPTIONS:
@@ -232,15 +243,16 @@ def tlm_prompt_process_and_validate_kwargs(
                 f"Supported keyword arguments are: {supported_kwargs}"
             )
 
-    process_and_validate_kwargs_constrain_outputs(prompt=prompt, kwargs_dict=kwargs_dict)
+    process_and_validate_kwargs_constrain_outputs(prompt=prompt, task=task, kwargs_dict=kwargs_dict)
 
 
 def tlm_score_process_response_and_kwargs(
     prompt: Union[str, Sequence[str]],
     response: Union[str, Sequence[str]],
+    task: Task,
     kwargs_dict: dict[str, Any],
 ) -> Union[dict[str, Any], list[dict[str, Any]]]:
-    process_and_validate_kwargs_constrain_outputs(prompt=prompt, kwargs_dict=kwargs_dict, response=response)
+    process_and_validate_kwargs_constrain_outputs(prompt=prompt, task=task, kwargs_dict=kwargs_dict, response=response)
 
     if not SKIP_VALIDATE_TLM_OPTIONS:
         invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS

@@ -1,3 +1,5 @@
+from cleanlab_tlm.internal.types import Task
+
 # TLM constants
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
@@ -23,6 +25,11 @@ _VALID_TLM_MODELS: list[str] = [
     "nova-pro",
 ]
 _TLM_DEFAULT_MODEL: str = "gpt-4o-mini"
+_VALID_TLM_TASKS: set[str] = {task.value for task in Task}
+TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS: set[Task] = {
+    Task.DEFAULT,
+    Task.CLASSIFICATION,
+}
 _TLM_MAX_RETRIES: int = 3  # TODO: finalize this number
 _TLM_MAX_TOKEN_RANGE: dict[str, tuple[int, int]] = {  # model: (min, max)
     "default": (64, 4096),
