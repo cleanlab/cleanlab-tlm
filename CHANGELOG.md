@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Custom evaluation supports multiple criteria
+- Add support for `task` argument during TLM initialization
 
 ## [1.0.6] - 2025-03-03
 
