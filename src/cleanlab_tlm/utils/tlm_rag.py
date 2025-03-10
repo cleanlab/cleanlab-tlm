@@ -6,7 +6,14 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import TYPE_CHECKING, Optional
+from collections.abc import Coroutine, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
+
+from tqdm.asyncio import tqdm_asyncio
+from typing_extensions import (  # for Python <3.11 with (Not)Required
+    NotRequired,
+    TypedDict,
+)
 
 from cleanlab_tlm.errors import (
     MissingApiKeyError,
@@ -14,7 +21,8 @@ from cleanlab_tlm.errors import (
 )
 from cleanlab_tlm.internal.api.api import tlm_rag_generate, tlm_rag_score
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
-from cleanlab_tlm.tlm import TLMOptions, TLMResponse, TLMScore, is_notebook
+from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
+from cleanlab_tlm.tlm import TLMOptions, is_notebook
 
 if TYPE_CHECKING:
     from cleanlab_tlm.internal.types import TLMQualityPreset
@@ -37,6 +45,11 @@ class TrustworthyRAG:
         self._api_key = api_key or os.environ.get("CLEANLAB_TLM_API_KEY")
         if self._api_key is None:
             raise MissingApiKeyError
+
+        # Validate quality_preset
+        if quality_preset not in ["medium", "low"]:
+            raise ValidationError(f"Unsupported quality_preset: '{quality_preset}'. Only 'medium' and 'low' are supported.")
+
         self._quality_preset = quality_preset
         self._options = options
 
@@ -74,100 +87,328 @@ class TrustworthyRAG:
     def generate(
         self,
         *,
-        prompt=None,
-        query=None,
-        context=None,
-        system_prompt=None,
-        fallback_response=None,
-        form_prompt = None
-    ) -> TrustworthyRAGResponse:
-        """ Required is either specifying at least: query and context, or prompt. 
-           default_prompt_format = function that takes in {query, context, system_prompt, fallback_response} 
-           returns a standard RAG prompt like we use for Agility. 
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None
+    ) -> Union[TrustworthyRAGResponse, list[TrustworthyRAGResponse]]:
+        """ Required parameters are query and context. Either prompt or form_prompt can be provided optionally.
+           default_prompt_format = function that takes in {query, context} 
+           returns a standard RAG prompt like we use for Agility.
+           
+           Args:
+                query: Either a single query string or a sequence of query strings for batch processing.
+                      This parameter is required.
+                context: Either a single context string or a sequence of context strings for batch processing.
+                        This parameter is required.
+                prompt: Either a single prompt string or a sequence of prompt strings for batch processing.
+                       This parameter is optional and mainly used for replacing the default prompt format entirely.
+                form_prompt: Optional function to format the prompt. Cannot be provided together with prompt.
+                       The function should take query and context as parameters and return a formatted prompt string.
+                       Note: If you need to include a system prompt or any other special instructions, you must
+                       incorporate them directly in your custom form_prompt function implementation.
+                       
+           Returns:
+                TrustworthyRAGResponse | list[TrustworthyRAGResponse]: A single response or a list of responses
+                if batch processing was used. Each response contains the generated text and evaluation scores.
         """
-        # Use the class method as default if form_prompt is not provided
-        if form_prompt is None:
+        # Validate that prompt and form_prompt are not provided at the same time
+        if prompt is not None and form_prompt is not None:
+            raise ValidationError("'prompt' and 'form_prompt' cannot be provided at the same time. Use either one, not both.")
+
+        # Use the class method as default if form_prompt is not provided and prompt is None
+        if prompt is None and form_prompt is None:
             form_prompt = self._default_prompt_formatter
 
-        # Validate that either prompt or both query and context are provided
-        if prompt is None and (query is None or context is None):
-            raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided")
+        # Check if we're dealing with batch inputs
+        is_batch = False
+        batch_size = None
 
-        if prompt is None:
-            prompt = form_prompt(query, context, system_prompt, fallback_response)
+        # Check if any of the inputs are sequences (for batch processing)
+        if isinstance(query, Sequence) and not isinstance(query, str):
+            is_batch = True
+            batch_size = len(query)
+        elif isinstance(context, Sequence) and not isinstance(context, str):
+            is_batch = True
+            batch_size = len(context)
+        elif isinstance(prompt, Sequence) and not isinstance(prompt, str):
+            is_batch = True
+            batch_size = len(prompt)
 
-        # Validate inputs for evaluations (excluding response which isn't available yet)
-        is_valid, error_message = self._validate_inputs(
-            query=query,
-            context=context,
-            fallback_response=fallback_response
-        )
-        if not is_valid:
-            raise ValidationError(error_message)
+        # Handle single input case
+        if not is_batch:
+            # Validate that query and context are provided
+            if query is None or context is None:
+                raise ValidationError("Both 'query' and 'context' are required parameters")
 
-        response = self._event_loop.run_until_complete(
-            self._generate_async(
-                prompt=prompt,
+            if prompt is None:
+                prompt = form_prompt(query, context)
+
+            # Validate parameter types
+            for param_name, param_value in [
+                ("prompt", prompt),
+                ("query", query),
+                ("context", context),
+            ]:
+                if param_value is not None and not isinstance(param_value, str):
+                    raise ValidationError(f"'{param_name}' must be a string")
+
+            # Validate inputs for evaluations (excluding response which isn't available yet)
+            is_valid, error_message = self._validate_inputs(
                 query=query,
                 context=context,
-                system_prompt=system_prompt,
-                fallback_response=fallback_response,
             )
-        )
+            if not is_valid:
+                raise ValidationError(error_message)
 
-        # Cast the response to TrustworthyRAGResponse
-        return TrustworthyRAGResponse(**response)
+            response = self._event_loop.run_until_complete(
+                self._generate_async(
+                    prompt=prompt,
+                    query=query,
+                    context=context,
+                )
+            )
+
+            # Return the response with the updated TrustworthyRAGResponse format
+            return TrustworthyRAGResponse(**response)
+
+        # Handle batch input case
+        else:
+            # Ensure all batch inputs have the same length
+            batch_inputs = []
+            for param_name, param_value in [
+                ("query", query),
+                ("context", context),
+                ("prompt", prompt),
+            ]:
+                if param_value is not None:
+                    if isinstance(param_value, Sequence) and not isinstance(param_value, str):
+                        if batch_size is not None and len(param_value) != batch_size:
+                            raise ValidationError(f"All batch inputs must have the same length, but '{param_name}' has length {len(param_value)} while expected {batch_size}")
+                        batch_inputs.append((param_name, param_value))
+                    elif isinstance(param_value, str):
+                        # Convert single string to a list of the same string repeated batch_size times
+                        batch_inputs.append((param_name, [param_value] * batch_size))
+                    else:
+                        raise ValidationError(f"'{param_name}' must be a string or a sequence of strings")
+
+            # Create dictionaries for each batch item
+            batch_items = [{} for _ in range(batch_size)]
+            for param_name, param_values in batch_inputs:
+                for i, value in enumerate(param_values):
+                    batch_items[i][param_name] = value
+
+            # Process each batch item
+            processed_prompts = []
+            processed_queries = []
+            processed_contexts = []
+
+            for item in batch_items:
+                item_prompt = item.get("prompt")
+                item_query = item.get("query")
+                item_context = item.get("context")
+
+                # Validate that query and context are provided for each batch item
+                if item_query is None or item_context is None:
+                    raise ValidationError("Both 'query' and 'context' are required parameters for each batch item")
+
+                # Generate prompt if not provided
+                if item_prompt is None:
+                    item_prompt = form_prompt(item_query, item_context)
+
+                # Validate inputs for evaluations
+                is_valid, error_message = self._validate_inputs(
+                    query=item_query,
+                    context=item_context,
+                )
+                if not is_valid:
+                    raise ValidationError(error_message)
+
+                processed_prompts.append(item_prompt)
+                processed_queries.append(item_query)
+                processed_contexts.append(item_context)
+
+            # Run batch processing
+            responses = self._event_loop.run_until_complete(
+                self._batch_generate(
+                    prompts=processed_prompts,
+                    queries=processed_queries,
+                    contexts=processed_contexts,
+                    capture_exceptions=False,
+                )
+            )
+
+            # Convert responses to TrustworthyRAGResponse format
+            return [TrustworthyRAGResponse(**response) for response in responses]
 
     def score(
         self,
         *,
-        response: str,
-        prompt=None,
-        query=None,
-        context=None,
-        system_prompt=None,
-        fallback_response=None,
-        form_prompt = None
-    ) -> TrustworthyRAGScore:
-        # Use the class method as default if form_prompt is not provided
-        if form_prompt is None:
+        response: Union[str, Sequence[str]],
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None
+    ) -> Union[TrustworthyRAGScore, list[TrustworthyRAGScore]]:
+        """ Required is either specifying at least: query and context, or prompt. 
+           default_prompt_format = function that takes in {query, context} 
+           returns a standard RAG prompt like we use for Agility.
+           
+           Args:
+                response: Either a single response string or a sequence of response strings for batch processing.
+                query: Either a single query string or a sequence of query strings for batch processing.
+                context: Either a single context string or a sequence of context strings for batch processing.
+                prompt: Either a single prompt string or a sequence of prompt strings for batch processing.
+                       This parameter is mainly used for replacing the default prompt format entirely.
+                form_prompt: Optional function to format the prompt. Cannot be provided together with prompt.
+                       The function should take query and context as parameters and return a formatted prompt string.
+                       Note: If you need to include a system prompt or any other special instructions, you must
+                       incorporate them directly in your custom form_prompt function implementation.
+                       
+           Returns:
+                TrustworthyRAGScore | list[TrustworthyRAGScore]: A single score or a list of scores
+                if batch processing was used. Each score contains evaluation metrics for the response.
+        """
+        # Validate that prompt and form_prompt are not provided at the same time
+        if prompt is not None and form_prompt is not None:
+            raise ValidationError("'prompt' and 'form_prompt' cannot be provided at the same time. Use either one, not both.")
+
+        # Use the class method as default if form_prompt is not provided and prompt is None
+        if prompt is None and form_prompt is None:
             form_prompt = self._default_prompt_formatter
 
-        # Validate that response is provided
-        if response is None or response.strip() == "":
-            raise ValidationError("'response' is required and cannot be empty")
+        # Check if we're dealing with batch inputs
+        is_batch = False
+        batch_size = None
 
-        # Validate that either prompt or both query and context are provided
-        if prompt is None and (query is None or context is None):
-            raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided")
+        # Check if any of the inputs are sequences (for batch processing)
+        if isinstance(response, Sequence) and not isinstance(response, str):
+            is_batch = True
+            batch_size = len(response)
+        elif isinstance(query, Sequence) and not isinstance(query, str):
+            is_batch = True
+            batch_size = len(query)
+        elif isinstance(context, Sequence) and not isinstance(context, str):
+            is_batch = True
+            batch_size = len(context)
+        elif isinstance(prompt, Sequence) and not isinstance(prompt, str):
+            is_batch = True
+            batch_size = len(prompt)
 
-        # Form the prompt if not provided
-        if prompt is None:
-            prompt = form_prompt(query, context, system_prompt, fallback_response)
+        # Handle single input case
+        if not is_batch:
+            # Validate that either prompt or both query and context are provided
+            if prompt is None and (query is None or context is None):
+                raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided")
 
-        # Validate inputs for evaluations
-        is_valid, error_message = self._validate_inputs(
-            query=query,
-            context=context,
-            response=response,
-            fallback_response=fallback_response
-        )
-        if not is_valid:
-            raise ValidationError(error_message)
+            if prompt is None:
+                prompt = form_prompt(query, context)
 
-        score_response = self._event_loop.run_until_complete(
-            self._score_async(
-                response=response,
-                prompt=prompt,
+            # Validate parameter types
+            for param_name, param_value in [
+                ("prompt", prompt),
+                ("query", query),
+                ("context", context),
+                ("response", response),
+            ]:
+                if not isinstance(param_value, str):
+                    raise ValidationError(f"'{param_name}' must be a string")
+
+            # Validate inputs for evaluations
+            is_valid, error_message = self._validate_inputs(
                 query=query,
                 context=context,
-                system_prompt=system_prompt,
-                fallback_response=fallback_response,
+                response=response,
             )
-        )
+            if not is_valid:
+                raise ValidationError(error_message)
 
-        # Cast the response to TrustworthyRAGScore
-        return TrustworthyRAGScore(**score_response)
+            score_result = self._event_loop.run_until_complete(
+                self._score_async(
+                    response=response,
+                    prompt=prompt,
+                    query=query,
+                    context=context,
+                )
+            )
+
+            # Return the score with the updated TrustworthyRAGScore format
+            return TrustworthyRAGScore(**score_result)
+
+        # Handle batch input case
+        else:
+            # Ensure all batch inputs have the same length
+            batch_inputs = []
+            for param_name, param_value in [
+                ("response", response),
+                ("query", query),
+                ("context", context),
+                ("prompt", prompt),
+            ]:
+                if param_value is not None:
+                    if isinstance(param_value, Sequence) and not isinstance(param_value, str):
+                        if batch_size is not None and len(param_value) != batch_size:
+                            raise ValidationError(f"All batch inputs must have the same length, but '{param_name}' has length {len(param_value)} while expected {batch_size}")
+                        batch_inputs.append((param_name, param_value))
+                    elif isinstance(param_value, str):
+                        # Convert single string to a list of the same string repeated batch_size times
+                        batch_inputs.append((param_name, [param_value] * batch_size))
+                    else:
+                        raise ValidationError(f"'{param_name}' must be a string or a sequence of strings")
+
+            # Create dictionaries for each batch item
+            batch_items = [{} for _ in range(batch_size)]
+            for param_name, param_values in batch_inputs:
+                for i, value in enumerate(param_values):
+                    batch_items[i][param_name] = value
+
+            # Process each batch item
+            processed_responses = []
+            processed_prompts = []
+            processed_queries = []
+            processed_contexts = []
+
+            for item in batch_items:
+                item_response = item.get("response")
+                item_prompt = item.get("prompt")
+                item_query = item.get("query")
+                item_context = item.get("context")
+
+                # Validate that either prompt or both query and context are provided
+                if item_prompt is None and (item_query is None or item_context is None):
+                    raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided for each batch item")
+
+                # Generate prompt if not provided
+                if item_prompt is None:
+                    item_prompt = form_prompt(item_query, item_context)
+
+                # Validate inputs for evaluations
+                is_valid, error_message = self._validate_inputs(
+                    query=item_query,
+                    context=item_context,
+                    response=item_response,
+                )
+                if not is_valid:
+                    raise ValidationError(error_message)
+
+                processed_responses.append(item_response)
+                processed_prompts.append(item_prompt)
+                processed_queries.append(item_query)
+                processed_contexts.append(item_context)
+
+            # Run batch processing
+            scores = self._event_loop.run_until_complete(
+                self._batch_score(
+                    responses=processed_responses,
+                    prompts=processed_prompts,
+                    queries=processed_queries,
+                    contexts=processed_contexts,
+                    capture_exceptions=False,
+                )
+            )
+
+            # Convert scores to TrustworthyRAGScore format
+            return [TrustworthyRAGScore(**score) for score in scores]
 
     def get_evals(self) -> list[Eval]:
         """
@@ -178,27 +419,27 @@ class TrustworthyRAG:
         """
         return self._evals.copy()
 
-    def _validate_inputs(self, query=None, context=None, response=None, fallback_response=None) -> tuple[bool, Optional[str]]:
+    def _validate_inputs(
+        self,
+        query: Optional[Union[str, Sequence[str]]] = None,
+        context: Optional[Union[str, Sequence[str]]] = None,
+        response: Optional[Union[str, Sequence[str]]] = None
+    ) -> tuple[bool, Optional[str]]:
         """
         Validate that all required inputs for evaluations are present.
         
         Args:
-            query: The user query
-            context: The context used for RAG
-            response: The response to evaluate
-            fallback_response: The fallback response
+            query: The user query or sequence of queries
+            context: The context used for RAG or sequence of contexts
+            response: The response to evaluate or sequence of responses
             
         Returns:
             A tuple of (is_valid, error_message)
             - is_valid: True if all required inputs are present, False otherwise
             - error_message: Error message if validation fails, None otherwise
         """
-        inputs_data = {
-            "query": query,
-            "context": context,
-            "response": response,
-            "fallback_response": fallback_response
-        }
+        # For validation purposes, we don't need to check for sequences again
+        # as the calling methods will have already raised errors for sequences
 
         # Determine if we're validating for generate (no response) or score (with response)
         is_generate = response is None
@@ -220,42 +461,40 @@ class TrustworthyRAG:
 
     def _default_prompt_formatter(
         self,
-        query: str,
-        context: str,
-        system_prompt: Optional[str] = None,
-        fallback_response: Optional[str] = None
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]]
     ) -> str:
         """
         Format a standard RAG prompt using the provided components.
         
+        Note: This default formatter does not include a system prompt. If you need to include
+        a system prompt or other special instructions, use a custom form_prompt function.
+        
         Args:
-            query: The user's question or request
-            context: Retrieved context/documents to help answer the query
-            system_prompt: Optional system instructions for the model
-            fallback_response: Optional fallback response to use if context is insufficient
+            query: The user's question or request, or a sequence of queries
+            context: Retrieved context/documents to help answer the query, or a sequence of contexts
             
         Returns:
             A formatted prompt string ready to be sent to the model
         """
-        # Start with system prompt if provided
-        prompt_parts = []
+        # Validate parameter types
+        for param_name, param_value in [
+            ("query", query),
+            ("context", context),
+        ]:
+            if param_value is not None:
+                # Validate parameter type
+                if not isinstance(param_value, str):
+                    raise ValidationError(f"'{param_name}' must be a string")
 
-        if system_prompt:
-            prompt_parts.append(f"{system_prompt.strip()}\n")
+        # Start with prompt parts
+        prompt_parts = []
 
         # Add context
         prompt_parts.append("Context information is below.\n")
         prompt_parts.append("---------------------\n")
         prompt_parts.append(f"{context.strip()}\n")
         prompt_parts.append("---------------------\n")
-
-        # Add fallback response guidance if provided
-        if fallback_response:
-            prompt_parts.append(
-                "Note: If the context above doesn't provide sufficient information to answer "
-                "the user's question, you may use the following fallback response as a guide:\n"
-            )
-            prompt_parts.append(f"{fallback_response.strip()}\n")
 
         # Add user query
         prompt_parts.append(f"User: {query.strip()}\n")
@@ -265,29 +504,28 @@ class TrustworthyRAG:
 
         return "\n".join(prompt_parts)
 
-    # @handle_tlm_exceptions("TLMResponse")
+    @handle_tlm_exceptions("TrustworthyRAGResponse")
     async def _generate_async(
         self,
         *,
-        prompt: str,
+        prompt: str,  # Already processed in the generate method
         query: Optional[str] = None,
         context: Optional[str] = None,
-        system_prompt: Optional[str] = None,
-        fallback_response: Optional[str] = None,
         timeout: Optional[float] = None,
-    ) -> TLMResponse:
+        capture_exceptions: bool = False,  # Added for exception handling
+        batch_index: Optional[int] = None,  # Added for exception handling
+    ) -> TrustworthyRAGResponse:
         """
         Private asynchronous method to get response and trustworthiness score from TLM.
 
         Args:
-            prompt (str): prompt for the TLM
-            client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
-            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
-            capture_exceptions (bool): if True, the returned [TLMResponse](#class-tlmresponse) object will include error details and retry information if any errors or timeouts occur during processing.
-            batch_index: index of the prompt in the batch, used for error messages
-            constrain_outputs: list of strings to constrain the output of the TLM to
+            prompt (str): prompt for the TLM. If a sequence was provided, it has been processed
+                         in the generate method to extract the first element.
+            query (str, optional): The query string.
+            context (str, optional): The context string.
+            timeout (float, optional): timeout (in seconds) to run the prompt, defaults to None (no timeout)
         Returns:
-            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
+            TrustworthyRAGResponse: [TrustworthyRAGResponse](#class-tlmresponse) object containing the response and trustworthiness score.
         """
         response_json = await asyncio.wait_for(
             tlm_rag_generate(
@@ -298,8 +536,6 @@ class TrustworthyRAG:
                 rate_handler=self._rate_handler,
                 query=query,
                 context=context,
-                system_prompt=system_prompt,
-                fallback_response=fallback_response,
                 evals=self._evals,
             ),
             timeout=timeout,
@@ -307,30 +543,30 @@ class TrustworthyRAG:
 
         return response_json
 
-    # @handle_tlm_exceptions("TLMResponse")
+    @handle_tlm_exceptions("TrustworthyRAGScore")
     async def _score_async(
         self,
         *,
         response: str,
-        prompt: str,
+        prompt: str,  # Already processed in the score method
         query: Optional[str] = None,
         context: Optional[str] = None,
-        system_prompt: Optional[str] = None,
-        fallback_response: Optional[str] = None,
         timeout: Optional[float] = None,
-    ) -> TLMResponse:
+        capture_exceptions: bool = False,  # Added for exception handling
+        batch_index: Optional[int] = None,  # Added for exception handling
+    ) -> TrustworthyRAGScore:
         """
         Private asynchronous method to get trustworthiness score from TLM.
 
         Args:
             response (str): response to score
-            prompt (str): prompt for the TLM
-            client_session (aiohttp.ClientSession, optional): async HTTP session to use for TLM query. Defaults to None (creates a new session).
-            timeout: timeout (in seconds) to run the prompt, defaults to None (no timeout)
-            capture_exceptions (bool): if True, the returned [TLMResponse](#class-tlmresponse) object will include error details and retry information if any errors or timeouts occur during processing.
-            batch_index: index of the prompt in the batch, used for error messages
+            prompt (str): prompt for the TLM. If a sequence was provided, it has been processed
+                         in the score method to extract the first element.
+            query (str, optional): The query string.
+            context (str, optional): The context string.
+            timeout (float, optional): timeout (in seconds) to run the prompt, defaults to None (no timeout)
         Returns:
-            TLMResponse: [TLMResponse](#class-tlmresponse) object containing the trustworthiness score.
+            TrustworthyRAGScore: [TrustworthyRAGScore](#class-tlmresponse) object containing the trustworthiness score.
         """
         response_json = await asyncio.wait_for(
             tlm_rag_score(
@@ -342,8 +578,6 @@ class TrustworthyRAG:
                 rate_handler=self._rate_handler,
                 query=query,
                 context=context,
-                system_prompt=system_prompt,
-                fallback_response=fallback_response,
                 evals=self._evals,
             ),
             timeout=timeout,
@@ -351,6 +585,329 @@ class TrustworthyRAG:
 
         return response_json
 
+    async def _batch_generate(
+        self,
+        prompts: Sequence[str],
+        queries: Sequence[Optional[str]],
+        contexts: Sequence[Optional[str]],
+        capture_exceptions: bool = False,
+    ) -> list[TrustworthyRAGResponse]:
+        """Run a batch of prompts through TrustworthyRAG and get responses/scores for each prompt in the batch.
+        The list returned will have the same length as the input list.
+
+        Args:
+            prompts (Sequence[str]): list of prompts to run
+            queries (Sequence[Optional[str]]): list of queries corresponding to each prompt
+            contexts (Sequence[Optional[str]]): list of contexts corresponding to each prompt
+            capture_exceptions (bool): if ``True``, the returned list will contain TrustworthyRAGResponse objects 
+                with error messages in place of the response for any errors or timeout when processing a particular prompt from the batch.
+                If ``False``, this entire method will raise an exception if TrustworthyRAG fails to produce a result for any prompt in the batch.
+
+        Returns:
+            list[TrustworthyRAGResponse]: TrustworthyRAG responses/scores for each prompt (in supplied order)
+        """
+        if capture_exceptions:
+            per_query_timeout, per_batch_timeout = self._timeout, None
+        else:
+            per_query_timeout, per_batch_timeout = None, self._timeout
+
+        # run batch of TrustworthyRAG
+        rag_responses = await self._batch_async(
+            [
+                self._generate_async(
+                    prompt=prompt,
+                    query=query,
+                    context=context,
+                    timeout=per_query_timeout,
+                    capture_exceptions=capture_exceptions,
+                    batch_index=batch_index,
+                )
+                for batch_index, (prompt, query, context) in enumerate(zip(prompts, queries, contexts))
+            ],
+            per_batch_timeout,
+        )
+
+        return cast(list[TrustworthyRAGResponse], rag_responses)
+
+    async def _batch_score(
+        self,
+        responses: Sequence[str],
+        prompts: Sequence[str],
+        queries: Sequence[Optional[str]],
+        contexts: Sequence[Optional[str]],
+        capture_exceptions: bool = False,
+    ) -> list[TrustworthyRAGScore]:
+        """Run batch of TrustworthyRAG score evaluations.
+
+        capture_exceptions behavior:
+        - If true, the list will contain None in place of the response for any errors or timeout processing some inputs.
+        - Otherwise, the method will raise an exception for any errors or timeout processing some inputs.
+
+        capture_exceptions interaction with timeout:
+        - If true, timeouts are applied on a per-query basis (i.e. some queries may succeed while others fail)
+        - If false, a single timeout is applied to the entire batch (i.e. all queries will fail if the timeout is reached)
+
+        Args:
+            responses (Sequence[str]): list of responses to evaluate
+            prompts (Sequence[str]): list of prompts corresponding to each response
+            queries (Sequence[Optional[str]]): list of queries corresponding to each prompt
+            contexts (Sequence[Optional[str]]): list of contexts corresponding to each prompt
+            capture_exceptions (bool): if True, the returned list will contain TrustworthyRAGScore objects 
+                with error messages in place of the score for any errors or timeout when processing a particular item from the batch.
+
+        Returns:
+            list[TrustworthyRAGScore]: TrustworthyRAG scores for each response (in supplied order).
+        """
+        if capture_exceptions:
+            per_query_timeout, per_batch_timeout = self._timeout, None
+        else:
+            per_query_timeout, per_batch_timeout = None, self._timeout
+
+        # run batch of TrustworthyRAG score evaluations
+        rag_scores = await self._batch_async(
+            [
+                self._score_async(
+                    response=response,
+                    prompt=prompt,
+                    query=query,
+                    context=context,
+                    timeout=per_query_timeout,
+                    capture_exceptions=capture_exceptions,
+                    batch_index=batch_index,
+                )
+                for batch_index, (response, prompt, query, context) in enumerate(zip(responses, prompts, queries, contexts))
+            ],
+            per_batch_timeout,
+        )
+
+        return cast(list[TrustworthyRAGScore], rag_scores)
+
+    async def _batch_async(
+        self,
+        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore]]],
+        batch_timeout: Optional[float] = None,
+    ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]]:
+        """Runs batch of TrustworthyRAG queries.
+
+        Args:
+            rag_coroutines (Sequence[Coroutine]): list of query coroutines to run, returning TrustworthyRAGResponse or TrustworthyRAGScore
+            batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
+
+        Returns:
+            Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]]: list of coroutine results, with preserved order
+        """
+        rag_query_tasks = [asyncio.create_task(rag_coro) for rag_coro in rag_coroutines]
+
+        if self._verbose:
+            gather_task = tqdm_asyncio.gather(
+                *rag_query_tasks,
+                total=len(rag_query_tasks),
+                desc="Querying TrustworthyRAG...",
+                bar_format="{desc} {percentage:3.0f}%|{bar}|",
+            )
+        else:
+            gather_task = asyncio.gather(*rag_query_tasks)  # type: ignore[assignment]
+
+        wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
+        try:
+            return cast(
+                Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]],
+                await wait_task,
+            )
+        except Exception:
+            # if exception occurs while awaiting batch results, cancel remaining tasks
+            for query_task in rag_query_tasks:
+                query_task.cancel()
+
+            # await remaining tasks to ensure they are cancelled
+            await asyncio.gather(*rag_query_tasks, return_exceptions=True)
+
+            raise
+
+    def try_generate(
+        self,
+        *,
+        query: Sequence[str],
+        context: Sequence[str],
+        prompt: Optional[Sequence[str]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None
+    ) -> list[TrustworthyRAGResponse]:
+        """
+        Gets response and evaluation scores for a batch of queries and contexts, handling any failures (errors or timeouts).
+
+        The list returned will have the same length as the input lists. If there are any
+        failures (errors or timeouts) processing some inputs, the TrustworthyRAGResponse objects in the returned list 
+        will contain error messages and retryability information instead of the usual response.
+
+        This is the recommended way to run TrustworthyRAG over large datasets with many queries.
+        It ensures partial results are preserved, even if some individual TrustworthyRAG calls over the dataset fail.
+
+        Args:
+            query (Sequence[str]): list of queries for the TrustworthyRAG
+            context (Sequence[str]): list of contexts for the TrustworthyRAG
+            prompt (Sequence[str], optional): list of prompts for the TrustworthyRAG
+            form_prompt (Callable[[str, str], str], optional): function to format the prompt
+        Returns:
+            list[TrustworthyRAGResponse]: list of TrustworthyRAGResponse objects containing the response and evaluation scores.
+                The returned list will always have the same length as the input lists.
+                In case of TrustworthyRAG failure on any input (due to timeouts or other errors),
+                the return list will include a TrustworthyRAGResponse with an error message and retryability information 
+                instead of the usual TrustworthyRAGResponse for that failed input.
+        """
+        # Validate that prompt and form_prompt are not provided at the same time
+        if prompt is not None and form_prompt is not None:
+            raise ValidationError("'prompt' and 'form_prompt' cannot be provided at the same time. Use either one, not both.")
+
+        # Use the class method as default if form_prompt is not provided and prompt is None
+        if prompt is None and form_prompt is None:
+            form_prompt = self._default_prompt_formatter
+
+        # Ensure all batch inputs have the same length
+        batch_size = len(query)
+        if len(context) != batch_size:
+            raise ValidationError(f"All batch inputs must have the same length, but 'context' has length {len(context)} while expected {batch_size}")
+        if prompt is not None and len(prompt) != batch_size:
+            raise ValidationError(f"All batch inputs must have the same length, but 'prompt' has length {len(prompt)} while expected {batch_size}")
+
+        # Process each batch item
+        processed_prompts = []
+        processed_queries = []
+        processed_contexts = []
+
+        for i in range(batch_size):
+            item_query = query[i]
+            item_context = context[i]
+            item_prompt = prompt[i] if prompt is not None else None
+
+            # Validate that either prompt or both query and context are provided
+            if item_prompt is None and (item_query is None or item_context is None):
+                raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided for each batch item")
+
+            # Generate prompt if not provided
+            if item_prompt is None:
+                item_prompt = form_prompt(item_query, item_context)
+
+            # Validate inputs for evaluations
+            is_valid, error_message = self._validate_inputs(
+                query=item_query,
+                context=item_context,
+            )
+            if not is_valid:
+                raise ValidationError(error_message)
+
+            processed_prompts.append(item_prompt)
+            processed_queries.append(item_query)
+            processed_contexts.append(item_context)
+
+        # Run batch processing with exception handling
+        responses = self._event_loop.run_until_complete(
+            self._batch_generate(
+                prompts=processed_prompts,
+                queries=processed_queries,
+                contexts=processed_contexts,
+                capture_exceptions=True,
+            )
+        )
+
+        # Convert responses to TrustworthyRAGResponse format
+        return [TrustworthyRAGResponse(**response) for response in responses]
+
+    def try_score(
+        self,
+        *,
+        response: Sequence[str],
+        query: Sequence[str],
+        context: Sequence[str],
+        prompt: Optional[Sequence[str]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None
+    ) -> list[TrustworthyRAGScore]:
+        """
+        Scores a batch of responses against queries and contexts, handling any failures (errors or timeouts).
+
+        The list returned will have the same length as the input lists. If there are any
+        failures (errors or timeouts) processing some inputs, the TrustworthyRAGScore objects in the returned list 
+        will contain error messages and retryability information instead of the usual score.
+
+        This is the recommended way to run TrustworthyRAG scoring over large datasets.
+        It ensures partial results are preserved, even if some individual TrustworthyRAG calls over the dataset fail.
+
+        Args:
+            response (Sequence[str]): list of responses to score
+            query (Sequence[str]): list of queries for the TrustworthyRAG
+            context (Sequence[str]): list of contexts for the TrustworthyRAG
+            prompt (Sequence[str], optional): list of prompts for the TrustworthyRAG
+            form_prompt (Callable[[str, str], str], optional): function to format the prompt
+        Returns:
+            list[TrustworthyRAGScore]: list of TrustworthyRAGScore objects containing the evaluation scores.
+                The returned list will always have the same length as the input lists.
+                In case of TrustworthyRAG failure on any input (due to timeouts or other errors),
+                the return list will include a TrustworthyRAGScore with an error message and retryability information 
+                instead of the usual TrustworthyRAGScore for that failed input.
+        """
+        # Validate that prompt and form_prompt are not provided at the same time
+        if prompt is not None and form_prompt is not None:
+            raise ValidationError("'prompt' and 'form_prompt' cannot be provided at the same time. Use either one, not both.")
+
+        # Use the class method as default if form_prompt is not provided and prompt is None
+        if prompt is None and form_prompt is None:
+            form_prompt = self._default_prompt_formatter
+
+        # Ensure all batch inputs have the same length
+        batch_size = len(response)
+        if len(query) != batch_size:
+            raise ValidationError(f"All batch inputs must have the same length, but 'query' has length {len(query)} while expected {batch_size}")
+        if len(context) != batch_size:
+            raise ValidationError(f"All batch inputs must have the same length, but 'context' has length {len(context)} while expected {batch_size}")
+        if prompt is not None and len(prompt) != batch_size:
+            raise ValidationError(f"All batch inputs must have the same length, but 'prompt' has length {len(prompt)} while expected {batch_size}")
+
+        # Process each batch item
+        processed_responses = []
+        processed_prompts = []
+        processed_queries = []
+        processed_contexts = []
+
+        for i in range(batch_size):
+            item_response = response[i]
+            item_query = query[i]
+            item_context = context[i]
+            item_prompt = prompt[i] if prompt is not None else None
+
+            # Validate that either prompt or both query and context are provided
+            if item_prompt is None and (item_query is None or item_context is None):
+                raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided for each batch item")
+
+            # Generate prompt if not provided
+            if item_prompt is None:
+                item_prompt = form_prompt(item_query, item_context)
+
+            # Validate inputs for evaluations
+            is_valid, error_message = self._validate_inputs(
+                query=item_query,
+                context=item_context,
+                response=item_response,
+            )
+            if not is_valid:
+                raise ValidationError(error_message)
+
+            processed_responses.append(item_response)
+            processed_prompts.append(item_prompt)
+            processed_queries.append(item_query)
+            processed_contexts.append(item_context)
+
+        # Run batch processing with exception handling
+        scores = self._event_loop.run_until_complete(
+            self._batch_score(
+                responses=processed_responses,
+                prompts=processed_prompts,
+                queries=processed_queries,
+                contexts=processed_contexts,
+                capture_exceptions=True,
+            )
+        )
+
+        # Convert scores to TrustworthyRAGScore format
+        return [TrustworthyRAGScore(**score) for score in scores]
 
 
 class Eval:
@@ -425,32 +982,6 @@ DEFAULT_EVALS = [
 ]
 
 
-class TrustworthyRAGResponse(TLMResponse):
-    """
-    A typed dict similar to [TLMResponse](../tlm/#class-tlmresponse) but containing an extra key `calibrated_score`.
-    View [TLMResponse](../tlm/#class-tlmresponse) for the description of the other keys in this dict.
-
-    Attributes:
-        calibrated_score (float, optional): score between 0 and 1 that has been calibrated to the provided ratings.
-        A higher score indicates a higher confidence that the response is correct/trustworthy.
-    """
-
-    rag_eval_scores: Optional[dict[str, float]]
-
-
-class TrustworthyRAGScore(TLMScore):
-    """
-    A typed dict similar to [TLMScore](../tlm/#class-tlmscore) but containing an extra key `calibrated_score`.
-    View [TLMScore](../tlm/#class-tlmscore) for the description of the other keys in this dict.
-
-    Attributes:
-        calibrated_score (float, optional): score between 0 and 1 that has been calibrated to the provided ratings.
-        A higher score indicates a higher confidence that the response is correct/trustworthy.
-    """
-
-    rag_eval_scores: Optional[dict[str, float]]
-
-
 def get_default_evals() -> list[Eval]:
     """
     Get default evaluation criteria from the client-side defaults.
@@ -471,4 +1002,69 @@ def get_default_evals() -> list[Eval]:
         )
         for eval_config in DEFAULT_EVALS
     ]
+
+# Define the response types first
+class EvaluationMetric(TypedDict):
+    """Evaluation metric with score and optional logs.
+
+    Attributes:
+        score (float, optional): score between 0-1 corresponding to the evaluation metric.
+        A higher score indicates a higher rating for the specific evaluation criteria being measured.
+
+        log (dict, optional): additional logs and metadata returned from the LLM call, only if the `log` key was specified in TLMOptions.
+    """
+
+    score: Optional[float]
+    log: NotRequired[dict[str, Any]]
+
+
+class TrustworthyRAGResponse(TypedDict, total=False):
+    """Response from TrustworthyRAG with generated text and evaluation scores.
+
+    Attributes:
+        response (str, optional): The generated response text.
+        
+        Additional keys: Each evaluation metric appears as a top-level key in the dictionary,
+        with values following the EvaluationMetric structure (containing score and optional log).
+        
+    Example:
+        ```python
+        {
+            "response": "<response text>",
+            "trustworthiness": {
+                "score": 0.92,
+                "log": {"explanation": "Did not find a reason to doubt trustworthiness."}
+            },
+            "context_informativeness": {
+                "score": 0.65
+            },
+            ...
+        }
+        ```
+    """
+
+    response: Optional[str]
+
+
+class TrustworthyRAGScore(TypedDict, total=False):
+    """Evaluation scores for an existing RAG response.
+
+    Attributes:
+        Each evaluation metric appears as a top-level key in the dictionary,
+        with values following the EvaluationMetric structure (containing score and optional log).
+        
+    Example:
+        ```python
+        {
+            "trustworthiness": {
+                "score": 0.92,
+                "log": {"explanation": "Did not find a reason to doubt trustworthiness."}
+            },
+            "context_informativeness": {
+                "score": 0.65
+            },
+            ...
+        }
+        ```
+    """
 

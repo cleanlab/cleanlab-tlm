@@ -308,7 +308,7 @@ async def tlm_get_confidence_score(
     return cast(JSONDict, res_json)
 
 
-# @tlm_retry
+@tlm_retry
 async def tlm_rag_generate(
     api_key: str,
     prompt: str,
@@ -320,8 +320,6 @@ async def tlm_rag_generate(
     constrain_outputs: Optional[list[str]] = None,
     query: Optional[str] = None,
     context: Optional[str] = None,
-    system_prompt: Optional[str] = None,
-    fallback_response: Optional[str] = None,
     evals: Optional[list[dict[str, Union[str, dict[str, str]]]]] = None,
 ) -> JSONDict:
     """
@@ -340,8 +338,6 @@ async def tlm_rag_generate(
                     "prompt": prompt,
                     "query": query,
                     "context": context,
-                    "system_prompt": system_prompt,
-                    "fallback_response": fallback_response,
                     "evals": [{
                         "name": eval.name,
                         "criteria": eval.criteria,
@@ -390,7 +386,7 @@ async def tlm_rag_generate(
     return cast(JSONDict, ordered_res)
 
 
-# @tlm_retry
+@tlm_retry
 async def tlm_rag_score(
     api_key: str,
     response: str,
@@ -403,8 +399,6 @@ async def tlm_rag_score(
     constrain_outputs: Optional[list[str]] = None,
     query: Optional[str] = None,
     context: Optional[str] = None,
-    system_prompt: Optional[str] = None,
-    fallback_response: Optional[str] = None,
     evals: Optional[list[Eval]] = None,
 ) -> JSONDict:
     """
@@ -424,8 +418,6 @@ async def tlm_rag_score(
                     "prompt": prompt,
                     "query": query,
                     "context": context,
-                    "system_prompt": system_prompt,
-                    "fallback_response": fallback_response,
                     "evals": [{
                         "name": eval.name,
                         "criteria": eval.criteria,

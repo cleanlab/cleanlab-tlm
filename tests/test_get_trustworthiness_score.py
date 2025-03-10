@@ -221,6 +221,7 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
+    print(response)
     assert all(is_tlm_score_response_with_error(r) for r in response)
 
 

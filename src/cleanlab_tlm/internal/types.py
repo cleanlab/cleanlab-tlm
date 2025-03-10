@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Literal
+from typing import Any, Dict, Literal
 
 TLMQualityPreset = Literal["best", "high", "medium", "low", "base"]
 
@@ -13,3 +13,8 @@ class Task(str, Enum):
 
 
 JSONDict = dict[str, Any]
+
+
+# Simple type alias for use in exception_handling.py
+# This avoids circular imports while still providing type information
+TLMResult = Dict[str, Any]

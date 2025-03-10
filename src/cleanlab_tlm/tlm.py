@@ -9,14 +9,11 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
-import warnings
 from collections.abc import Coroutine, Sequence
-from functools import wraps
 from typing import (
     # lazydocs: ignore
     TYPE_CHECKING,
     Any,
-    Callable,
     Optional,
     Union,
     cast,
@@ -30,11 +27,7 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
 )
 
 from cleanlab_tlm.errors import (
-    APITimeoutError,
     MissingApiKeyError,
-    RateLimitError,
-    TlmBadRequestError,
-    TlmServerError,
     ValidationError,
 )
 from cleanlab_tlm.internal.api import api
@@ -46,6 +39,7 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
     _VALID_TLM_TASKS,
 )
+from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.types import Task
 from cleanlab_tlm.internal.validation import (
     tlm_prompt_process_and_validate_kwargs,
@@ -59,114 +53,6 @@ from cleanlab_tlm.internal.validation import (
 
 if TYPE_CHECKING:
     from cleanlab_tlm.internal.types import TLMQualityPreset
-
-
-def handle_tlm_exceptions(
-    response_type: str,
-) -> Callable[
-    [Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]],
-    Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]],
-]:
-    """Decorator to handle exceptions for TLM API calls.
-
-    lazydocs: ignore
-    """
-
-    def decorator(
-        func: Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]],
-    ) -> Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]:
-        @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Union[TLMResponse, TLMScore]:
-            capture_exceptions = kwargs.get("capture_exceptions", False)
-            batch_index = kwargs.get("batch_index")
-            try:
-                return await func(*args, **kwargs)
-            except asyncio.TimeoutError:
-                return _handle_exception(
-                    APITimeoutError(
-                        "Timeout while waiting for prediction. Please retry or consider increasing the timeout."
-                    ),
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-            except RateLimitError as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-            except TlmBadRequestError as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=e.retryable,
-                    response_type=response_type,
-                )
-            except TlmServerError as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-            except Exception as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-
-        return wrapper
-
-    return decorator
-
-
-def _handle_exception(
-    e: Exception,
-    capture_exceptions: bool,
-    batch_index: Optional[int],
-    retryable: bool,
-    response_type: str,
-) -> Union[TLMResponse, TLMScore]:
-    if capture_exceptions:
-        retry_message = (
-            "Worth retrying."
-            if retryable
-            else "Retrying will not help. Please address the issue described in the error message before attempting again."
-        )
-        error_message = str(e.message) if hasattr(e, "message") else str(e)
-        warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {error_message}"
-        warnings.warn(warning_message)
-
-        error_log = {"error": {"message": error_message, "retryable": retryable}}
-
-        if response_type == "TLMResponse":
-            return TLMResponse(
-                response=None,
-                trustworthiness_score=None,
-                log=error_log,
-            )
-        if response_type == "TLMScore":
-            return TLMScore(
-                trustworthiness_score=None,
-                log=error_log,
-            )
-        raise ValueError(f"Unsupported response type: {response_type}")
-
-    if len(e.args) > 0:
-        additional_message = "Consider using `TLM.try_prompt()` or `TLM.try_get_trustworthiness_score()` to gracefully handle errors and preserve partial results. For large datasets, consider also running it on multiple smaller batches."
-        new_args = (str(e.args[0]) + "\n" + additional_message,) + e.args[1:]
-        raise type(e)(*new_args)
-
-    raise e  # in the case where the error has no message/args
 
 
 class TLM:
