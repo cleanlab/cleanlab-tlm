@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from cleanlab_tlm.errors import APITimeoutError
 from cleanlab_tlm.internal.exception_handling import _handle_exception
-from cleanlab_tlm.utils.tlm_rag import Eval
+from cleanlab_tlm.utils.rag import Eval
 
 
 class TestExceptionHandling:
@@ -10,9 +10,27 @@ class TestExceptionHandling:
         """Test exception handling for TrustworthyRAGResponse with custom evals."""
         # Create custom evals
         custom_evals = [
-            Eval(name="custom_eval_1", criteria="Custom evaluation criteria 1"),
-            Eval(name="custom_eval_2", criteria="Custom evaluation criteria 2"),
-            Eval(name="trustworthiness", criteria="Trustworthiness evaluation"),  # Should be handled specially
+            Eval(
+                name="custom_eval_1",
+                criteria="Custom evaluation criteria 1",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            ),
+            Eval(
+                name="custom_eval_2",
+                criteria="Custom evaluation criteria 2",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            ),
+            Eval(
+                name="trustworthiness",
+                criteria="Trustworthiness evaluation",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            ),  # Should be handled specially
         ]
 
         # Create an exception
@@ -59,9 +77,27 @@ class TestExceptionHandling:
         """Test exception handling for TrustworthyRAGScore with custom evals."""
         # Create custom evals
         custom_evals = [
-            Eval(name="custom_eval_1", criteria="Custom evaluation criteria 1"),
-            Eval(name="custom_eval_2", criteria="Custom evaluation criteria 2"),
-            Eval(name="trustworthiness", criteria="Trustworthiness evaluation"),  # Should be handled specially
+            Eval(
+                name="custom_eval_1",
+                criteria="Custom evaluation criteria 1",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            ),
+            Eval(
+                name="custom_eval_2",
+                criteria="Custom evaluation criteria 2",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            ),
+            Eval(
+                name="trustworthiness",
+                criteria="Trustworthiness evaluation",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            ),  # Should be handled specially
         ]
 
         # Create an exception

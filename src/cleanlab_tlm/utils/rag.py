@@ -382,11 +382,34 @@ class Eval:
         """
         lazydocs: ignore
         """
+        # Validate that at least one identifier is specified
+        if query_identifier is None and context_identifier is None and response_identifier is None:
+            raise ValueError(
+                "At least one of query_identifier, context_identifier, or response_identifier must be specified."
+            )
+
         self.name = name
         self.criteria = criteria
         self.query_identifier = query_identifier
         self.context_identifier = context_identifier
         self.response_identifier = response_identifier
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the Eval object in dictionary format.
+
+        Returns:
+            str: A dictionary-like string representation of the Eval object.
+        """
+        return (
+            f"{{\n"
+            f"    'name': '{self.name}',\n"
+            f"    'criteria': '{self.criteria}',\n"
+            f"    'query_identifier': {self.query_identifier!r},\n"
+            f"    'context_identifier': {self.context_identifier!r},\n"
+            f"    'response_identifier': {self.response_identifier!r}\n"
+            f"}}"
+        )
 
 
 # TODO: update criteria after benchmark is complete

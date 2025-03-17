@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     import requests
 
     from cleanlab_tlm.internal.concurrency import TlmRateHandler
-    from cleanlab_tlm.utils.tlm_rag import Eval
+    from cleanlab_tlm.utils.rag import Eval
 
 
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")

@@ -6,7 +6,7 @@ import pytest
 from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.tlm import TLMOptions
-from cleanlab_tlm.utils.tlm_rag import (
+from cleanlab_tlm.utils.rag import (
     Eval,
     EvalMetric,
     TrustworthyRAG,
@@ -178,7 +178,7 @@ def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
 
     # Verify that the returned list is a copy
     original_evals = trustworthy_rag._evals
-    evals.append(Eval(name="new_eval", criteria="New criteria"))
+    evals.append(Eval(name="new_eval", criteria="New criteria", query_identifier="query"))
     assert len(evals) == len(original_evals) + 1
     assert len(trustworthy_rag._evals) == len(original_evals)
 
@@ -225,14 +225,40 @@ def test_eval_class_with_defaults() -> None:
     eval_obj = Eval(
         name="test_eval",
         criteria="Test evaluation criteria",
+        query_identifier="Query",  # Adding at least one identifier to pass validation
     )
 
     assert eval_obj is not None
     assert eval_obj.name == "test_eval"
     assert eval_obj.criteria == "Test evaluation criteria"
-    assert eval_obj.query_identifier is None
+    assert eval_obj.query_identifier == "Query"
     assert eval_obj.context_identifier is None
     assert eval_obj.response_identifier is None
+
+
+def test_eval_class_requires_at_least_one_identifier() -> None:
+    """Test that creating an Eval without any identifiers raises a ValueError."""
+    with pytest.raises(
+        ValueError,
+        match="At least one of query_identifier, context_identifier, or response_identifier must be specified.",
+    ):
+        Eval(
+            name="test_eval",
+            criteria="Test evaluation criteria",
+            query_identifier=None,
+            context_identifier=None,
+            response_identifier=None,
+        )
+
+    # Also test the default case where all identifiers default to None
+    with pytest.raises(
+        ValueError,
+        match="At least one of query_identifier, context_identifier, or response_identifier must be specified.",
+    ):
+        Eval(
+            name="test_eval",
+            criteria="Test evaluation criteria",
+        )
 
 
 def test_custom_eval_criteria_not_supported(trustworthy_rag_api_key: str) -> None:
