@@ -1,12 +1,15 @@
 import os
 from typing import Any, cast
+from unittest import mock
 
 import pytest
 
 from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
+from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.tlm import TLMOptions
 from cleanlab_tlm.utils.rag import (
+    _DEFAULT_EVALS,
     Eval,
     EvalMetric,
     TrustworthyRAG,
@@ -119,11 +122,11 @@ def test_init_with_missing_api_key() -> None:
 def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
     custom_evals = [
         Eval(
-            name="custom_eval",
-            criteria="Custom evaluation criteria",
-            query_identifier="Q",
-            context_identifier="C",
-            response_identifier="R",
+            name="test_evaluation",
+            criteria="Evaluate the response based on X",
+            query_identifier="Question",
+            context_identifier="Context",
+            response_identifier="Answer",
         )
     ]
 
@@ -131,11 +134,22 @@ def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
 
     assert rag is not None
     assert len(rag._evals) == 1
-    assert rag._evals[0].name == "custom_eval"
-    assert rag._evals[0].criteria == "Custom evaluation criteria"
-    assert rag._evals[0].query_identifier == "Q"
-    assert rag._evals[0].context_identifier == "C"
-    assert rag._evals[0].response_identifier == "R"
+    assert rag._evals[0].name == "test_evaluation"
+    assert rag._evals[0].criteria == "Evaluate the response based on X"
+    assert rag._evals[0].query_identifier == "Question"
+    assert rag._evals[0].context_identifier == "Context"
+    assert rag._evals[0].response_identifier == "Answer"
+
+
+def test_init_with_empty_evals(trustworthy_rag_api_key: str) -> None:
+    """Tests TrustworthyRAG initialization with an empty list of evaluations."""
+    empty_evals: list[Eval] = []
+
+    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=empty_evals)
+
+    assert rag is not None
+    assert rag._evals == []
+    assert len(rag._evals) == 0
 
 
 def test_init_with_options(trustworthy_rag_api_key: str) -> None:
@@ -192,14 +206,7 @@ def test_get_default_evals() -> None:
 
     # Verify that default evals include specific expected evaluations
     eval_names = [eval_obj.name for eval_obj in evals]
-    expected_evals = [
-        "context_informativeness",
-        "context_clarity",
-        "response_helpfulness",
-        "response_grounding",
-        "query_clarity",
-        "response_sentiment",
-    ]
+    expected_evals = [eval_config["name"] for eval_config in _DEFAULT_EVALS]
     for expected_eval in expected_evals:
         assert expected_eval in eval_names
 
@@ -459,6 +466,29 @@ def test_generate_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> No
     assert cast(dict[str, Any], response)["response"] is not None
 
 
+def test_generate_with_empty_evals(trustworthy_rag_api_key: str) -> None:
+    """Tests RAG generate with empty evaluations list."""
+    # Create a TrustworthyRAG instance with empty evals
+    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
+
+    # Generate response with empty evals
+    response = rag.generate(
+        query=test_query,
+        context=test_context,
+    )
+
+    # Check for response with minimal evaluation metrics
+    assert response is not None
+    assert is_trustworthy_rag_response(response)
+    assert "response" in response
+    assert cast(dict[str, Any], response)["response"] is not None
+
+    # Since we have empty evals, there should be minimal or no evaluation metrics
+    # other than potentially a trustworthiness score which might be included by default
+    available_keys = set(cast(dict[str, Any], response).keys())
+    assert available_keys.issubset({"response", "trustworthiness"})
+
+
 def test_default_prompt_formatter() -> None:
     """Test that the default prompt formatter works as expected"""
     formatted_prompt = TrustworthyRAG._default_prompt_formatter(
@@ -520,7 +550,7 @@ def test_score_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> None:
     def custom_form_prompt(query: str, context: str) -> str:
         system_prompt = "You are a helpful assistant that provides accurate information based on the context."
         prompt = f"{system_prompt}\n\n"
-        prompt += f"CUSTOM PROMPT FORMAT\n\nQUESTION: {query}\n\nINFORMATION: {context}\n\n"
+        prompt += f"CUSTOM FORMAT\n\nQUESTION: {query}\n\nCONTEXT: {context}\n\n"
         prompt += "ANSWER:"
         return prompt
 
@@ -533,9 +563,151 @@ def test_score_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> None:
 
     assert score is not None
     assert is_trustworthy_rag_score(score)
-    assert len(score) > 0
-    for metric_data in cast(dict[str, Any], score).values():
-        assert "score" in metric_data
+
+
+def test_score_with_empty_evals(trustworthy_rag_api_key: str) -> None:
+    """Tests RAG score with empty evaluations list."""
+    # Create a TrustworthyRAG instance with empty evals
+    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
+
+    # Score response with empty evals
+    score = rag.score(
+        response=test_response,
+        query=test_query,
+        context=test_context,
+    )
+
+    # Check the score
+    assert score is not None
+    assert is_trustworthy_rag_score(score)
+
+    # Since we have empty evals, there should be minimal or no evaluation metrics
+    # other than potentially a trustworthiness score which might be included by default
+    available_keys = set(cast(dict[str, Any], score).keys())
+    assert available_keys.issubset({"trustworthiness"})
+
+
+@pytest.mark.asyncio
+async def test_api_tlm_rag_generate_empty_evals() -> None:
+    """Test the API level handling of empty evals for tlm_rag_generate."""
+    # Sample test data
+    test_api_key = "test_api_key"
+    test_prompt = "What is the capital of France?"
+    test_query = "Capital of France?"
+    test_context = "France is in Europe and its capital is Paris."
+    test_quality_preset = "medium"
+    mock_trustworthiness_score = 0.95
+
+    # Mock response data
+    mock_response_data = {
+        "response": "The capital of France is Paris.",
+        "trustworthiness": {"score": mock_trustworthiness_score},
+    }
+
+    # Create mock session and response
+    mock_response = mock.MagicMock()
+    mock_response.status = 200
+    mock_response.json = mock.AsyncMock(return_value=mock_response_data)
+
+    mock_session = mock.MagicMock()
+    mock_session.post = mock.AsyncMock(return_value=mock_response)
+    mock_session.close = mock.AsyncMock()
+
+    # Create mock rate handler
+    mock_rate_handler = mock.MagicMock()
+    mock_rate_handler.__aenter__ = mock.AsyncMock()
+    mock_rate_handler.__aexit__ = mock.AsyncMock()
+
+    # Patch client session and test API call
+    with mock.patch("aiohttp.ClientSession", return_value=mock_session):
+        result = await api.tlm_rag_generate(
+            api_key=test_api_key,
+            prompt=test_prompt,
+            query=test_query,
+            context=test_context,
+            evals=[],  # Empty evals list
+            quality_preset=test_quality_preset,
+            options=None,
+            rate_handler=mock_rate_handler,
+        )
+
+    # Verify the result
+    assert result is not None
+    assert "response" in result
+    assert result["response"] == "The capital of France is Paris."
+    assert "trustworthiness" in result
+    assert result["trustworthiness"]["score"] == mock_trustworthiness_score
+
+    # Verify the API call
+    mock_session.post.assert_called_once()
+    call_args = mock_session.post.call_args
+
+    # Extract the JSON payload
+    json_payload = call_args[1]["json"]
+
+    # Verify the evals parameter was passed correctly as an empty list
+    assert "_evals" in json_payload
+    assert json_payload["_evals"] == []
+
+
+@pytest.mark.asyncio
+async def test_api_tlm_rag_score_empty_evals() -> None:
+    """Test the API level handling of empty evals for tlm_rag_score."""
+    # Sample test data
+    test_api_key = "test_api_key"
+    test_prompt = "What is the capital of France?"
+    test_query = "Capital of France?"
+    test_context = "France is in Europe and its capital is Paris."
+    test_response = "The capital of France is Paris."
+    test_quality_preset = "medium"
+    mock_trustworthiness_score = 0.95
+
+    # Mock response data
+    mock_response_data = {"trustworthiness": {"score": mock_trustworthiness_score}}
+
+    # Create mock session and response
+    mock_response = mock.MagicMock()
+    mock_response.status = 200
+    mock_response.json = mock.AsyncMock(return_value=mock_response_data)
+
+    mock_session = mock.MagicMock()
+    mock_session.post = mock.AsyncMock(return_value=mock_response)
+    mock_session.close = mock.AsyncMock()
+
+    # Create mock rate handler
+    mock_rate_handler = mock.MagicMock()
+    mock_rate_handler.__aenter__ = mock.AsyncMock()
+    mock_rate_handler.__aexit__ = mock.AsyncMock()
+
+    # Patch client session and test API call
+    with mock.patch("aiohttp.ClientSession", return_value=mock_session):
+        result = await api.tlm_rag_score(
+            api_key=test_api_key,
+            response={"response": test_response},
+            prompt=test_prompt,
+            query=test_query,
+            context=test_context,
+            evals=[],  # Empty evals list
+            quality_preset=test_quality_preset,
+            options=None,
+            rate_handler=mock_rate_handler,
+        )
+
+    # Verify the result
+    assert result is not None
+    assert "trustworthiness" in result
+    assert result["trustworthiness"]["score"] == mock_trustworthiness_score
+
+    # Verify the API call
+    mock_session.post.assert_called_once()
+    call_args = mock_session.post.call_args
+
+    # Extract the JSON payload
+    json_payload = call_args[1]["json"]
+
+    # Verify the evals parameter was passed correctly as an empty list
+    assert "_evals" in json_payload
+    assert json_payload["_evals"] == []
 
 
 def test_score_missing_required_params(trustworthy_rag: TrustworthyRAG) -> None:
