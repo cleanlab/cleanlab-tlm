@@ -1,5 +1,7 @@
 """
 A version of Cleanlab's Trustworthy Language Model(TLM) that evaluates the quality of retrieval-augmented generation(RAG) systems.
+
+This feature is in Beta, contact us if you encounter issues.
 """
 
 from __future__ import annotations
