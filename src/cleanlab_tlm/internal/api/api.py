@@ -5,7 +5,6 @@ import os
 import ssl
 import time
 import warnings
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable, Optional, cast
 
 import aiohttp
@@ -357,7 +356,7 @@ async def tlm_rag_generate(
         context (Optional[str], optional): context information for RAG. Defaults to None.
         evals (Optional[list[dict[str, Union[str, dict[str, str]]]]], optional): list of evaluation criteria. Defaults to None.
     Returns:
-        JSONDict: ordered dictionary with TLM response, trustworthiness score, and any evaluation results
+        JSONDict: dictionary with TLM response, trustworthiness score, and any evaluation results
     """
     local_scoped_client = False
     if not client_session:
@@ -395,8 +394,8 @@ async def tlm_rag_generate(
         if local_scoped_client:
             await client_session.close()
 
-    # Create an ordered dictionary with the specified key order
-    ordered_res = OrderedDict()
+    # Create a dictionary with the specified key order
+    ordered_res = {}
 
     if _TLM_RESPONSE_KEY in res_json:
         ordered_res[_TLM_RESPONSE_KEY] = res_json[_TLM_RESPONSE_KEY]
@@ -444,7 +443,7 @@ async def tlm_rag_score(
         context (Optional[str], optional): context information used for RAG. Defaults to None.
         evals (Optional[list[Eval]], optional): list of evaluation criteria objects. Defaults to None.
     Returns:
-        JSONDict: ordered dictionary with trustworthiness score and any evaluation results
+        JSONDict: dictionary with trustworthiness score and any evaluation results
     """
     local_scoped_client = False
     if not client_session:
@@ -483,8 +482,8 @@ async def tlm_rag_score(
         if local_scoped_client:
             await client_session.close()
 
-    # Create an ordered dictionary with the specified key order
-    ordered_res = OrderedDict()
+    # Create a dictionary with the specified key order
+    ordered_res = {}
 
     if _TLM_RESPONSE_KEY in res_json:
         ordered_res[_TLM_RESPONSE_KEY] = res_json[_TLM_RESPONSE_KEY]
