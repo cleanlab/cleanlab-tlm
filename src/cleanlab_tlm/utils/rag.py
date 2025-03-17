@@ -412,50 +412,14 @@ class Eval:
         )
 
 
-# TODO: update criteria after benchmark is complete
 _DEFAULT_EVALS = [
     {
-        "name": "context_informativeness",
-        "criteria": "Determine whether the Context contains all of the information necessary to answer the Query. A good Context will contain every piece of information that would be required to answer the Query without prior knowledge. A bad Context would have none of this information, perhaps being unrelated to the Query.",
-        "query_identifier": "Query",
-        "context_identifier": "Context",
-        "response_identifier": None,
-    },
-    {
-        "name": "context_clarity",
-        "criteria": "Determine whether the Context is clear and consistent. Check if the information is confusing, overly complex, or contains self-contradictions. A good Context should be easy to understand and internally consistent. A bad Context would be difficult to follow, unnecessarily complex, or have contradicting statements.",
-        "query_identifier": None,
-        "context_identifier": "Context",
-        "response_identifier": None,
-    },
-    {
-        "name": "response_helpfulness",
-        "criteria": "Determine whether the Response is helpful in addressing the Query. Check if the Response directly answers the Query, provides useful information, or appropriately indicates when it cannot provide an answer. A good Response will either give a clear, relevant answer or explicitly acknowledge its limitations (e.g., 'I don't know' or 'I need more information'). A bad Response would be irrelevant, evasive, or provide misleading information when it should acknowledge uncertainty.",
-        "query_identifier": "Query",
-        "context_identifier": None,
-        "response_identifier": "Response",
-    },
-    {
-        "name": "response_grounding",
-        "criteria": "Determine whether the Response is fully grounded in the Context. Check if all claims and information in the Response can be directly supported by information provided in the Context. A good Response will only contain information that is present in or can be reasonably inferred from the Context. A bad Response would include claims or information not supported by the Context.",
-        "query_identifier": None,
-        "context_identifier": "Context",
-        "response_identifier": "Response",
-    },
-    {
-        "name": "query_clarity",
-        "criteria": "Determine whether the Query is clear and complete. Check if the Query is overly complex, vague, or missing key contextual information (such as software versions, specific products, or other relevant details needed to provide an accurate response). A good Query should be specific, focused, and include all necessary context. A bad Query would be ambiguous, overly broad, or lack critical details needed to properly address the user's needs.",
-        "query_identifier": "Query",
+        "name": "query_ease",
+        "criteria": "Determine whether the above User Request appears simple and straightforward. A bad User Request will appear either: disgruntled, complex, purposefully tricky, abnormal, or vague, perhaps missing vital information needed to answer properly. The simpler the User Request appears, the better. If you believe an AI Assistant could correctly answer this User Request, it is considered good. If the User Request is non-propositional language, it is also considered good.",
+        "query_identifier": "User Request",
         "context_identifier": None,
         "response_identifier": None,
-    },
-    {
-        "name": "response_sentiment",
-        "criteria": "Determine whether the Response is written in a positive tone. Answer Yes or No only: Yes if the tone is positive, No if it is negative or neutral.",
-        "query_identifier": None,
-        "context_identifier": None,
-        "response_identifier": "Response",
-    },
+    }
 ]
 
 
