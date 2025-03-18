@@ -48,27 +48,35 @@ if TYPE_CHECKING:
 
 class TrustworthyRAG(BaseTLM):
     """
-    Represents a RAG version of Cleanlab's Trustworthy Language Model (TLM) instance, which can be used to evaluate the quality of RAG systems.
+    Real-time Evals for Retrieval-Augmented Generation (RAG) systems, powered by Cleanlab's Trustworthy Language Model (TLM).
 
-    Possible arguments for TrustworthyRAG() are documented below. Most of the input arguments for this class are similar to those for [TLM](../tlm/#class-tlm),
-    major differences will be described below. For detailed argument documentation, refer to the [TLM](../tlm/#class-tlm).
+    For RAG use-cases, we recommend using this object in place of the basic `TLM` object. You can use `TrustworthyRAG` to either `score` an existing RAG response (from any LLM) based on user query and retrieved context, or to both `generate` the RAG response and score it simultaneously.
+    
+    This object combines Cleanlab's trustworthiness scores for each RAG response with additional Evals for other RAG components (such as the retrieved context).
+
+    You can also customize Evals for your use-case. Each Eval provides real-time detection of quality issues in your RAG application based on the: user query, retrieved context (documents), and/or LLM-generated response.
+    
+    Most arguments for this `TrustworthyRAG()` class are similar to those for [TLM](../tlm/#class-tlm), the
+    differences are described below. For details about each argument, refer to the [TLM](../tlm/#class-tlm) documentation.
 
     Args:
         quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
-            the quality of TLM responses and trustworthiness scores vs. latency/costs.
+            the quality of generated LLM responses and trustworthiness scores vs. latency/costs.
 
-        api_key (str, optional): API key for accessing the TLM service. If not provided, the function will
+        api_key (str, optional): API key for accessing TLM. If not provided, this client will
             attempt to use the CLEANLAB_TLM_API_KEY environment variable.
 
         options (TLMOptions, optional): a typed dict of advanced configurations you can optionally specify.
-            "custom_eval_criteria" is not supported for TrustworthyRAG.
+            The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
 
-        timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
+        timeout (float, optional): timeout (in seconds) to apply to each request.
 
-        verbose (bool, optional): whether to print outputs during execution, i.e. show a progress bar when running TLM over a batch of data.
+        verbose (bool, optional): whether to print outputs during execution, i.e. show a progress bar when processing a batch of data.
 
-        evals (list[Eval], optional): evaluation criteria to use instead of the default evaluations.
-            if not provided, default evaluations will be used (access these via the [get_default_evals()](#function-get_default_evals) function).
+        evals (list[Eval], optional): additional evaluation criteria to check for, in addition to response trustworthiness.
+            If not specified, default evaluations will be used (access these via [get_default_evals](#function-get_default_evals)).
+            To come up with your custom `evals`, we recommend you first run [get_default_evals()](#function-get_default_evals) and then add/remove/modify the returned list.
+            Each [Eval](#class-eval) in this list provides real-time detection of specific issues in your RAG application based on the: user query, retrieved context (documents), and/or LLM-generated response.
     """
 
     def __init__(
@@ -111,48 +119,6 @@ class TrustworthyRAG(BaseTLM):
         else:
             self._evals = evals
 
-    def generate(
-        self,
-        *,
-        query: Union[str, Sequence[str]],
-        context: Union[str, Sequence[str]],
-        prompt: Optional[Union[str, Sequence[str]]] = None,
-        form_prompt: Optional[Callable[[str, str], str]] = None,
-    ) -> Union[TrustworthyRAGResponse, list[TrustworthyRAGResponse]]:
-        """
-        Genereate response and evaluation scores for RAG systems.
-
-        Batch processing will be supported shortly in a future release.
-
-        Args:
-             query (str | Sequence[str]): A query (or list of multiple queries) to be used for generating responses.
-             context (str | Sequence[str]): A context (or list of multiple contexts) to be used for generating responses.
-             prompt (str | Sequence[str], optional): Optional prompt (or list of multiple prompts) to be used for generating responses.
-             form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt. Cannot be provided together with prompt.
-                    The function should take query and context as parameters and return a formatted prompt string.
-                    If not provided, a default prompt formatter will be used.
-                    If you need to include a system prompt or any other special instructions, you must
-                    incorporate them directly in your custom form_prompt function implementation.
-
-        Returns:
-             TrustworthyRAGResponse | list[TrustworthyRAGResponse]: [TrustworthyRAGResponse](#class-trustworthyragresponse) object containing the generated text and evaluation scores.
-        """
-        if prompt is None and form_prompt is None:
-            form_prompt = TrustworthyRAG._default_prompt_formatter
-
-        formatted_prompt = validate_rag_inputs(
-            query=query, context=context, prompt=prompt, form_prompt=form_prompt, evals=self._evals, is_generate=True
-        )
-
-        return self._event_loop.run_until_complete(
-            self._generate_async(
-                prompt=formatted_prompt,
-                query=query,
-                context=context,
-                timeout=self._timeout,
-            )
-        )
-
     def score(
         self,
         *,
@@ -163,23 +129,23 @@ class TrustworthyRAG(BaseTLM):
         form_prompt: Optional[Callable[[str, str], str]] = None,
     ) -> Union[TrustworthyRAGScore, list[TrustworthyRAGScore]]:
         """
-        Evaluate and score the quality of a RAG system's response.
+        Evaluate an existing RAG system's response to a given user query and retrieved context.
 
-        Batch processing will be supported shortly in a future release.
+        Batch processing (supplying lists of strings) will be supported shortly in a future release.
 
         Args:
-             response (str | Sequence[str]): A response (or list of multiple responses) to be evaluated.
-             query (str | Sequence[str]): A query (or list of multiple queries) used to generate the response.
-             context (str | Sequence[str]): A context (or list of multiple contexts) used to generate the response.
-             prompt (str | Sequence[str], optional): Optional prompt (or list of multiple prompts) used to generate the response.
-             form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt. Cannot be provided together with prompt.
-                    The function should take query and context as parameters and return a formatted prompt string.
+             response (str | Sequence[str]): A response (or list of multiple responses) from your LLM/RAG system.
+             query (str | Sequence[str]): The user query (or list of multiple queries) that was used to generate the response.
+             context (str | Sequence[str]): The context (or list of multiple contexts) that was retrieved from the RAG Knowledge Base and used to generate the response.
+             prompt (str | Sequence[str], optional): Optional prompt (or list of multiple prompts) representing the actual inputs (combining query, context, and system instructions into one string) to the LLM that generated the response.
+             form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt based on query and context. Cannot be provided together with prompt, provide one or the other.
+                    This function should take query and context as parameters and return a formatted prompt string.
                     If not provided, a default prompt formatter will be used.
-                    If you need to include a system prompt or any other special instructions, you must
-                    incorporate them directly in your custom form_prompt function implementation.
+                    To include a system prompt or any other special instructions for your LLM, 
+                    incorporate them directly in your custom `form_prompt()` function definition.
 
         Returns:
-             TrustworthyRAGScore | list[TrustworthyRAGScore]: [TrustworthyRAGScore](#class-trustworthyragscore) object containing evaluation metrics for the response.
+             TrustworthyRAGScore | list[TrustworthyRAGScore]: [TrustworthyRAGScore](#class-trustworthyragscore) object containing evaluation metrics.
         """
         if prompt is None and form_prompt is None:
             form_prompt = TrustworthyRAG._default_prompt_formatter
@@ -207,18 +173,53 @@ class TrustworthyRAG(BaseTLM):
             )
         )
 
+def generate(
+        self,
+        *,
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None,
+    ) -> Union[TrustworthyRAGResponse, list[TrustworthyRAGResponse]]:
+        """
+        Generate a RAG response and evaluate/score it simultaneously.
+
+        You can use this method in place of the generator LLM in your RAG application (no change to your prompts needed). 
+        It will both produce the response based on query/context and the corresponding evaluations computed by [score()](#method-score).
+
+        This method relies on the same arguments as [score()](#method-score), except you should not provide a `response`.
+        
+        Returns:
+             TrustworthyRAGResponse | list[TrustworthyRAGResponse]: [TrustworthyRAGResponse](#class-trustworthyragresponse) object containing the generated response text and corresponding evaluation scores.
+        """
+        if prompt is None and form_prompt is None:
+            form_prompt = TrustworthyRAG._default_prompt_formatter
+
+        formatted_prompt = validate_rag_inputs(
+            query=query, context=context, prompt=prompt, form_prompt=form_prompt, evals=self._evals, is_generate=True
+        )
+
+        return self._event_loop.run_until_complete(
+            self._generate_async(
+                prompt=formatted_prompt,
+                query=query,
+                context=context,
+                timeout=self._timeout,
+            )
+        )
+
     def get_evals(self) -> list[Eval]:
         """
-        Get the list of evaluations used by this TrustworthyRAG instance.
+        Get the list of [Evals](#class-eval) that this TrustworthyRAG instance checks.
 
-        This method returns a copy of the internal evaluation criteria list to prevent
-        accidental modification of the instance's evaluation criteria. The returned list
+        This method returns a copy of the internal evaluation criteria list (to prevent
+        accidental modification of the instance's evaluation criteria). The returned list
         contains all evaluation criteria currently configured for this TrustworthyRAG instance,
         whether they are the default evaluations or custom evaluations provided during initialization.
+        To change which Evals are run, instantiate a new TrustworthyRAG instance.
 
         Returns:
-            list[Eval]: A list of [Eval](#class-eval) objects representing the evaluation criteria
-                used by this TrustworthyRAG instance.
+            list[Eval]: A list of [Eval](#class-eval) objects which this TrustworthyRAG instance checks.
         """
         return self._evals.copy()
 
@@ -317,20 +318,21 @@ class TrustworthyRAG(BaseTLM):
 
         This method creates a formatted prompt string suitable for RAG systems by combining
         the provided query and context in a structured format. The resulting prompt follows
-        a common pattern for RAG interactions with clear separation between context and query.
+        a common pattern for RAG application's with clear delimiters between context and query.
 
         Note: This default formatter does not include a system prompt. If you need to include
-        a system prompt or other special instructions, use a custom form_prompt function when
-        calling generate() or score().
+        a system prompt or other special instructions to the LLM, use a custom `form_prompt()` function when
+        calling `generate()` or `score()`.
+        For conversational (multi-turn dialogues rather than single-turn Q&A) RAG apps, we recommend specifying `form_prompt()`.
 
         Args:
-            query (str): The user's question or request to be answered based on the context.
-            context (str): Retrieved context/documents to help answer the query.
+            query (str): The user's question or request to be answered by the RAG system.
+            context (str): Context/documents that the RAG system retrieved to help answer the `query`.
 
         Returns:
             str: A formatted prompt string ready to be sent to the model, with the following structure:
                 - Context section with clear delimiters
-                - Instruction to use context
+                - Instructions to use context
                 - User query prefixed with "User: "
                 - Assistant response starter
         """
@@ -452,23 +454,22 @@ A Response is not helpful if it:
 
 def get_default_evals() -> list[Eval]:
     """
-    Get the default evaluation criteria for TrustworthyRAG.
+    Get the evaluation criteria that are run in TrustworthyRAG by default.
 
     Returns:
-        list[Eval]: A list of Eval objects configured with the default evaluation criteria
+        list[Eval]: A list of [Eval](#class-eval) objects based on pre-configured criteria
         that can be used with TrustworthyRAG.
 
     Example:
         ```python
-        # Get the default evaluation criteria
         default_evaluations = get_default_evals()
 
-        # You can modify the default evaluations by:
+        # You can modify the default Evals by:
         # 1. Adding new evaluation criteria
         # 2. Updating existing criteria with custom text
         # 3. Removing specific evaluations you don't need
 
-        # Use with TrustworthyRAG
+        # Run TrustworthyRAG with your modified Evals
         trustworthy_rag = TrustworthyRAG(evals=modified_evaluations)
         ```
     """
@@ -486,13 +487,13 @@ def get_default_evals() -> list[Eval]:
 
 # Define the response types first
 class EvalMetric(TypedDict):
-    """Evaluation metric with score and optional logs.
+    """Evaluation metric reporting a quality score and optional logs.
 
     Attributes:
         score (float, optional): score between 0-1 corresponding to the evaluation metric.
         A higher score indicates a higher rating for the specific evaluation criteria being measured.
 
-        log (dict, optional): additional logs and metadata returned from the LLM call, only if the `log` key was specified in TLMOptions.
+        log (dict, optional): additional logs and metadata, reported only if the `log` key was specified in `TLMOptions`.
     """
 
     score: Optional[float]
@@ -500,12 +501,12 @@ class EvalMetric(TypedDict):
 
 
 class TrustworthyRAGResponse(dict[str, Union[Optional[str], EvalMetric]]):
-    """Response from TrustworthyRAG with generated text and evaluation scores. This class is a dictionary with specific expected keys.
+    """Object returned by `TrustworthyRAG.generate()` containing generated text and evaluation scores. This class is a dictionary with specific keys.
 
     Attributes:
-        response (str): The generated response text. A required key.
-        trustworthiness ([EvalMetric](#class-evalmetric)): Overall trustworthiness of the response. A required key.
-        Additional keys: Various evaluation metrics (context_relevance, response_helpfulness, etc.),
+        response (str): The generated response text.
+        trustworthiness ([EvalMetric](#class-evalmetric)): Overall trustworthiness of the response.
+        Additional keys: Various evaluation metrics (context_sufficiency, response_helpfulness, etc.),
             each following the [EvalMetric](#class-evalmetric) structure.
 
     Example:
@@ -527,11 +528,11 @@ class TrustworthyRAGResponse(dict[str, Union[Optional[str], EvalMetric]]):
 
 # Class for evaluation scores with dynamic evaluation metric keys
 class TrustworthyRAGScore(dict[str, EvalMetric]):
-    """Evaluation scores for an existing RAG response. This class is a dictionary with specific expected keys.
+    """Object returned by `TrustworthyRAG.score()` containing evaluation scores. This class is a dictionary with specific keys.
 
     Attributes:
-        trustworthiness ([EvalMetric](#class-evalmetric)): Overall trustworthiness of the response. A required key.
-        Additional keys: Various evaluation metrics (context_relevance, response_helpfulness, etc.),
+        trustworthiness ([EvalMetric](#class-evalmetric)): Overall trustworthiness of the response.
+        Additional keys: Various evaluation metrics (context_sufficiency, response_helpfulness, etc.),
             each following the [EvalMetric](#class-evalmetric) structure.
 
     Example:
