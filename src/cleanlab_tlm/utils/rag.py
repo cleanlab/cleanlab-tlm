@@ -426,7 +426,7 @@ _DEFAULT_EVALS = [
         "name": "response_helpfulness",
         "criteria": """Assess whether the AI Assistant Response is a helpful answer to the User Query.
 A Response is not helpful if it:
-- Is not useful, incomplete, or unclear.
+- Is not useful, incomplete, or unclear
 - Abstains or refuses to answer the question
 - Contains statements which are similar to 'I don't know', 'Sorry', or 'No information available'
 - Leaves part of the original User Query unresolved""",
