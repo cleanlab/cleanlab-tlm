@@ -51,11 +51,11 @@ class TrustworthyRAG(BaseTLM):
     Real-time Evals for Retrieval-Augmented Generation (RAG) systems, powered by Cleanlab's Trustworthy Language Model (TLM).
 
     For RAG use-cases, we recommend using this object in place of the basic `TLM` object. You can use `TrustworthyRAG` to either `score` an existing RAG response (from any LLM) based on user query and retrieved context, or to both `generate` the RAG response and score it simultaneously.
-    
+
     This object combines Cleanlab's trustworthiness scores for each RAG response with additional Evals for other RAG components (such as the retrieved context).
 
     You can also customize Evals for your use-case. Each Eval provides real-time detection of quality issues in your RAG application based on the: user query, retrieved context (documents), and/or LLM-generated response.
-    
+
     Most arguments for this `TrustworthyRAG()` class are similar to those for [TLM](../tlm/#class-tlm), the
     differences are described below. For details about each argument, refer to the [TLM](../tlm/#class-tlm) documentation.
 
@@ -141,7 +141,7 @@ class TrustworthyRAG(BaseTLM):
              form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt based on query and context. Cannot be provided together with prompt, provide one or the other.
                     This function should take query and context as parameters and return a formatted prompt string.
                     If not provided, a default prompt formatter will be used.
-                    To include a system prompt or any other special instructions for your LLM, 
+                    To include a system prompt or any other special instructions for your LLM,
                     incorporate them directly in your custom `form_prompt()` function definition.
 
         Returns:
@@ -173,7 +173,7 @@ class TrustworthyRAG(BaseTLM):
             )
         )
 
-def generate(
+    def generate(
         self,
         *,
         query: Union[str, Sequence[str]],
@@ -184,11 +184,11 @@ def generate(
         """
         Generate a RAG response and evaluate/score it simultaneously.
 
-        You can use this method in place of the generator LLM in your RAG application (no change to your prompts needed). 
+        You can use this method in place of the generator LLM in your RAG application (no change to your prompts needed).
         It will both produce the response based on query/context and the corresponding evaluations computed by [score()](#method-score).
 
         This method relies on the same arguments as [score()](#method-score), except you should not provide a `response`.
-        
+
         Returns:
              TrustworthyRAGResponse | list[TrustworthyRAGResponse]: [TrustworthyRAGResponse](#class-trustworthyragresponse) object containing the generated response text and corresponding evaluation scores.
         """
