@@ -423,6 +423,18 @@ _DEFAULT_EVALS = [
         "response_identifier": None,
     },
     {
+        "name": "response_helpfulness",
+        "criteria": """Assess whether the AI Assistant Response is a helpful answer to the User Query.
+A Response is not helpful if it:
+- Is not useful, incomplete, or unclear.
+- Abstains or refuses to answer the question
+- Contains statements which are similar to 'I don't know', 'Sorry', or 'No information available'
+- Leaves part of the original User Query unresolved""",
+        "query_identifier": "User Query",
+        "context_identifier": None,
+        "response_identifier": "AI Assistant Response",
+    },
+    {
         "name": "query_ease",
         "criteria": "Determine whether the above User Request appears simple and straightforward. A bad User Request will appear either: disgruntled, complex, purposefully tricky, abnormal, or vague, perhaps missing vital information needed to answer properly. The simpler the User Request appears, the better. If you believe an AI Assistant could correctly answer this User Request, it is considered good. If the User Request is non-propositional language, it is also considered good.",
         "query_identifier": "User Request",
