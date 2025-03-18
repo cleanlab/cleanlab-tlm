@@ -646,8 +646,8 @@ async def test_api_tlm_rag_generate_empty_evals() -> None:
     json_payload = call_args[1]["json"]
 
     # Verify the evals parameter was passed correctly as an empty list
-    assert "_evals" in json_payload
-    assert json_payload["_evals"] == []
+    assert "evals" in json_payload
+    assert json_payload["evals"] == []
 
 
 @pytest.mark.asyncio
@@ -706,8 +706,8 @@ async def test_api_tlm_rag_score_empty_evals() -> None:
     json_payload = call_args[1]["json"]
 
     # Verify the evals parameter was passed correctly as an empty list
-    assert "_evals" in json_payload
-    assert json_payload["_evals"] == []
+    assert "evals" in json_payload
+    assert json_payload["evals"] == []
 
 
 def test_score_missing_required_params(trustworthy_rag: TrustworthyRAG) -> None:
