@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.10] - 2025-03-18
+
+### Added
+
+- Add `response_helpfulness` evaluation to TrustworthyRAG default evals
+
 ## [1.0.9] - 2025-03-18
 
 ### Added
@@ -62,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.9...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.10...HEAD
+[1.0.10]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.7...v1.0.8
 [1.0.6]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.5...v1.0.6
