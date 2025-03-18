@@ -7,16 +7,11 @@ Learn how to use TLM via the [quickstart tutorial](/tlm/tutorials/tlm).
 from __future__ import annotations
 
 import asyncio
-import os
-import sys
-import warnings
 from collections.abc import Coroutine, Sequence
-from functools import wraps
 from typing import (
     # lazydocs: ignore
     TYPE_CHECKING,
     Any,
-    Callable,
     Optional,
     Union,
     cast,
@@ -29,28 +24,21 @@ from typing_extensions import (  # for Python <3.11 with (Not)Required
     TypedDict,
 )
 
-from cleanlab_tlm.errors import (
-    APITimeoutError,
-    MissingApiKeyError,
-    RateLimitError,
-    TlmBadRequestError,
-    TlmServerError,
-    ValidationError,
-)
+from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
-from cleanlab_tlm.internal.concurrency import TlmRateHandler
+from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
+    _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_CONSTRAIN_OUTPUTS_KEY,
-    _TLM_DEFAULT_MODEL,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
     _VALID_TLM_TASKS,
 )
+from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.types import Task
 from cleanlab_tlm.internal.validation import (
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
-    validate_tlm_options,
     validate_tlm_prompt,
     validate_tlm_prompt_response,
     validate_tlm_try_prompt,
@@ -61,115 +49,7 @@ if TYPE_CHECKING:
     from cleanlab_tlm.internal.types import TLMQualityPreset
 
 
-def handle_tlm_exceptions(
-    response_type: str,
-) -> Callable[
-    [Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]],
-    Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]],
-]:
-    """Decorator to handle exceptions for TLM API calls.
-
-    lazydocs: ignore
-    """
-
-    def decorator(
-        func: Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]],
-    ) -> Callable[..., Coroutine[Any, Any, Union[TLMResponse, TLMScore]]]:
-        @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Union[TLMResponse, TLMScore]:
-            capture_exceptions = kwargs.get("capture_exceptions", False)
-            batch_index = kwargs.get("batch_index")
-            try:
-                return await func(*args, **kwargs)
-            except asyncio.TimeoutError:
-                return _handle_exception(
-                    APITimeoutError(
-                        "Timeout while waiting for prediction. Please retry or consider increasing the timeout."
-                    ),
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-            except RateLimitError as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-            except TlmBadRequestError as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=e.retryable,
-                    response_type=response_type,
-                )
-            except TlmServerError as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-            except Exception as e:
-                return _handle_exception(
-                    e,
-                    capture_exceptions,
-                    batch_index,
-                    retryable=True,
-                    response_type=response_type,
-                )
-
-        return wrapper
-
-    return decorator
-
-
-def _handle_exception(
-    e: Exception,
-    capture_exceptions: bool,
-    batch_index: Optional[int],
-    retryable: bool,
-    response_type: str,
-) -> Union[TLMResponse, TLMScore]:
-    if capture_exceptions:
-        retry_message = (
-            "Worth retrying."
-            if retryable
-            else "Retrying will not help. Please address the issue described in the error message before attempting again."
-        )
-        error_message = str(e.message) if hasattr(e, "message") else str(e)
-        warning_message = f"prompt[{batch_index}] failed. {retry_message} Error: {error_message}"
-        warnings.warn(warning_message)
-
-        error_log = {"error": {"message": error_message, "retryable": retryable}}
-
-        if response_type == "TLMResponse":
-            return TLMResponse(
-                response=None,
-                trustworthiness_score=None,
-                log=error_log,
-            )
-        if response_type == "TLMScore":
-            return TLMScore(
-                trustworthiness_score=None,
-                log=error_log,
-            )
-        raise ValueError(f"Unsupported response type: {response_type}")
-
-    if len(e.args) > 0:
-        additional_message = "Consider using `TLM.try_prompt()` or `TLM.try_get_trustworthiness_score()` to gracefully handle errors and preserve partial results. For large datasets, consider also running it on multiple smaller batches."
-        new_args = (str(e.args[0]) + "\n" + additional_message,) + e.args[1:]
-        raise type(e)(*new_args)
-
-    raise e  # in the case where the error has no message/args
-
-
-class TLM:
+class TLM(BaseTLM):
     """
     Represents a Trustworthy Language Model (TLM) instance, which is bound to a Cleanlab TLM account.
 
@@ -216,7 +96,7 @@ class TLM:
 
     def __init__(
         self,
-        quality_preset: TLMQualityPreset = "medium",
+        quality_preset: TLMQualityPreset = _DEFAULT_TLM_QUALITY_PRESET,
         *,
         task: str = "default",
         api_key: Optional[str] = None,
@@ -227,55 +107,22 @@ class TLM:
         """
         lazydocs: ignore
         """
-        self._api_key = api_key or os.environ.get("CLEANLAB_TLM_API_KEY")
-        if self._api_key is None:
-            raise MissingApiKeyError
+        # Initialize base class
+        super().__init__(
+            quality_preset=quality_preset,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
+            support_custom_eval_criteria=True,
+            api_key=api_key,
+            options=options,
+            timeout=timeout,
+            verbose=verbose,
+        )
 
-        if quality_preset not in _VALID_TLM_QUALITY_PRESETS:
-            raise ValidationError(
-                f"Invalid quality preset {quality_preset} -- must be one of {_VALID_TLM_QUALITY_PRESETS}"
-            )
-
+        # TLM-specific initialization
         if task not in _VALID_TLM_TASKS:
             raise ValidationError(f"Invalid task {task} -- must be one of {_VALID_TLM_TASKS}")
 
-        self._return_log = False
-
-        options_dict = options or {}
-        validate_tlm_options(options_dict)
-        if "log" in options_dict and len(options_dict["log"]) > 0:
-            self._return_log = True
-
-        if "custom_eval_criteria" in options_dict:
-            self._return_log = True
-
-        # explicitly specify the default model
-        self._options = {"model": _TLM_DEFAULT_MODEL, **options_dict}
-
-        self._quality_preset = quality_preset
         self._task = Task(task)
-
-        if timeout is not None and not (isinstance(timeout, (float, int))):
-            raise ValidationError("timeout must be a integer or float value")
-
-        if verbose is not None and not isinstance(verbose, bool):
-            raise ValidationError("verbose must be a boolean value")
-
-        is_notebook_flag = is_notebook()
-
-        self._timeout = timeout if timeout is not None and timeout > 0 else None
-        self._verbose = verbose if verbose is not None else is_notebook_flag
-
-        if is_notebook_flag:
-            import nest_asyncio  # type: ignore
-
-            nest_asyncio.apply()
-
-        try:
-            self._event_loop = asyncio.get_event_loop()
-        except RuntimeError:
-            self._event_loop = asyncio.new_event_loop()
-        self._rate_handler = TlmRateHandler()
 
     async def _batch_prompt(
         self,
@@ -903,15 +750,3 @@ class TLMOptions(TypedDict):
     reasoning_effort: NotRequired[str]
     log: NotRequired[list[str]]
     custom_eval_criteria: NotRequired[list[dict[str, Any]]]
-
-
-def is_notebook() -> bool:
-    """Returns True if running in a notebook, False otherwise.
-
-    lazydocs: ignore
-    """
-    try:
-        get_ipython = sys.modules["IPython"].get_ipython
-        return bool("IPKernelApp" in get_ipython().config)
-    except Exception:
-        return False
