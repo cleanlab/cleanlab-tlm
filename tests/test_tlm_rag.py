@@ -1,4 +1,6 @@
+import asyncio
 import os
+from collections.abc import Generator
 from typing import Any, cast
 from unittest import mock
 
@@ -30,6 +32,26 @@ test_query = make_text_unique(TEST_QUERY)
 test_context = make_text_unique(TEST_CONTEXT)
 test_response = make_text_unique(TEST_RESPONSE)
 test_prompt = make_text_unique(TEST_PROMPT)
+
+# Create test batches
+test_query_batch = [
+    make_text_unique("What is the capital of France?"),
+    make_text_unique("What is the capital of Germany?"),
+]
+test_context_batch = [
+    make_text_unique(
+        "France is a country in Western Europe. Its capital is Paris, which is known for the Eiffel Tower."
+    ),
+    make_text_unique("Germany is a country in Central Europe. Its capital is Berlin, known for the Brandenburg Gate."),
+]
+test_response_batch = [
+    make_text_unique("The capital of France is Paris."),
+    make_text_unique("The capital of Germany is Berlin."),
+]
+test_prompt_batch = [
+    make_text_unique("Using the context information, answer the following question: What is the capital of France?"),
+    make_text_unique("Using the context information, answer the following question: What is the capital of Germany?"),
+]
 
 
 @pytest.fixture(scope="module")
@@ -765,3 +787,177 @@ def test_init_with_unsupported_quality_preset(trustworthy_rag_api_key: str) -> N
             quality_preset="unsupported_preset",  # type: ignore
             api_key=trustworthy_rag_api_key,
         )
+
+
+def test_batch_generate(trustworthy_rag: TrustworthyRAG) -> None:
+    """Tests batch generate functionality of TrustworthyRAG.
+
+    Expected:
+    - TrustworthyRAG should return a list of TrustworthyRAGResponse objects
+    - Each response should be a valid TrustworthyRAGResponse object
+    """
+    # act
+    responses = trustworthy_rag.generate(
+        query=test_query_batch,
+        context=test_context_batch,
+    )
+
+    # assert
+    assert isinstance(responses, list)
+    assert all(is_trustworthy_rag_response(r) for r in responses)
+
+
+def test_batch_score(trustworthy_rag: TrustworthyRAG) -> None:
+    """Tests batch score functionality of TrustworthyRAG.
+
+    Expected:
+    - TrustworthyRAG should return a list of TrustworthyRAGScore objects
+    - Each score should be a valid TrustworthyRAGScore object
+    """
+    # act
+    scores = trustworthy_rag.score(
+        query=test_query_batch,
+        context=test_context_batch,
+        response=test_response_batch,
+    )
+
+    # assert
+    assert isinstance(scores, list)
+    assert all(is_trustworthy_rag_score(s) for s in scores)
+
+
+def test_batch_generate_with_prompt(trustworthy_rag: TrustworthyRAG) -> None:
+    """Tests batch generate functionality of TrustworthyRAG with prompt.
+
+    Expected:
+    - TrustworthyRAG should return a list of TrustworthyRAGResponse objects
+    - Each response should be a valid TrustworthyRAGResponse object
+    """
+    # act
+    responses = trustworthy_rag.generate(
+        query=test_query_batch,
+        context=test_context_batch,
+        prompt=test_prompt_batch,
+    )
+
+    # assert
+    assert isinstance(responses, list)
+    assert all(is_trustworthy_rag_response(r) for r in responses)
+
+
+def test_batch_score_with_prompt(trustworthy_rag: TrustworthyRAG) -> None:
+    """Tests batch score functionality of TrustworthyRAG with prompt.
+
+    Expected:
+    - TrustworthyRAG should return a list of TrustworthyRAGScore objects
+    - Each score should be a valid TrustworthyRAGScore object
+    """
+    # act
+    scores = trustworthy_rag.score(
+        query=test_query_batch,
+        context=test_context_batch,
+        response=test_response_batch,
+        prompt=test_prompt_batch,
+    )
+
+    # assert
+    assert isinstance(scores, list)
+    assert all(is_trustworthy_rag_score(s) for s in scores)
+
+
+def test_batch_generate_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> None:
+    """Tests batch generate functionality of TrustworthyRAG with custom form_prompt.
+
+    Expected:
+    - TrustworthyRAG should return a list of TrustworthyRAGResponse objects
+    - Each response should be a valid TrustworthyRAGResponse object
+    """
+
+    def custom_form_prompt(query: str, context: str) -> str:
+        return f"System: Always be helpful\nContext: {context}\nUser: {query}"
+
+    # act
+    responses = trustworthy_rag.generate(
+        query=test_query_batch,
+        context=test_context_batch,
+        form_prompt=custom_form_prompt,
+    )
+
+    # assert
+    assert isinstance(responses, list)
+    assert all(is_trustworthy_rag_response(r) for r in responses)
+
+
+def test_batch_score_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> None:
+    """Tests batch score functionality of TrustworthyRAG with custom form_prompt.
+
+    Expected:
+    - TrustworthyRAG should return a list of TrustworthyRAGScore objects
+    - Each score should be a valid TrustworthyRAGScore object
+    """
+
+    def custom_form_prompt(query: str, context: str) -> str:
+        return f"System: Always be helpful\nContext: {context}\nUser: {query}"
+
+    # act
+    scores = trustworthy_rag.score(
+        query=test_query_batch,
+        context=test_context_batch,
+        response=test_response_batch,
+        form_prompt=custom_form_prompt,
+    )
+
+    # assert
+    assert isinstance(scores, list)
+    assert all(is_trustworthy_rag_score(s) for s in scores)
+
+
+def test_generate_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_timeout: None) -> None:  # noqa: ARG001
+    """Tests batch generate with forced timeouts.
+
+    Sets timeout to 0.0001 seconds, which should force a timeout for all requests.
+    This should result in a timeout error being thrown.
+
+    Expected:
+    - TrustworthyRAG should raise a timeout error
+    """
+    # arrange -- override timeout
+    trustworthy_rag._timeout = 0.0001
+
+    # assert -- timeout is thrown
+    with pytest.raises(asyncio.TimeoutError):
+        # act -- run a batch generate
+        trustworthy_rag.generate(
+            query=test_query_batch,
+            context=test_context_batch,
+        )
+
+
+def test_score_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_timeout: None) -> None:  # noqa: ARG001
+    """Tests batch score with forced timeouts.
+
+    Sets timeout to 0.0001 seconds, which should force a timeout for all requests.
+    This should result in a timeout error being thrown.
+
+    Expected:
+    - TrustworthyRAG should raise a timeout error
+    """
+    # arrange -- override timeout
+    trustworthy_rag._timeout = 0.0001
+
+    # assert -- timeout is thrown
+    with pytest.raises(asyncio.TimeoutError):
+        # act -- run a batch score
+        trustworthy_rag.score(
+            query=test_query_batch,
+            context=test_context_batch,
+            response=test_response_batch,
+        )
+
+
+@pytest.fixture
+def reset_rag_timeout(trustworthy_rag: TrustworthyRAG) -> Generator[None, None, None]:
+    """Reset the timeout on the TrustworthyRAG fixture after tests that modify it."""
+    old_timeout = trustworthy_rag._timeout
+    yield
+    trustworthy_rag._timeout = old_timeout

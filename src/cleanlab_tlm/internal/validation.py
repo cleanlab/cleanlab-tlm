@@ -345,7 +345,7 @@ def validate_rag_inputs(
     form_prompt: Optional[Callable[[str, str], str]] = None,
     response: Optional[Union[str, Sequence[str]]] = None,
     evals: Optional[list[Any]] = None,
-) -> str:
+) -> Union[str, Sequence[str]]:
     """
     Validate inputs for TrustworthyRAG generate and score methods.
 
@@ -354,19 +354,17 @@ def validate_rag_inputs(
     validates parameter types, ensures prompt formatting is handled correctly, and verifies
     that the necessary inputs for any evaluation objects are present.
 
-    Currently, batch processing (sequences of inputs) is not supported and will raise a NotImplementedError.
-
     Args:
-        is_generate: Whether this validation is for the generate method (True) or score method (False).
-        query: The user query or sequence of queries.
-        context: The context used for RAG or sequence of contexts.
-        prompt: Optional pre-formatted prompt string. Cannot be used with form_prompt.
-        form_prompt: Optional function to format a prompt from query and context. Cannot be used with prompt.
-        response: The response to evaluate or sequence of responses (required for score, not for generate).
-        evals: List of evaluation objects to validate against.
+        is_generate (bool): Whether this validation is for a generate call or not.
+        query (str | Sequence[str]): The user query (or multiple queries) to be answered.
+        context (str | Sequence[str]): The context (or contexts) to use when answering the query.
+        prompt (str | Sequence[str], optional): Optional prompt string (or prompts) to use instead of forming a prompt from query and context.
+        form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt based on query and context.
+        response (str | Sequence[str], optional): Optional response (or responses) to score. Required when is_generate=False.
+        evals (list[Any], optional): List of evaluation criteria to use.
 
     Returns:
-        The formatted prompt string if all validation checks pass.
+        str | Sequence[str]: Formatted prompts if all validation checks pass.
 
     Raises:
         ValidationError: If any validation check fails (incompatible parameters, missing required inputs, etc.).
@@ -383,12 +381,6 @@ def validate_rag_inputs(
     if not is_generate:
         batch_params.append((response, "response"))
 
-    for param_tuple in batch_params:
-        if param_tuple[0] and isinstance(param_tuple[0], Sequence) and not isinstance(param_tuple[0], str):
-            raise NotImplementedError(
-                "Batch processing is not yet supported. It will be available in a future release."
-            )
-
     # Validate required parameters based on method
     if is_generate:
         if query is None or context is None:
@@ -400,16 +392,43 @@ def validate_rag_inputs(
             raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided")
 
     # Format prompt if needed
-    formatted_prompt = prompt
+    formatted_prompts: Union[str, Sequence[str]] = "" if prompt is None else prompt
     if prompt is None and form_prompt is not None:
         if query is None or context is None:
             raise ValidationError("Both 'query' and 'context' are required when using 'form_prompt'")
-        formatted_prompt = form_prompt(str(query), str(context))
+
+        # Handle both single and batch cases for formatting
+        if isinstance(query, str) and isinstance(context, str):
+            formatted_prompts = form_prompt(query, context)
+        elif (
+            isinstance(query, Sequence)
+            and isinstance(context, Sequence)
+            and not isinstance(query, str)
+            and not isinstance(context, str)
+        ):
+            if len(query) != len(context):
+                raise ValidationError("'query' and 'context' sequences must have the same length for batch processing")
+            formatted_prompts = [form_prompt(q, c) for q, c in zip(query, context)]
+        else:
+            raise ValidationError("'query' and 'context' must both be either strings or sequences of strings")
 
     # Validate parameter types - reuse the batch_params list
     for param_tuple in batch_params:
-        if param_tuple[0] is not None and not isinstance(param_tuple[0], str):
-            raise ValidationError(f"'{param_tuple[1]}' must be a string")
+        param_value, param_name = param_tuple
+        if param_value is not None:
+            if isinstance(param_value, str):
+                # String input is valid
+                pass
+            elif isinstance(param_value, Sequence) and not isinstance(param_value, str):
+                # Check that all items in the sequence are strings
+                if any(not isinstance(item, str) for item in param_value):
+                    raise ValidationError(
+                        f"All items in '{param_name}' must be of type string when providing a sequence"
+                    )
+            else:
+                raise ValidationError(
+                    f"'{param_name}' must be either a string or a sequence of strings, not {type(param_value)}"
+                )
 
     # Validate inputs for evaluations - collect all missing inputs in one error message
     if evals:
@@ -427,4 +446,4 @@ def validate_rag_inputs(
                     f"Missing required input(s) {', '.join(missing_inputs)} for evaluation '{eval_obj.name}'"
                 )
 
-    return str(formatted_prompt)
+    return formatted_prompts
