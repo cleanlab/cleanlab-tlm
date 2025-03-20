@@ -364,21 +364,15 @@ class Eval:
     Args:
         name (str): The name of the evaluation, used to identify this specific evaluation in the results.
         criteria (str): The evaluation criteria text that describes what aspect is being evaluated and how.
-        query_identifier (str, optional): Identifier string for the query input in the evaluation criteria.
-            This indicates that the query should be considered when performing this evaluation.
-            The identifier should match what you use in your criteria text.
-            For example, using "User Question" as the identifier means your criteria should refer to the query as "User Question".
-            Set to None if this evaluation doesn't consider the query. Default is None.
-        context_identifier (str, optional): Identifier string for the context input in the evaluation criteria.
-            This indicates that the retrieved context should be considered when performing this evaluation.
-            The identifier should match what you use in your criteria text.
-            For example, using "Retrieved Documents" as the identifier means your criteria should refer to the context as "Retrieved Documents".
-            Set to None if this evaluation doesn't consider the context. Default is None.
-        response_identifier (str, optional): Identifier string for the response input in the evaluation criteria.
-            This indicates that the generated response should be considered when performing this evaluation.
-            The identifier should match what you use in your criteria text.
-            For example, using "AI Answer" as the identifier means your criteria should refer to the response as "AI Answer".
-            Set to None if this evaluation doesn't consider the response. Default is None.
+        query_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the user's query.
+            For example, specifying `query_identifier` as "User Question" means your `criteria` should refer to the query as "User Question".
+            Leave this value as None (the default) if this Eval doesn't consider the query.
+        context_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the retrieved context.
+            For example, specifying `context_identifier` as "Retrieved Documents" means your `criteria` should refer to the context as "Retrieved Documents".
+            Leave this value as None (the default) if this Eval doesn't consider the context.
+        response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
+            For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
+            Leave this value as None (the default) if this Eval doesn't consider the response.
     """
 
     def __init__(
