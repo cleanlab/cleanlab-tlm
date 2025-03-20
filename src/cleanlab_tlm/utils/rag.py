@@ -416,13 +416,20 @@ class Eval:
         )
 
 
-_DEFAULT_EVALS = [
+_DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
     {
         "name": "context_sufficiency",
         "criteria": "Review the Document and assess whether it contains sufficient information to fully answer the Question. A Document meets the criteria if it provides every essential piece of information needed to construct a complete answer without requiring external knowledge or assumptions. If the Document has gaps that require using general knowledge to fill in or is missing crucial information, it doesn't meet the criteria. Be particularly cautious with Questions that require multiple distinct pieces of information, as the Document is more likely to lack key elements.",
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
+    },
+    {
+        "name": "response_groundedness",
+        "criteria": "Review the Response to the Query and assess whether every factual claim in the Response is explicitly supported by the provided Context. A Response meets the criteria if all information is directly backed by evidence in the Context, without relying on assumptions, external knowledge, or unstated inferences. The focus is on whether the Response is fully grounded in the Context, rather than whether it fully addresses the Query. If any claim in the Response lacks direct support or introduces information not present in the Context, the Response is bad and does not meet the criteria.",
+        "query_identifier": "Query",
+        "context_identifier": "Context",
+        "response_identifier": "Response",
     },
     {
         "name": "response_helpfulness",
