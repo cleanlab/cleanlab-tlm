@@ -451,16 +451,6 @@ def test_validate_rag_inputs_prompt_and_form_prompt_together() -> None:
     assert "prompt' and 'form_prompt' cannot be provided at the same time" in str(exc_info.value)
 
 
-def test_validate_rag_inputs_batch_not_supported() -> None:
-    """Tests that NotImplementedError is raised when batch inputs are provided."""
-    from cleanlab_tlm.internal.validation import validate_rag_inputs
-
-    with pytest.raises(NotImplementedError) as exc_info:
-        validate_rag_inputs(query=["query1", "query2"], context="test context", is_generate=True)
-
-    assert "Batch processing is not yet supported" in str(exc_info.value)
-
-
 def test_validate_rag_inputs_generate_missing_required_params() -> None:
     """Tests that ValidationError is raised when required parameters are missing for generate."""
     from cleanlab_tlm.internal.validation import validate_rag_inputs
@@ -513,14 +503,65 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
     """Tests that ValidationError is raised when parameters have invalid types."""
     from cleanlab_tlm.internal.validation import validate_rag_inputs
 
+    # Test invalid query type
     with pytest.raises(ValidationError) as exc_info:
         validate_rag_inputs(
             query=123,  # type: ignore
             context="test context",
             is_generate=True,
         )
+    assert "'query' must be either a string or a sequence of strings, not <class 'int'>" in str(exc_info.value)
 
-    assert "'query' must be a string" in str(exc_info.value)
+    # Test invalid context type
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context=456,  # type: ignore
+            is_generate=True,
+        )
+    assert "'context' must be either a string or a sequence of strings, not <class 'int'>" in str(exc_info.value)
+
+    # Test invalid response type
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context="test context",
+            response=789,  # type: ignore
+            is_generate=False,
+        )
+    assert "'response' must be either a string or a sequence of strings, not <class 'int'>" in str(exc_info.value)
+
+    # Test invalid prompt type
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context="test context",
+            prompt=True,  # type: ignore
+            is_generate=True,
+        )
+    assert "'prompt' must be either a string or a sequence of strings, not <class 'bool'>" in str(exc_info.value)
+
+    # Test sequence with non-string items
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["valid", 123, "also valid"],  # type: ignore
+            context="test context",
+            is_generate=True,
+        )
+    assert "All items in 'query' must be of type string when providing a sequence" in str(exc_info.value)
+
+    # Test mismatched length of query and context sequences with a proper form_prompt function
+    def valid_form_prompt(q: str, c: str) -> str:
+        return f"{q} {c}"
+
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["q1", "q2", "q3"],
+            context=["c1", "c2"],
+            form_prompt=valid_form_prompt,
+            is_generate=True,
+        )
+    assert "'query' and 'context' sequences must have the same length for batch processing" in str(exc_info.value)
 
 
 def test_validate_rag_inputs_with_evals() -> None:
