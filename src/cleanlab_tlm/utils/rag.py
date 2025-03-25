@@ -437,7 +437,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
 A Response is not helpful if it:
 - Is not useful, incomplete, or unclear
 - Abstains or refuses to answer the question
-- Contains statements which are similar to 'I don't know', 'Sorry', 'N.A.', or 'No information available'
+- Contains statements which are similar to 'I don't know', 'Sorry', 'N.A', or 'No information available'
 - Leaves part of the original User Query unresolved""",
         "query_identifier": "User Query",
         "context_identifier": None,
