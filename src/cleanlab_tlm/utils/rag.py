@@ -77,6 +77,7 @@ class TrustworthyRAG(BaseTLM):
             If not specified, default evaluations will be used (access these via [get_default_evals](#function-get_default_evals)).
             To come up with your custom `evals`, we recommend you first run [get_default_evals()](#function-get_default_evals) and then add/remove/modify the returned list.
             Each [Eval](#class-eval) in this list provides real-time detection of specific issues in your RAG application based on the user query, retrieved context (documents), and/or LLM-generated response.
+            Set this to an empty list to only score response trustworthiness without additional evaluations.
     """
 
     def __init__(
