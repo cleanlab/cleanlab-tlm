@@ -545,7 +545,7 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
     with pytest.raises(ValidationError) as exc_info:
         validate_rag_inputs(
             query=["valid", 123, "also valid"],  # type: ignore
-            context="test context",
+            context=["test context1", "test context2", "test context3"],
             is_generate=True,
         )
     assert "All items in 'query' must be of type string when providing a sequence" in str(exc_info.value)
@@ -561,7 +561,10 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
             form_prompt=valid_form_prompt,
             is_generate=True,
         )
-    assert "'query' and 'context' sequences must have the same length for batch processing" in str(exc_info.value)
+    assert (
+        "Input lists have different lengths: query: 3, context: 2. All input lists must have the same length."
+        in str(exc_info.value)
+    )
 
 
 def test_validate_rag_inputs_with_evals() -> None:
@@ -738,3 +741,115 @@ def test_validate_tlm_options_support_custom_eval_criteria() -> None:
         match="^custom_eval_criteria is not supported for this class$",
     ):
         validate_tlm_options(options, support_custom_eval_criteria=False)
+
+
+def test_validate_rag_inputs_mixed_string_and_sequence() -> None:
+    """Tests that validate_rag_inputs rejects mixed inputs where some are strings and others are sequences."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Test string query with sequence context (for generate)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context=["context 1", "context 2"],
+            is_generate=True,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+    assert "query is a string while other inputs are lists" in str(exc_info.value)
+
+    # Test with prompt as a sequence but query and context as strings (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt=["prompt 1", "prompt 2", "prompt 3"],
+            query="test query",
+            context="test context",
+            response="test response",
+            is_generate=False,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+
+    # Test with response as a sequence but query and context as strings (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt="test prompt",
+            query="test query",
+            context="test context",
+            response=["response 1", "response 2"],
+            is_generate=False,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+
+    # Test the specific case provided by the user
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt=["sample"],
+            response=["sample"],
+            query="sample",
+            context="sample",
+            is_generate=False,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_list_length_mismatch() -> None:
+    """Tests that validate_rag_inputs rejects lists with different lengths."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Test lists with different lengths (for generate)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["query 1", "query 2", "query 3"],
+            context=["context 1", "context 2"],
+            is_generate=True,
+        )
+
+    assert "Input lists have different lengths" in str(exc_info.value)
+
+    # Test lists with different lengths (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["query 1", "query 2"],
+            context=["context 1", "context 2"],
+            response=["response 1", "response 2", "response 3"],
+            is_generate=False,
+        )
+
+    assert "Input lists have different lengths" in str(exc_info.value)
+
+    # Test lists with different lengths including prompt (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt=["prompt 1", "prompt 2", "prompt 3"],
+            query=["query 1", "query 2"],
+            context=["context 1", "context 2"],
+            response=["response 1", "response 2"],
+            is_generate=False,
+        )
+
+    assert "Input lists have different lengths" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_matching_lists() -> None:
+    """Tests that validate_rag_inputs accepts lists with matching lengths."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    list_length = 2
+
+    # Test with matching list lengths and form_prompt (for score)
+    result = validate_rag_inputs(
+        query=["query 1", "query 2"],
+        context=["context 1", "context 2"],
+        response=["response 1", "response 2"],
+        form_prompt=lambda q, c: f"Q: {q} C: {c}",
+        is_generate=False,
+    )
+
+    # Should get a list of formatted prompts
+    assert isinstance(result, list)
+    assert len(result) == list_length
+    assert result[0] == "Q: query 1 C: context 1"
+    assert result[1] == "Q: query 2 C: context 2"

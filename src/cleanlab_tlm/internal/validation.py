@@ -376,6 +376,39 @@ def validate_rag_inputs(
             "'prompt' and 'form_prompt' cannot be provided at the same time. Use either one, not both."
         )
 
+    # Ensure consistent input formats - either all strings or all lists
+    inputs_to_check = [("query", query), ("context", context), ("prompt", prompt)]
+    if not is_generate:
+        inputs_to_check.append(("response", response))
+
+    # Filter out None values
+    inputs_to_check = [(name, value) for name, value in inputs_to_check if value is not None]
+
+    # Check if any input is a list (not a string)
+    is_any_list = any(isinstance(value, Sequence) and not isinstance(value, str) for _, value in inputs_to_check)
+
+    # Validate format consistency and length matching for list inputs
+    if is_any_list:
+        # All inputs should be lists
+        string_inputs = [(name, value) for name, value in inputs_to_check if isinstance(value, str)]
+        if string_inputs:
+            raise ValidationError(
+                f"Inconsistent input formats: {string_inputs[0][0]} is a string while other inputs are lists. "
+                f"All inputs must be either strings or lists."
+            )
+
+        # All lists should have the same length
+        list_lengths = [
+            (name, len(value))
+            for name, value in inputs_to_check
+            if isinstance(value, Sequence) and not isinstance(value, str)
+        ]
+        if len({length for _, length in list_lengths}) > 1:
+            lengths_str = ", ".join(f"{name}: {length}" for name, length in list_lengths)
+            raise ValidationError(
+                f"Input lists have different lengths: {lengths_str}. " f"All input lists must have the same length."
+            )
+
     # Check for batch inputs - simplified by using a list of parameters to check
     batch_params = [(query, "query"), (context, "context"), (prompt, "prompt")]
     if not is_generate:

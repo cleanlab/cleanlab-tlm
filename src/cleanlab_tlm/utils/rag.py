@@ -178,14 +178,10 @@ class TrustworthyRAG(BaseTLM):
             )
 
         # Batch processing
-        assert isinstance(query, Sequence)
-        assert isinstance(context, Sequence)
-        assert isinstance(processed_responses, Sequence)
-        assert isinstance(formatted_prompts, Sequence)
-
+        responses_seq = cast(Sequence[dict[str, Any]], processed_responses)
         return self._event_loop.run_until_complete(
             self._batch_score(
-                responses=processed_responses,
+                responses=responses_seq,
                 prompts=formatted_prompts,
                 queries=query,
                 contexts=context,
@@ -231,10 +227,6 @@ class TrustworthyRAG(BaseTLM):
             )
 
         # Batch processing
-        assert isinstance(query, Sequence)
-        assert isinstance(context, Sequence)
-        assert isinstance(formatted_prompts, Sequence)
-
         return self._event_loop.run_until_complete(
             self._batch_generate(
                 prompts=formatted_prompts,
