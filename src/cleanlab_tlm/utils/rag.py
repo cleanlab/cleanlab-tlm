@@ -420,7 +420,7 @@ class Eval:
 _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
     {
         "name": "context_sufficiency",
-        "criteria": "Review the Document and assess whether it contains sufficient information to fully answer the Question. A Document meets the criteria if it provides every essential piece of information needed to construct a complete answer without requiring external knowledge or assumptions. If the Document has gaps that require using general knowledge to fill in or is missing crucial information, it doesn't meet the criteria. Be particularly cautious with Questions that require multiple distinct pieces of information, as the Document is more likely to lack key elements.",
+        "criteria": "Determine if the Document contains 100% of the information needed to answer the Question. If any external knowledge or assumptions are required, mark as insufficient. Each Question component must have explicit support in the Document.",
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
