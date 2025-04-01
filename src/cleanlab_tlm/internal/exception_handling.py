@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 from cleanlab_tlm.errors import (
     APITimeoutError,
+    AuthError,
     RateLimitError,
     TlmBadRequestError,
     TlmServerError,
@@ -70,6 +71,18 @@ def handle_tlm_exceptions(
                         capture_exceptions,
                         batch_index,
                         retryable=True,
+                        response_type=response_type,
+                        evals=evals,
+                    ),
+                )
+            except AuthError as e:
+                return cast(
+                    ResponseT,
+                    _handle_exception(
+                        e,
+                        capture_exceptions,
+                        batch_index,
+                        retryable=False,
                         response_type=response_type,
                         evals=evals,
                     ),
