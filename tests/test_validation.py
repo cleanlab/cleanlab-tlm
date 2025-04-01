@@ -482,7 +482,7 @@ def test_validate_rag_inputs_score_missing_required_params() -> None:
     with pytest.raises(ValidationError) as exc_info:
         validate_rag_inputs(query=None, context=None, response="test response", is_generate=False)  # type: ignore
 
-    assert "Either 'prompt' or both 'query' and 'context' must be provided" in str(exc_info.value)
+    assert "Both 'query' and 'context' are required parameters" in str(exc_info.value)
 
 
 def test_validate_rag_inputs_form_prompt_missing_params() -> None:

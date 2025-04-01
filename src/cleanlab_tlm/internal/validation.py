@@ -414,22 +414,14 @@ def validate_rag_inputs(
     if not is_generate:
         batch_params.append((response, "response"))
 
-    # Validate required parameters based on method
-    if is_generate:
-        if query is None or context is None:
-            raise ValidationError("Both 'query' and 'context' are required parameters")
-    else:
-        if response is None:
-            raise ValidationError("'response' is a required parameter")
-        if prompt is None and (query is None or context is None):
-            raise ValidationError("Either 'prompt' or both 'query' and 'context' must be provided")
+    if query is None or context is None:
+        raise ValidationError("Both 'query' and 'context' are required parameters")
+    if not is_generate and response is None:
+        raise ValidationError("'response' is a required parameter")
 
     # Format prompt if needed
     formatted_prompts: Union[str, Sequence[str]] = "" if prompt is None else prompt
     if prompt is None and form_prompt is not None:
-        if query is None or context is None:
-            raise ValidationError("Both 'query' and 'context' are required when using 'form_prompt'")
-
         # Handle both single and batch cases for formatting
         if isinstance(query, str) and isinstance(context, str):
             formatted_prompts = form_prompt(query, context)
