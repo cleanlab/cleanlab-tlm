@@ -178,10 +178,9 @@ class TrustworthyRAG(BaseTLM):
             )
 
         # Batch processing
-        responses_seq = cast(Sequence[dict[str, Any]], processed_responses)
         return self._event_loop.run_until_complete(
             self._batch_score(
-                responses=responses_seq,
+                responses=cast(Sequence[dict[str, Any]], processed_responses),
                 prompts=formatted_prompts,
                 queries=query,
                 contexts=context,
