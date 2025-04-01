@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.14] - 2025-03-31
+
+### Added
+
+- Add batch support to TrustworthyRAG
+
 ## [1.0.13] - 2025-03-20
 
 ### Added
@@ -75,7 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.13...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.14...HEAD
+[1.0.13]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.13...v1.0.14
 [1.0.13]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.12...v1.0.13
 [1.0.12]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.10...v1.0.11

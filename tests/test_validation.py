@@ -451,16 +451,6 @@ def test_validate_rag_inputs_prompt_and_form_prompt_together() -> None:
     assert "prompt' and 'form_prompt' cannot be provided at the same time" in str(exc_info.value)
 
 
-def test_validate_rag_inputs_batch_not_supported() -> None:
-    """Tests that NotImplementedError is raised when batch inputs are provided."""
-    from cleanlab_tlm.internal.validation import validate_rag_inputs
-
-    with pytest.raises(NotImplementedError) as exc_info:
-        validate_rag_inputs(query=["query1", "query2"], context="test context", is_generate=True)
-
-    assert "Batch processing is not yet supported" in str(exc_info.value)
-
-
 def test_validate_rag_inputs_generate_missing_required_params() -> None:
     """Tests that ValidationError is raised when required parameters are missing for generate."""
     from cleanlab_tlm.internal.validation import validate_rag_inputs
@@ -492,7 +482,7 @@ def test_validate_rag_inputs_score_missing_required_params() -> None:
     with pytest.raises(ValidationError) as exc_info:
         validate_rag_inputs(query=None, context=None, response="test response", is_generate=False)  # type: ignore
 
-    assert "Either 'prompt' or both 'query' and 'context' must be provided" in str(exc_info.value)
+    assert "Both 'query' and 'context' are required parameters" in str(exc_info.value)
 
 
 def test_validate_rag_inputs_form_prompt_missing_params() -> None:
@@ -513,14 +503,68 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
     """Tests that ValidationError is raised when parameters have invalid types."""
     from cleanlab_tlm.internal.validation import validate_rag_inputs
 
+    # Test invalid query type
     with pytest.raises(ValidationError) as exc_info:
         validate_rag_inputs(
             query=123,  # type: ignore
             context="test context",
             is_generate=True,
         )
+    assert "'query' must be either a string or a sequence of strings, not <class 'int'>" in str(exc_info.value)
 
-    assert "'query' must be a string" in str(exc_info.value)
+    # Test invalid context type
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context=456,  # type: ignore
+            is_generate=True,
+        )
+    assert "'context' must be either a string or a sequence of strings, not <class 'int'>" in str(exc_info.value)
+
+    # Test invalid response type
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context="test context",
+            response=789,  # type: ignore
+            is_generate=False,
+        )
+    assert "'response' must be either a string or a sequence of strings, not <class 'int'>" in str(exc_info.value)
+
+    # Test invalid prompt type
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context="test context",
+            prompt=True,  # type: ignore
+            is_generate=True,
+        )
+    assert "'prompt' must be either a string or a sequence of strings, not <class 'bool'>" in str(exc_info.value)
+
+    # Test sequence with non-string items
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["valid", 123, "also valid"],  # type: ignore
+            context=["test context1", "test context2", "test context3"],
+            is_generate=True,
+        )
+    assert "All items in 'query' must be of type string when providing a sequence" in str(exc_info.value)
+
+    # Test mismatched length of query and context sequences with a proper form_prompt function
+    def valid_form_prompt(q: str, c: str) -> str:
+        return f"{q} {c}"
+
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["q1", "q2", "q3"],
+            context=["c1", "c2"],
+            form_prompt=valid_form_prompt,
+            is_generate=True,
+        )
+    assert (
+        "Input lists have different lengths: query: 3, context: 2. All input lists must have the same length."
+        in str(exc_info.value)
+    )
 
 
 def test_validate_rag_inputs_with_evals() -> None:
@@ -697,3 +741,115 @@ def test_validate_tlm_options_support_custom_eval_criteria() -> None:
         match="^custom_eval_criteria is not supported for this class$",
     ):
         validate_tlm_options(options, support_custom_eval_criteria=False)
+
+
+def test_validate_rag_inputs_mixed_string_and_sequence() -> None:
+    """Tests that validate_rag_inputs rejects mixed inputs where some are strings and others are sequences."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Test string query with sequence context (for generate)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query="test query",
+            context=["context 1", "context 2"],
+            is_generate=True,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+    assert "query is a string while other inputs are lists" in str(exc_info.value)
+
+    # Test with prompt as a sequence but query and context as strings (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt=["prompt 1", "prompt 2", "prompt 3"],
+            query="test query",
+            context="test context",
+            response="test response",
+            is_generate=False,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+
+    # Test with response as a sequence but query and context as strings (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt="test prompt",
+            query="test query",
+            context="test context",
+            response=["response 1", "response 2"],
+            is_generate=False,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+
+    # Test the specific case provided by the user
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt=["sample"],
+            response=["sample"],
+            query="sample",
+            context="sample",
+            is_generate=False,
+        )
+
+    assert "Inconsistent input formats" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_list_length_mismatch() -> None:
+    """Tests that validate_rag_inputs rejects lists with different lengths."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    # Test lists with different lengths (for generate)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["query 1", "query 2", "query 3"],
+            context=["context 1", "context 2"],
+            is_generate=True,
+        )
+
+    assert "Input lists have different lengths" in str(exc_info.value)
+
+    # Test lists with different lengths (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            query=["query 1", "query 2"],
+            context=["context 1", "context 2"],
+            response=["response 1", "response 2", "response 3"],
+            is_generate=False,
+        )
+
+    assert "Input lists have different lengths" in str(exc_info.value)
+
+    # Test lists with different lengths including prompt (for score)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_rag_inputs(
+            prompt=["prompt 1", "prompt 2", "prompt 3"],
+            query=["query 1", "query 2"],
+            context=["context 1", "context 2"],
+            response=["response 1", "response 2"],
+            is_generate=False,
+        )
+
+    assert "Input lists have different lengths" in str(exc_info.value)
+
+
+def test_validate_rag_inputs_matching_lists() -> None:
+    """Tests that validate_rag_inputs accepts lists with matching lengths."""
+    from cleanlab_tlm.internal.validation import validate_rag_inputs
+
+    list_length = 2
+
+    # Test with matching list lengths and form_prompt (for score)
+    result = validate_rag_inputs(
+        query=["query 1", "query 2"],
+        context=["context 1", "context 2"],
+        response=["response 1", "response 2"],
+        form_prompt=lambda q, c: f"Q: {q} C: {c}",
+        is_generate=False,
+    )
+
+    # Should get a list of formatted prompts
+    assert isinstance(result, list)
+    assert len(result) == list_length
+    assert result[0] == "Q: query 1 C: context 1"
+    assert result[1] == "Q: query 2 C: context 2"
