@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16] - 2025-04-02
+
+### Added
+
+- TrustworthyRAG set retries
+
 ## [1.0.15] - 2025-04-01
 
 ### Added
