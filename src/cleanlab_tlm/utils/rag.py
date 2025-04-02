@@ -36,6 +36,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_EVAL_NAME_KEY,
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
+    _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS_RAG,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
@@ -424,6 +425,7 @@ class TrustworthyRAG(BaseTLM):
                     options=self._options,
                     rate_handler=self._rate_handler,
                     batch_index=batch_index,
+                    retries=_TLM_MAX_RETRIES,
                 ),
                 timeout=timeout,
             ),
@@ -473,6 +475,7 @@ class TrustworthyRAG(BaseTLM):
                     rate_handler=self._rate_handler,
                     evals=self._evals,
                     batch_index=batch_index,
+                    retries=_TLM_MAX_RETRIES,
                 ),
                 timeout=timeout,
             ),
