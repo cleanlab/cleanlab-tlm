@@ -10,6 +10,10 @@ class APIError(Exception):
     pass
 
 
+class HTTPBadRequestError(APIError):
+    pass
+
+
 class AuthError(HandledError):
     pass
 
