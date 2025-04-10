@@ -12,12 +12,14 @@ import aiohttp.client_exceptions
 from tqdm import tqdm
 
 from cleanlab_tlm.errors import (
+    HTTP_BAD_REQUEST,
     HTTP_OK,
     HTTP_TOO_MANY_REQUESTS,
     HTTP_UNAUTHORIZED,
     HTTP_UNPROCESSABLE_ENTITY,
     APIError,
     AuthError,
+    HTTPBadRequestError,
     InvalidProjectConfigurationError,
     RateLimitError,
     TlmBadRequestError,
@@ -87,6 +89,13 @@ def handle_api_error_from_json(res_json: JSONDict, status_code: Optional[int] = 
 
     if status_code != HTTP_OK:
         raise APIError(f"API call failed with status code {status_code}")
+
+
+async def handle_http_bad_request_error_from_resp(resp: aiohttp.ClientResponse) -> None:
+    """Catches 400 (bad request) errors."""
+    if resp.status == HTTP_BAD_REQUEST:
+        res_json = await resp.json()
+        raise HTTPBadRequestError(res_json["error"])
 
 
 async def handle_api_key_error_from_resp(resp: aiohttp.ClientResponse) -> None:
@@ -187,10 +196,13 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             except RateLimitError as e:
                 # note: we don't increment num_general_retry here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
-            except TlmBadRequestError as e:
+            except HTTPBadRequestError as e:
                 sleep_time = 2**num_general_retry
                 num_general_retry += 1
                 error_message = str(e)
+            except TlmBadRequestError:
+                # dont retry for client-side errors
+                raise
             except AuthError:
                 # dont retry for auth errors
                 raise
@@ -263,6 +275,7 @@ async def tlm_prompt(
             res_json = await res.json()
 
             await handle_api_key_error_from_resp(res)
+            await handle_http_bad_request_error_from_resp(res)
             handle_rate_limit_error_from_resp(res)
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
@@ -328,6 +341,7 @@ async def tlm_get_confidence_score(
             res_json = await res.json()
 
             await handle_api_key_error_from_resp(res)
+            await handle_http_bad_request_error_from_resp(res)
             handle_rate_limit_error_from_resp(res)
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
@@ -400,6 +414,7 @@ async def tlm_rag_generate(
             res_json = await res.json()
 
             await handle_api_key_error_from_resp(res)
+            await handle_http_bad_request_error_from_resp(res)
             handle_rate_limit_error_from_resp(res)
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
@@ -489,6 +504,7 @@ async def tlm_rag_score(
             res_json = await res.json()
 
             await handle_api_key_error_from_resp(res)
+            await handle_http_bad_request_error_from_resp(res)
             handle_rate_limit_error_from_resp(res)
             await handle_tlm_client_error_from_resp(res, batch_index)
             await handle_tlm_api_error_from_resp(res, batch_index)
