@@ -196,17 +196,13 @@ def tlm_retry(func: Callable[..., Any]) -> Callable[..., Any]:
             except RateLimitError as e:
                 # note: we don't increment num_general_retry here, because we don't want rate limit retries to count against the total number of retries
                 sleep_time = e.retry_after
-            except HTTPBadRequestError as e:
-                sleep_time = 2**num_general_retry
-                num_general_retry += 1
-                error_message = str(e)
             except TlmBadRequestError:
                 # dont retry for client-side errors
                 raise
             except AuthError:
                 # dont retry for auth errors
                 raise
-            except Exception as e:
+            except (HTTPBadRequestError, Exception) as e:
                 sleep_time = 2**num_general_retry
                 num_general_retry += 1
                 error_message = str(e)
