@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.18] - 2025-04-11
+
+### Added
+
+- Add `score_async` method to TrustworthyRAG
+
 ## [1.0.16] - 2025-04-02
 
 ### Added
@@ -68,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `embedding` and `embedding_large` as new `similarity_measure` options
-- Add support for Claude 3.7 Sonnet 
+- Add support for Claude 3.7 Sonnet
 
 ## [1.0.3] - 2025-02-19
 
@@ -93,8 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.17...HEAD
-[1.0.16]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.16...v1.0.17
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.18...HEAD
+[1.0.18]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.17...v1.0.18
+[1.0.17]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.16...v1.0.17
 [1.0.16]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.15...v1.0.16
 [1.0.15]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.14...v1.0.15
 [1.0.14]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.13...v1.0.14
