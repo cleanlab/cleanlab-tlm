@@ -202,7 +202,7 @@ class TrustworthyRAG(BaseTLM):
         form_prompt: Optional[Callable[[str, str], str]] = None,
     ) -> Union[TrustworthyRAGScore, list[TrustworthyRAGScore]]:
         """
-        Evaluate an existing RAG system's response to a given user query and retrieved context.
+        Asynchronously evaluate an existing RAG system's response to a given user query and retrieved context.
 
         Args:
              response (str | Sequence[str]): A response (or list of multiple responses) from your LLM/RAG system.
