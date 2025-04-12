@@ -40,7 +40,10 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS_RAG,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
-from cleanlab_tlm.internal.validation import tlm_score_process_response_and_kwargs, validate_rag_inputs
+from cleanlab_tlm.internal.validation import (
+    tlm_score_process_response_and_kwargs,
+    validate_rag_inputs,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine
@@ -189,6 +192,68 @@ class TrustworthyRAG(BaseTLM):
             )
         )
 
+    async def score_async(
+        self,
+        *,
+        response: Union[str, Sequence[str]],
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None,
+    ) -> Union[TrustworthyRAGScore, list[TrustworthyRAGScore]]:
+        """
+        Evaluate an existing RAG system's response to a given user query and retrieved context.
+
+        Args:
+             response (str | Sequence[str]): A response (or list of multiple responses) from your LLM/RAG system.
+             query (str | Sequence[str]): The user query (or list of multiple queries) that was used to generate the response.
+             context (str | Sequence[str]): The context (or list of multiple contexts) that was retrieved from the RAG Knowledge Base and used to generate the response.
+             prompt (str | Sequence[str], optional): Optional prompt (or list of multiple prompts) representing the actual inputs (combining query, context, and system instructions into one string) to the LLM that generated the response.
+             form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt based on query and context. Cannot be provided together with prompt, provide one or the other.
+                    This function should take query and context as parameters and return a formatted prompt string.
+                    If not provided, a default prompt formatter will be used.
+                    To include a system prompt or any other special instructions for your LLM,
+                    incorporate them directly in your custom `form_prompt()` function definition.
+
+        Returns:
+             TrustworthyRAGScore | list[TrustworthyRAGScore]: [TrustworthyRAGScore](#class-trustworthyragscore) object containing evaluation metrics.
+                 If multiple inputs were provided in lists, a list of TrustworthyRAGScore objects is returned, one for each set of inputs.
+        """
+        if prompt is None and form_prompt is None:
+            form_prompt = TrustworthyRAG._default_prompt_formatter
+
+        formatted_prompts = validate_rag_inputs(
+            query=query,
+            context=context,
+            response=response,
+            prompt=prompt,
+            form_prompt=form_prompt,
+            evals=self._evals,
+            is_generate=False,
+        )
+
+        # Support constrain_outputs later
+        processed_responses = tlm_score_process_response_and_kwargs(formatted_prompts, response, None, {})
+
+        # Check if we're handling a batch or a single item
+        if isinstance(query, str) and isinstance(context, str) and isinstance(processed_responses, dict):
+            return await self._score_async(
+                response=processed_responses,
+                prompt=formatted_prompts,
+                query=query,
+                context=context,
+                timeout=self._timeout,
+            )
+
+        # Batch processing
+        return await self._batch_score(
+            responses=cast(Sequence[dict[str, Any]], processed_responses),
+            prompts=formatted_prompts,
+            queries=query,
+            contexts=context,
+            capture_exceptions=False,
+        )
+
     def generate(
         self,
         *,
@@ -212,7 +277,12 @@ class TrustworthyRAG(BaseTLM):
             form_prompt = TrustworthyRAG._default_prompt_formatter
 
         formatted_prompts = validate_rag_inputs(
-            query=query, context=context, prompt=prompt, form_prompt=form_prompt, evals=self._evals, is_generate=True
+            query=query,
+            context=context,
+            prompt=prompt,
+            form_prompt=form_prompt,
+            evals=self._evals,
+            is_generate=True,
         )
 
         # Check if we're handling a batch or a single item
