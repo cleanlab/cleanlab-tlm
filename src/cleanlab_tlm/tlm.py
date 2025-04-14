@@ -48,6 +48,9 @@ from cleanlab_tlm.internal.validation import (
 if TYPE_CHECKING:
     from cleanlab_tlm.internal.types import TLMQualityPreset
 
+# Threshold for showing large dataset message
+_LARGE_DATASET_THRESHOLD = 1000
+
 
 class TLM(BaseTLM):
     """
@@ -236,6 +239,12 @@ class TLM(BaseTLM):
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
         if self._verbose:
+            print("If this progress bar appears frozen, TLM is still processing your dataset so just continue waiting.")
+            if len(tlm_query_tasks) > _LARGE_DATASET_THRESHOLD:
+                print(
+                    "For running TLM over bigger datasets, consider using this approach: https://help.cleanlab.ai/tlm/tutorials/tlm_advanced/#running-tlm-over-large-datasets"
+                )
+
             gather_task = tqdm_asyncio.gather(
                 *tlm_query_tasks,
                 total=len(tlm_query_tasks),
