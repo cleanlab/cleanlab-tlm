@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.20] - 2025-04-15
+
+### Added
+
+- Add new options for `similarity_metric`: `code` and `discrepancy`
+
 ## [1.0.19] - 2025-04-14
 
 ### Added
