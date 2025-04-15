@@ -49,6 +49,8 @@ TLM_SIMILARITY_MEASURES: set[str] = {
     "string",
     "embedding",
     "embedding_large",
+    "code",
+    "discrepancy",
 }
 TLM_REASONING_EFFORT_VALUES: set[str] = {"none", "low", "medium", "high"}
 TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation"}
