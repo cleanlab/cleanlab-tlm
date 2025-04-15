@@ -430,6 +430,10 @@ class TrustworthyRAG(BaseTLM):
         rag_query_tasks = [asyncio.create_task(rag_coro) for rag_coro in rag_coroutines]
 
         if self._verbose:
+            print(
+                "If this progress bar appears frozen, TrustworthyRAG is still processing your dataset so just continue waiting."
+            )
+
             gather_task = tqdm_asyncio.gather(
                 *rag_query_tasks,
                 total=len(rag_query_tasks),
