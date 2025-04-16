@@ -125,8 +125,7 @@ class TrustworthyRAG(BaseTLM):
             ]
         else:
             self._evals = evals
-            evals_are_invalid = any([type(ev) is not Eval for ev in evals])
-            if evals_are_invalid:
+            if (type(evals) is not list) or any([type(ev) is not Eval for ev in evals]):
                 raise ValueError("`evals` must be a list of Eval objects")
 
     def score(
