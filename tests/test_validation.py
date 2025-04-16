@@ -9,6 +9,7 @@ from cleanlab_tlm.internal.constants import (
     TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
 )
 from cleanlab_tlm.tlm import TLM, TLMOptions
+from cleanlab_tlm.utils.rag import Eval, TrustworthyRAG
 from tests.conftest import make_text_unique
 from tests.constants import (
     CHARACTERS_PER_TOKEN,
@@ -565,6 +566,37 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
         "Input lists have different lengths: query: 3, context: 2. All input lists must have the same length."
         in str(exc_info.value)
     )
+
+
+def test_validate_proper_evals_input(tlm_api_key: str) -> None:
+    evals = [
+        Eval(
+            name="test_eval",
+            criteria="This is a test criteria",
+            query_identifier="query",
+            context_identifier="context",
+            response_identifier="response",
+        )
+    ]
+
+    # test the expected case will work
+    tlm_rag = TrustworthyRAG(api_key=tlm_api_key, evals=evals)
+    assert tlm_rag is not None
+
+    # test passing a list of list of evals
+    with pytest.raises(ValidationError) as exc_info:
+        tlm_rag = TrustworthyRAG(api_key=tlm_api_key, evals=[evals])  # type: ignore
+    assert "'evals' must be a list of Eval objects" in str(exc_info.value)
+
+    # test passing a list of dicts
+    with pytest.raises(ValidationError) as exc_info:
+        tlm_rag = TrustworthyRAG(api_key=tlm_api_key, evals=[{"test_eval": "This is a test criteria"}])  # type: ignore
+    assert "'evals' must be a list of Eval objects" in str(exc_info.value)
+
+    # test passing a string
+    with pytest.raises(ValidationError) as exc_info:
+        tlm_rag = TrustworthyRAG(api_key=tlm_api_key, evals="This is a test criteria")  # type: ignore
+    assert "'evals' must be a list of Eval objects" in str(exc_info.value)
 
 
 def test_validate_rag_inputs_with_evals() -> None:

@@ -27,6 +27,7 @@ from typing import (
 from tqdm.asyncio import tqdm_asyncio
 from typing_extensions import NotRequired, TypedDict
 
+from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
@@ -124,6 +125,10 @@ class TrustworthyRAG(BaseTLM):
                 for eval_config in _DEFAULT_EVALS
             ]
         else:
+            # validate that evals is a list of Eval objects
+            if not isinstance(evals, list) or any(not isinstance(ev, Eval) for ev in evals):
+                raise ValidationError("'evals' must be a list of Eval objects")
+
             self._evals = evals
 
     def score(
