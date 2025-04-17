@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.21] - 2025-04-17
+
+### Added 
+
+- Add new OpenAI models: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `o3`, `o4-mini`
+
 ## [1.0.20] - 2025-04-15
 
 ### Added
@@ -115,7 +121,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.20...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.21...HEAD
+[1.0.21]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.20...v1.0.21
 [1.0.20]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.19...v1.0.20
 [1.0.19]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.18...v1.0.19
 [1.0.18]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.17...v1.0.18
