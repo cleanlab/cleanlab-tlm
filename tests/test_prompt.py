@@ -20,7 +20,7 @@ def is_tlm_response(
     """Returns True if the response is a TLMResponse.
 
     Args:
-        allow_none_response: If True, allows the response to be None (only allowed for try_prompt)
+        allow_none_response: If True, allows the response to be None
         allow_null_trustworthiness_score: If True, allows the trustworthiness_score to be None
             (only allowed for base preset for models with no perplexity score)
     """
@@ -97,51 +97,8 @@ def test_single_prompt_constrain_outputs(tlm: TLM) -> None:
     assert response["response"] == "test"
 
 
-def test_batch_prompt(tlm: TLM) -> None:
-    """Tests running a batch prompt in the TLM.
-
-    Expected:
-    - TLM should return a list of responses
-    - Responses should be non-None
-    - No exceptions are raised
-    - Each response should be of type TLMResponse
-    """
-    # act -- run a batch prompt
-    response = tlm.prompt(test_prompt_batch)
-
-    # assert
-    # - response is not None
-    # - a list of responses of type TLMResponse is returned
-    # - no exceptions are raised (implicit)
-    assert response is not None
-    assert isinstance(response, list)
-    assert all(is_tlm_response(r) for r in response)
-
-
-def test_batch_prompt_constrain_outputs(tlm: TLM) -> None:
-    """Tests running a batch prompt in the TLM with constrain_outputs.
-
-    Expected:
-    - TLM should return a list of responses
-    - Responses should be non-None
-    - No exceptions are raised
-    - Each response should be of type TLMResponse
-    """
-    # act -- run a batch prompt
-    response = tlm.prompt(test_prompt_batch, constrain_outputs=[["test"], ["test"]])
-
-    # assert
-    # - response is not None
-    # - a list of responses of type TLMResponse is returned
-    # - no exceptions are raised (implicit)
-    assert response is not None
-    assert isinstance(response, list)
-    assert all(is_tlm_response(r) for r in response)
-    assert all(r["response"] == "test" for r in response)
-
-
-def test_batch_prompt_force_timeouts(tlm: TLM) -> None:
-    """Tests running a batch prompt in the TLM, forcing timeouts.
+def test_single_prompt_force_timeouts(tlm: TLM) -> None:
+    """Tests running a single prompt in the TLM, forcing timeouts.
 
     Sets timeout to 0.0001 seconds, which should force a timeout for all prompts.
     This should result in a timeout error being thrown
@@ -154,12 +111,12 @@ def test_batch_prompt_force_timeouts(tlm: TLM) -> None:
 
     # assert -- timeout is thrown
     with pytest.raises(asyncio.TimeoutError):
-        # act -- run a batch prompt
-        tlm.prompt(test_prompt_batch)
+        # act -- run a single prompt
+        tlm.prompt(test_prompt)
 
 
-def test_batch_try_prompt(tlm: TLM) -> None:
-    """Tests running a batch try prompt in the TLM.
+def test_batch_prompt(tlm: TLM) -> None:
+    """Tests running a batch prompt in the TLM.
 
     Expected:
     - TLM should return a list of responses
@@ -167,19 +124,19 @@ def test_batch_try_prompt(tlm: TLM) -> None:
     - No exceptions are raised
     """
     # act -- run a batch prompt
-    response = tlm.try_prompt(test_prompt_batch)
+    response = tlm.prompt(test_prompt_batch)
 
     # assert
     # - response is not None
-    # - a list of responses of type TLMResponse or None is returned
+    # - a list of responses of type TLMResponse is returned
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_response(r, allow_none_response=True) for r in response)
 
 
-def test_batch_try_prompt_constrain_outputs(tlm: TLM) -> None:
-    """Tests running a batch try prompt in the TLM with constrain_outputs.
+def test_batch_prompt_constrain_outputs(tlm: TLM) -> None:
+    """Tests running a batch prompt in the TLM with constrain_outputs.
 
     Expected:
     - TLM should return a list of responses
@@ -187,11 +144,11 @@ def test_batch_try_prompt_constrain_outputs(tlm: TLM) -> None:
     - No exceptions are raised
     """
     # act -- run a batch prompt
-    response = tlm.try_prompt(test_prompt_batch, constrain_outputs=[["test"], ["test"]])
+    response = tlm.prompt(test_prompt_batch, constrain_outputs=[["test"], ["test"]])
 
     # assert
     # - response is not None
-    # - a list of responses of type TLMResponse or None is returned
+    # - a list of responses of type TLMResponse is returned
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
@@ -199,8 +156,8 @@ def test_batch_try_prompt_constrain_outputs(tlm: TLM) -> None:
     assert all(r["response"] == "test" for r in response)
 
 
-def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
-    """Tests running a batch try prompt in the TLM, forcing timeouts.
+def test_batch_prompt_force_timeouts(tlm: TLM) -> None:
+    """Tests running a batch prompt in the TLM, forcing timeouts.
 
     Sets timeout to 0.0001 seconds, which should force a timeout for all prompts.
     This should result in None responses for all prompts.
@@ -214,7 +171,7 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
     tlm._timeout = 0.0001
 
     # act -- run a batch prompt
-    response = tlm.try_prompt(test_prompt_batch)
+    response = tlm.prompt(test_prompt_batch)
 
     # assert
     # - response is not None
@@ -223,6 +180,23 @@ def test_batch_try_prompt_force_timeouts(tlm: TLM) -> None:
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_response_with_error(r) for r in response)
+
+
+def test_try_prompt(tlm: TLM) -> None:
+    # act -- run a batch get_trustworthiness_score
+    with pytest.warns(DeprecationWarning) as warning:
+        response = tlm.try_prompt(
+            test_prompt_batch,
+        )
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse or None is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_tlm_response(r, allow_none_response=True) for r in response)
+    assert "Deprecated method." in str(warning[0].message)
 
 
 @pytest.fixture(autouse=True)

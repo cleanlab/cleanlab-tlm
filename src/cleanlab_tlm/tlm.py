@@ -249,11 +249,9 @@ class TLM(BaseTLM):
         Returns:
             TLMResponse | list[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
-                This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
-                Use it if you want strict error handling and immediate notification of any exceptions/timeouts.
-
-                If running this method on a big batch of prompts, you might lose partially completed results if TLM fails on any one of them.
-                Use the [`try_prompt()`](#method-try_prompt) method instead and run it on multiple smaller batches.
+                The returned list will always have the same length as the input list.
+                In case of TLM failure on any prompt (due to timeouts or other errors),the return list will include a [TLMResponse](#class-tlmresponse)
+                with an error message and retryability information instead of the usual TLMResponse for that failed prompt.
         """
         validate_tlm_prompt(prompt)
         tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
@@ -412,11 +410,9 @@ class TLM(BaseTLM):
                 If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and optional log dictionary keys for each prompt-response pair passed in.
 
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
-                If running on many prompt-response pairs simultaneously:
-                this method will raise an exception if any TLM errors or timeouts occur.
-                Use it if immediate notification of any exceptions/timeouts is preferred.
-                You will lose any partial results if an exception is raised.
-                For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
+                The returned list will always have the same length as the input list.
+                In case of TLM error or timeout on any prompt-response pair,
+                the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the trustworthiness score.
         """
         validate_tlm_prompt_response(prompt, response)
         processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
