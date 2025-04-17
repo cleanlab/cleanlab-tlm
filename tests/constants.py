@@ -30,7 +30,6 @@ excluded_tlm_models: list[str] = [
     "o1-mini",
     "o3",
     "o3-mini",
-    "o4-mini",
     "nova-lite",
     "nova-pro",
     "gpt-4",
