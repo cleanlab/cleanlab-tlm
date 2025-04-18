@@ -1,9 +1,9 @@
-import asyncio
 from collections.abc import Generator
 from typing import Any
 
 import pytest
 
+from cleanlab_tlm.errors import APITimeoutError
 from cleanlab_tlm.tlm import TLM
 from tests.conftest import make_text_unique
 from tests.constants import TEST_PROMPT, TEST_PROMPT_BATCH
@@ -110,7 +110,7 @@ def test_single_prompt_force_timeouts(tlm: TLM) -> None:
     tlm._timeout = 0.0001
 
     # assert -- timeout is thrown
-    with pytest.raises(asyncio.TimeoutError):
+    with pytest.raises(APITimeoutError):
         # act -- run a single prompt
         tlm.prompt(test_prompt)
 

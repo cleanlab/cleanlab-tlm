@@ -1,4 +1,3 @@
-import asyncio
 import os
 from collections.abc import Generator
 from typing import Any, cast
@@ -6,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
+from cleanlab_tlm.errors import APITimeoutError, MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.tlm import TLMOptions
@@ -925,7 +924,7 @@ def test_generate_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_time
     trustworthy_rag._timeout = 0.0001
 
     # assert -- timeout is thrown
-    with pytest.raises(asyncio.TimeoutError):
+    with pytest.raises(APITimeoutError):
         # act -- run a batch generate
         trustworthy_rag.generate(
             query=test_query_batch,
@@ -946,7 +945,7 @@ def test_score_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_timeout
     trustworthy_rag._timeout = 0.0001
 
     # assert -- timeout is thrown
-    with pytest.raises(asyncio.TimeoutError):
+    with pytest.raises(APITimeoutError):
         # act -- run a batch score
         trustworthy_rag.score(
             query=test_query_batch,
