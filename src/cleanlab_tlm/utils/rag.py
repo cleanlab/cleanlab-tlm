@@ -683,8 +683,8 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
     {
         "name": "response_helpfulness",
         "criteria": """Assess whether the AI Assistant Response is a helpful answer to the User Query.
-A Response is considered helpful if it makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect your judgment. The only thing that matters is whether the Assistant tries to answer the question.
-A Response is considered not helpful if it avoids answering the question. For example, by saying or implying things like "I don't know," "Sorry," "No information available," or any other form of refusal or deflection.""",
+A Response is considered helpful if it makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect the assessment. The only thing that matters is whether the Assistant tries to answer the question.
+A Response is considered not helpful if it avoids answering the question. For example, by saying or implying things like "I don't know", "Sorry", "No information available", or any other form of refusal or deflection.""",
         "query_identifier": "User Query",
         "context_identifier": None,
         "response_identifier": "AI Assistant Response",
