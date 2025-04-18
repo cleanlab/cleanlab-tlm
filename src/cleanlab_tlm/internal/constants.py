@@ -69,6 +69,8 @@ TLM_MODELS_NOT_SUPPORTING_EXPLANATION: set[str] = {
     "o1-preview",
     "o1",
     "o3-mini",
+    "o3",
+    "o4-mini",
 }
 VALID_RESPONSE_OPTIONS: set[str] = {"max_tokens"}
 INVALID_SCORE_OPTIONS: set[str] = {"num_candidate_responses"}
