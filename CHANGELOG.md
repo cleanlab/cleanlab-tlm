@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.22] - 2025-04-18
+
+- Update `response_helpfulness` default criteria
+
 ## [1.0.21] - 2025-04-17
 
 ### Added 
@@ -121,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.21...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.22...HEAD
+[1.0.22]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.21...v1.0.22
 [1.0.21]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.20...v1.0.21
 [1.0.20]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.19...v1.0.20
 [1.0.19]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.18...v1.0.19
