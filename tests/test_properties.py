@@ -231,6 +231,7 @@ def test_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> No
     _test_batch_prompt_response(
         responses,
         options,
+        allow_none_response=True,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 
@@ -266,31 +267,6 @@ def test_prompt_async(tlm_dict: dict[str, Any], model: str, quality_preset: str)
     _test_batch_prompt_response(
         responses,
         options,
-        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
-    )
-
-
-@pytest.mark.parametrize("model", VALID_TLM_MODELS)
-@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_try_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
-    """Tests running try_prompt in the TLM for all quality_presets, model types batch prompt."""
-    print("Testing with batch prompt:", test_prompt_batch)
-    # get TLM and options dictionary based on parameters
-    tlm_no_options = tlm_dict[quality_preset][model]["tlm_no_options"]
-    allow_null_trustworthiness_score = quality_preset == "base" and model in MODELS_WITH_NO_PERPLEXITY_SCORE
-    print("TLM with no options called on batch query run.")
-    print("TLM Options for run: None.")
-
-    # test prompt with batch prompt
-    tlm_no_options_kwargs = {}
-    if tlm_no_options._task == Task.CLASSIFICATION:
-        tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
-    responses = tlm_no_options.try_prompt(test_prompt_batch, **tlm_no_options_kwargs)
-    print("TLM Batch Responses:", responses)
-    _test_batch_prompt_response(
-        responses,
-        {},
-        allow_none_response=True,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 
@@ -362,25 +338,5 @@ def test_get_trustworthiness_score_async(tlm_dict: dict[str, Any], model: str, q
             **tlm_kwargs,
         )
     )
-    print("TLM Batch Responses:", responses)
-    _test_batch_get_trustworthiness_score_response(responses, options, quality_preset)
-
-
-@pytest.mark.parametrize("model", VALID_TLM_MODELS)
-@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
-def test_try_get_trustworthiness_score(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> None:
-    """Tests running try_get_trustworthiness_score in the TLM for all quality_presets, model types and batch prompt."""
-    print("Testing with batch prompt/response:", test_prompt_batch, TEST_RESPONSE_BATCH)
-    # get TLMs and options dictionary based on parameters
-    tlm = tlm_dict[quality_preset][model]["tlm"]
-    options = tlm_dict[quality_preset][model]["options"]
-    print("TLM without options is not called.")
-    print("TLM Options for run:", options)
-
-    # test prompt with batch prompt
-    tlm_kwargs = {}
-    if tlm._task == Task.CLASSIFICATION:
-        tlm_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS
-    responses = tlm.try_get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH, **tlm_kwargs)
     print("TLM Batch Responses:", responses)
     _test_batch_get_trustworthiness_score_response(responses, options, quality_preset)

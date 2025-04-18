@@ -193,7 +193,6 @@ class TrustworthyRAG(BaseTLM):
                 prompts=formatted_prompts,
                 queries=query,
                 contexts=context,
-                capture_exceptions=False,
             )
         )
 
@@ -256,7 +255,6 @@ class TrustworthyRAG(BaseTLM):
             prompts=formatted_prompts,
             queries=query,
             contexts=context,
-            capture_exceptions=False,
         )
 
     def generate(
@@ -307,7 +305,6 @@ class TrustworthyRAG(BaseTLM):
                 prompts=formatted_prompts,
                 queries=query,
                 contexts=context,
-                capture_exceptions=False,
             )
         )
 
@@ -331,7 +328,6 @@ class TrustworthyRAG(BaseTLM):
         prompts: Sequence[str],
         queries: Sequence[str],
         contexts: Sequence[str],
-        capture_exceptions: bool = False,
     ) -> list[TrustworthyRAGResponse]:
         """Run a batch of generate operations through TrustworthyRAG. The list returned will have the same length as the input list.
 
@@ -339,17 +335,10 @@ class TrustworthyRAG(BaseTLM):
             prompts (Sequence[str]): list of prompts to run
             queries (Sequence[str]): list of queries corresponding to each prompt
             contexts (Sequence[str]): list of contexts corresponding to each prompt
-            capture_exceptions (bool): if True, the returned list will contain TrustworthyRAGResponse objects with error messages and
-                retryability information in place of the response for any errors or timeout when processing a particular input.
-                If False, this entire method will raise an exception if TrustworthyRAG fails to produce a result for any input.
 
         Returns:
             list[TrustworthyRAGResponse]: TrustworthyRAG responses/scores for each input (in supplied order)
         """
-        if capture_exceptions:
-            per_query_timeout, per_batch_timeout = self._timeout, None
-        else:
-            per_query_timeout, per_batch_timeout = None, self._timeout
 
         # run batch of TrustworthyRAG generate
         rag_responses = await self._batch_async(
@@ -358,13 +347,12 @@ class TrustworthyRAG(BaseTLM):
                     prompt=prompt,
                     query=query,
                     context=context,
-                    timeout=per_query_timeout,
-                    capture_exceptions=capture_exceptions,
+                    timeout=self._timeout,
+                    capture_exceptions=True,
                     batch_index=batch_index,
                 )
                 for batch_index, (prompt, query, context) in enumerate(zip(prompts, queries, contexts))
-            ],
-            per_batch_timeout,
+            ]
         )
 
         return cast(list[TrustworthyRAGResponse], rag_responses)
@@ -375,7 +363,6 @@ class TrustworthyRAG(BaseTLM):
         prompts: Sequence[str],
         queries: Sequence[str],
         contexts: Sequence[str],
-        capture_exceptions: bool = False,
     ) -> list[TrustworthyRAGScore]:
         """Run a batch of score operations through TrustworthyRAG. The list returned will have the same length as the input list.
 
@@ -384,17 +371,10 @@ class TrustworthyRAG(BaseTLM):
             prompts (Sequence[str]): list of prompts corresponding to each response
             queries (Sequence[str]): list of queries corresponding to each response
             contexts (Sequence[str]): list of contexts corresponding to each response
-            capture_exceptions (bool): if True, the returned list will contain TrustworthyRAGScore objects with error messages and
-                retryability information in place of the scores for any errors or timeout when processing a particular input.
-                If False, this entire method will raise an exception if TrustworthyRAG fails to produce a result for any input.
 
         Returns:
             list[TrustworthyRAGScore]: TrustworthyRAG scores for each input (in supplied order)
         """
-        if capture_exceptions:
-            per_query_timeout, per_batch_timeout = self._timeout, None
-        else:
-            per_query_timeout, per_batch_timeout = None, self._timeout
 
         # run batch of TrustworthyRAG score
         rag_scores = await self._batch_async(
@@ -404,15 +384,14 @@ class TrustworthyRAG(BaseTLM):
                     prompt=prompt,
                     query=query,
                     context=context,
-                    timeout=per_query_timeout,
-                    capture_exceptions=capture_exceptions,
+                    timeout=self._timeout,
+                    capture_exceptions=True,
                     batch_index=batch_index,
                 )
                 for batch_index, (response, prompt, query, context) in enumerate(
                     zip(responses, prompts, queries, contexts)
                 )
-            ],
-            per_batch_timeout,
+            ]
         )
 
         return cast(list[TrustworthyRAGScore], rag_scores)
@@ -420,14 +399,12 @@ class TrustworthyRAG(BaseTLM):
     async def _batch_async(
         self,
         rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore]]],
-        batch_timeout: Optional[float] = None,
     ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]]:
         """Runs batch of TrustworthyRAG operations.
 
         Args:
             rag_coroutines (Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore]]]):
                 list of coroutines to run, returning TrustworthyRAGResponse or TrustworthyRAGScore
-            batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
 
         Returns:
             Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]]: list of coroutine results, with preserved order
@@ -448,21 +425,10 @@ class TrustworthyRAG(BaseTLM):
         else:
             gather_task = asyncio.gather(*rag_query_tasks)  # type: ignore[assignment]
 
-        wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
-        try:
-            return cast(
-                Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]],
-                await wait_task,
-            )
-        except Exception:
-            # if exception occurs while awaiting batch results, cancel remaining tasks
-            for query_task in rag_query_tasks:
-                query_task.cancel()
-
-            # await remaining tasks to ensure they are cancelled
-            await asyncio.gather(*rag_query_tasks, return_exceptions=True)
-
-            raise
+        return cast(
+            Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]],
+            await gather_task,
+        )
 
     @handle_tlm_exceptions("TrustworthyRAGResponse")
     async def _generate_async(

@@ -3,6 +3,7 @@ TLM Lite is a version of the [Trustworthy Language Model (TLM)](../tlm) that ena
 """
 
 import os
+import warnings
 from collections.abc import Sequence
 from typing import Optional, Union, cast
 
@@ -18,7 +19,6 @@ from cleanlab_tlm.tlm import (
     TLM,
     TLMOptions,
     TLMResponse,
-    TLMScore,
 )
 
 
@@ -111,21 +111,36 @@ class TLMLite:
         """
         prompt_response = self._tlm_response.prompt(prompt)
 
-        if (
-            isinstance(prompt, Sequence)
-            and isinstance(prompt_response, list)
-            and all(r["response"] is not None for r in prompt_response)
-        ):
-            response = cast(list[str], [r["response"] for r in prompt_response])
-            perplexity = [r["log"]["perplexity"] for r in prompt_response]
-            return self._batch_score(prompt, response, perplexity)
+        # single call
+        if isinstance(prompt, str) and isinstance(prompt_response, dict):
+            if prompt_response["response"] is None:
+                return prompt_response
 
-        if isinstance(prompt, str) and isinstance(prompt_response, dict) and prompt_response["response"] is not None:
             return self._score(
                 prompt,
                 prompt_response["response"],
                 perplexity=prompt_response["log"]["perplexity"],
             )
+
+        # batch call
+        if isinstance(prompt, Sequence) and isinstance(prompt_response, list):
+            prompt_succeeded_mask = np.array([res["response"] is not None for res in prompt_response])
+
+            if not np.any(prompt_succeeded_mask):  # all prompts failed
+                return prompt_response
+
+            # handle masking with numpy for easier indexing
+            prompt_succeeded = np.array(prompt)[prompt_succeeded_mask].tolist()
+            prompt_response_succeeded = np.array(prompt_response)[prompt_succeeded_mask]
+
+            response_succeeded = [r["response"] for r in prompt_response_succeeded]
+            perplexity_succeeded = [r["log"]["perplexity"] for r in prompt_response_succeeded]
+            score_response_succeeded = self._batch_score(prompt_succeeded, response_succeeded, perplexity_succeeded)
+
+            tlm_response = np.array(prompt_response)
+            tlm_response[prompt_succeeded_mask] = np.array(score_response_succeeded)
+
+            return cast(list[TLMResponse], tlm_response.tolist())
 
         raise ValueError("prompt and prompt_response do not have matching types")
 
@@ -134,26 +149,15 @@ class TLMLite:
         prompt: Sequence[str],
     ) -> list[TLMResponse]:
         """
-        Similar to [`TLM.try_prompt()`](../tlm/#method-try_prompt), view documentation there for expected input arguments and outputs.
+        lazydocs: ignore
+        Deprecated method. Use `prompt()` instead.
         """
-        prompt_response = self._tlm_response.try_prompt(prompt)
-        prompt_succeeded_mask = np.array([res["response"] is not None for res in prompt_response])
-
-        if not np.any(prompt_succeeded_mask):  # all prompts failed
-            return prompt_response
-
-        # handle masking with numpy for easier indexing
-        prompt_succeeded = np.array(prompt)[prompt_succeeded_mask].tolist()
-        prompt_response_succeeded = np.array(prompt_response)[prompt_succeeded_mask]
-
-        response_succeeded = [r["response"] for r in prompt_response_succeeded]
-        perplexity_succeeded = [r["log"]["perplexity"] for r in prompt_response_succeeded]
-        score_response_succeeded = self._try_batch_score(prompt_succeeded, response_succeeded, perplexity_succeeded)
-
-        tlm_response = np.array(prompt_response)
-        tlm_response[prompt_succeeded_mask] = np.array(score_response_succeeded)
-
-        return cast(list[TLMResponse], tlm_response.tolist())
+        warnings.warn(
+            "Deprecated method. Use `prompt()` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return cast(list[TLMResponse], self.prompt(prompt))
 
     def _score(
         self,
@@ -179,33 +183,6 @@ class TLMLite:
         return {"response": response, **score_response}
 
     def _batch_score(
-        self,
-        prompt: Sequence[str],
-        response: Sequence[str],
-        perplexity: Sequence[Optional[float]],
-    ) -> list[TLMResponse]:
-        """
-        Private method to get trustworthiness score for a batch of examples and process the outputs into TLMResponse dictionaries.
-
-        Args:
-            prompt: list of prompts for the TLM to evaluate
-            response: list of responses corresponding to the input prompt
-            perplexity: list of perplexity scores of the response (given by LLM)
-        Returns:
-            list[TLMResponse]: list of [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score
-        """
-        score_response = self._tlm_score.get_trustworthiness_score(prompt, response, perplexity=perplexity)
-
-        assert isinstance(score_response, list)
-        assert len(prompt) == len(score_response)
-
-        if not all(isinstance(score, dict) for score in score_response):
-            raise TypeError("score_response has invalid type")
-
-        score_response = cast(list[TLMScore], score_response)
-        return [{"response": res, **score} for res, score in zip(response, score_response)]
-
-    def _try_batch_score(
         self,
         prompt: Sequence[str],
         response: Sequence[str],

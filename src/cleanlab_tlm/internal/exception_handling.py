@@ -162,7 +162,9 @@ def _handle_exception(
         error_log = {"error": {"message": error_message, "retryable": retryable}}
 
         # Helper function to create evaluation metrics dictionary
-        def create_eval_metrics(include_response: bool = False) -> dict[str, Union[dict[str, Any], None]]:
+        def create_eval_metrics(
+            include_response: bool = False,
+        ) -> dict[str, Union[dict[str, Any], None]]:
             result: dict[str, Union[dict[str, Any], None]] = {
                 "trustworthiness": {
                     "score": None,
@@ -205,10 +207,5 @@ def _handle_exception(
             return create_eval_metrics(include_response=False)
 
         raise ValueError(f"Unsupported response type: {response_type}")
-
-    if len(e.args) > 0 and response_type != RAG_GENERATE_RESPONSE_TYPE and response_type != RAG_SCORE_RESPONSE_TYPE:
-        additional_message = "Consider using `TLM.try_prompt()` or `TLM.try_get_trustworthiness_score()` to gracefully handle errors and preserve partial results. For large datasets, consider also running it on multiple smaller batches."
-        new_args = (str(e.args[0]) + "\n" + additional_message,) + e.args[1:]
-        raise type(e)(*new_args)
 
     raise e  # in the case where the error has no message/args
