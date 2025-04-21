@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-04-21
+
+### Changed 
+
+- All `.prompt()` / `.get_trustworthiness_score()` / `.generate()` / `.score()` methods will now catch any errors and return `null` values alongside a log of why the exception occurred
+- `try_` methods are deprecated and will share the same functionality as the "non-try" methods
+
 ## [1.0.22] - 2025-04-18
+
+### Added 
 
 - Update `response_helpfulness` default criteria
 
