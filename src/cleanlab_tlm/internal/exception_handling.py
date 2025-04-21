@@ -58,7 +58,7 @@ def handle_tlm_exceptions(
         async def wrapper(*args: Any, **kwargs: Any) -> ResponseT:
             capture_exceptions = kwargs.get("capture_exceptions", False)
             batch_index = kwargs.get("batch_index")
-            evals = kwargs.get("evals", [])
+            evals = getattr(args[0], "_evals", [])
             try:
                 return await func(*args, **kwargs)
             except asyncio.TimeoutError:
