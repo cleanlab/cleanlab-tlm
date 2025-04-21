@@ -700,14 +700,14 @@ class TLMOptions(TypedDict):
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
-        model ({"gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "o3-mini", "o1", "o1-mini", "o1-preview", \
-        "gpt-3.5-turbo-16k", "gpt-4","gpt-4.5-preview", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", "claude-3.5-haiku", \
+        model ({"gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "o3-mini", "o1", "o1-mini", \
+        "gpt-4", "gpt-4.5-preview", "gpt-3.5-turbo-16k", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", "claude-3.5-haiku", \
         "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"): \
         Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
         - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4.5-preview", \
             "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
-        - Recommended models for accuracy: "gpt-4o", "o3-mini", "o1", "claude-3.7-sonnet".
-        - Recommended models for low latency/costs: "nova-micro", "gpt-4o-mini".
+        - Recommended models for accuracy: "gpt-4.1", "o4-mini", "o3", "claude-3.7-sonnet", "claude-3.5-sonnet-v2".
+        - Recommended models for low latency/costs: "gpt-4.1-nano", "nova-micro".
 
         max_tokens (int, default = 512): the maximum number of tokens that can be generated in the TLM response (and in internal trustworthiness scoring).
         Higher values here may produce better (more reliable) TLM responses and trustworthiness scores, but at higher runtimes/costs.
