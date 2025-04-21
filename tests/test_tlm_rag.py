@@ -1,4 +1,3 @@
-import asyncio
 import os
 from collections.abc import Generator
 from typing import Any, cast
@@ -6,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
+from cleanlab_tlm.errors import APITimeoutError, MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.tlm import TLMOptions
@@ -913,10 +912,9 @@ def test_batch_score_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) ->
 
 
 def test_generate_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_timeout: None) -> None:  # noqa: ARG001
-    """Tests batch generate with forced timeouts.
+    """Tests single prompt generate with forced timeouts.
 
-    Sets timeout to 0.0001 seconds, which should force a timeout for all requests.
-    This should result in a timeout error being thrown.
+    Sets timeout to 0.0001 seconds, which should force a timeout error being thrown.
 
     Expected:
     - TrustworthyRAG should raise a timeout error
@@ -925,19 +923,18 @@ def test_generate_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_time
     trustworthy_rag._timeout = 0.0001
 
     # assert -- timeout is thrown
-    with pytest.raises(asyncio.TimeoutError):
-        # act -- run a batch generate
+    with pytest.raises(APITimeoutError):
+        # act -- run a generate
         trustworthy_rag.generate(
-            query=test_query_batch,
-            context=test_context_batch,
+            query=test_query,
+            context=test_context,
         )
 
 
 def test_score_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_timeout: None) -> None:  # noqa: ARG001
-    """Tests batch score with forced timeouts.
+    """Tests single score with forced timeouts.
 
-    Sets timeout to 0.0001 seconds, which should force a timeout for all requests.
-    This should result in a timeout error being thrown.
+    Sets timeout to 0.0001 seconds, which should force a timeout error being thrown.
 
     Expected:
     - TrustworthyRAG should raise a timeout error
@@ -946,12 +943,12 @@ def test_score_force_timeouts(trustworthy_rag: TrustworthyRAG, reset_rag_timeout
     trustworthy_rag._timeout = 0.0001
 
     # assert -- timeout is thrown
-    with pytest.raises(asyncio.TimeoutError):
+    with pytest.raises(APITimeoutError):
         # act -- run a batch score
         trustworthy_rag.score(
-            query=test_query_batch,
-            context=test_context_batch,
-            response=test_response_batch,
+            query=test_query,
+            context=test_context,
+            response=test_response,
         )
 
 

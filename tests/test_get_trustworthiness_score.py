@@ -1,9 +1,9 @@
-import asyncio
 from collections.abc import Generator
 from typing import Any
 
 import pytest
 
+from cleanlab_tlm.errors import APITimeoutError
 from cleanlab_tlm.tlm import TLM
 from tests.conftest import make_text_unique
 from tests.constants import (
@@ -85,6 +85,27 @@ def test_single_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
     assert is_trustworthiness_score_json_format(response)
 
 
+def test_single_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
+    """Tests running a single get_trustworthiness_score in the TLM, forcing timeouts.
+
+    Sets timeout to 0.0001 seconds, which should force a timeout for all get_trustworthiness_scores.
+    This should result in a timeout error being thrown
+
+    Expected:
+    - TLM should raise a timeout error
+    """
+    # arrange -- override timeout
+    tlm._timeout = 0.0001
+
+    # assert -- timeout is thrown
+    with pytest.raises(APITimeoutError):
+        # act -- run a single get_trustworthiness_score
+        tlm.get_trustworthiness_score(
+            test_prompt,
+            TEST_RESPONSE,
+        )
+
+
 def test_batch_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
     """Tests running a batch get_trustworthiness_score in the TLM with constrain_outputs.
     Expected:
@@ -112,16 +133,18 @@ def test_batch_get_trustworthiness_score(tlm: TLM) -> None:
 
     Expected:
     - TLM should return a list of responses
-    - Responses should be non-None
+    - Responses will be of type TLMResponse
     - No exceptions are raised
-    - Each response should be of type TLMResponse
     """
     # act -- run a batch get_trustworthiness_score
-    response = tlm.get_trustworthiness_score(test_prompt_batch, TEST_RESPONSE_BATCH)
+    response = tlm.get_trustworthiness_score(
+        test_prompt_batch,
+        TEST_RESPONSE_BATCH,
+    )
 
     # assert
     # - response is not None
-    # - a list of responses of type TLMResponse is returned
+    # - a list of responses of type TLMResponse or None is returned
     # - no exceptions are raised (implicit)
     assert response is not None
     assert isinstance(response, list)
@@ -130,73 +153,6 @@ def test_batch_get_trustworthiness_score(tlm: TLM) -> None:
 
 def test_batch_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     """Tests running a batch get_trustworthiness_score in the TLM, forcing timeouts.
-
-    Sets timeout to 0.0001 seconds, which should force a timeout for all get_trustworthiness_scores.
-    This should result in a timeout error being thrown
-
-    Expected:
-    - TLM should raise a timeout error
-    """
-    # arrange -- override timeout
-    tlm._timeout = 0.0001
-
-    # assert -- timeout is thrown
-    with pytest.raises(asyncio.TimeoutError):
-        # act -- run a batch get_trustworthiness_score
-        tlm.get_trustworthiness_score(
-            test_prompt_batch,
-            TEST_RESPONSE_BATCH,
-        )
-
-
-def test_batch_try_get_trustworthiness_score(tlm: TLM) -> None:
-    """Tests running a batch try get_trustworthiness_score in the TLM.
-
-    Expected:
-    - TLM should return a list of responses
-    - Responses will be of type TLMResponse
-    - No exceptions are raised
-    """
-    # act -- run a batch get_trustworthiness_score
-    response = tlm.try_get_trustworthiness_score(
-        test_prompt_batch,
-        TEST_RESPONSE_BATCH,
-    )
-
-    # assert
-    # - response is not None
-    # - a list of responses of type TLMResponse or None is returned
-    # - no exceptions are raised (implicit)
-    assert response is not None
-    assert isinstance(response, list)
-    assert all(is_trustworthiness_score_json_format(r) for r in response)
-
-
-def test_batch_try_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:
-    """Tests running a batch try get_trustworthiness_score in the TLM with constrain_outputs.
-    Expected:
-    - TLM should return a list of responses
-    - Responses will be of type TLMResponse
-    - No exceptions are raised
-    """
-    # act -- run a batch get_trustworthiness_score
-    response = tlm.try_get_trustworthiness_score(
-        test_prompt_batch,
-        TEST_RESPONSE_BATCH,
-        constrain_outputs=TEST_RESPONSE_BATCH,
-    )
-
-    # assert
-    # - response is not None
-    # - a list of responses of type TLMResponse or None is returned
-    # - no exceptions are raised (implicit)
-    assert response is not None
-    assert isinstance(response, list)
-    assert all(is_trustworthiness_score_json_format(r) for r in response)
-
-
-def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
-    """Tests running a batch try get_trustworthiness_score in the TLM, forcing timeouts.
 
     Sets timeout to 0.0001 seconds, which should force a timeout for all get_trustworthiness_scores.
     This should result in TLMResponse with error messages and retryability information for all get_trustworthiness_scores.
@@ -210,7 +166,7 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     tlm._timeout = 0.0001
 
     # act -- run a batch get_trustworthiness_score
-    response = tlm.try_get_trustworthiness_score(
+    response = tlm.get_trustworthiness_score(
         test_prompt_batch,
         TEST_RESPONSE_BATCH,
     )
@@ -222,6 +178,24 @@ def test_batch_try_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
     assert response is not None
     assert isinstance(response, list)
     assert all(is_tlm_score_response_with_error(r) for r in response)
+
+
+def test_try_get_trustworthiness_score(tlm: TLM) -> None:
+    # act -- run a batch get_trustworthiness_score
+    with pytest.warns(DeprecationWarning) as warning:
+        response = tlm.try_get_trustworthiness_score(
+            test_prompt_batch,
+            TEST_RESPONSE_BATCH,
+        )
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse or None is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_trustworthiness_score_json_format(r) for r in response)
+    assert "Deprecated method." in str(warning[0].message)
 
 
 @pytest.fixture(autouse=True)

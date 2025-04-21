@@ -7,6 +7,7 @@ Learn how to use TLM via the [quickstart tutorial](/tlm/tutorials/tlm).
 from __future__ import annotations
 
 import asyncio
+import warnings
 from collections.abc import Coroutine, Sequence
 from typing import (
     # lazydocs: ignore
@@ -41,8 +42,6 @@ from cleanlab_tlm.internal.validation import (
     tlm_score_process_response_and_kwargs,
     validate_tlm_prompt,
     validate_tlm_prompt_response,
-    validate_tlm_try_prompt,
-    validate_try_tlm_prompt_response,
 )
 
 if TYPE_CHECKING:
@@ -129,7 +128,6 @@ class TLM(BaseTLM):
     async def _batch_prompt(
         self,
         prompts: Sequence[str],
-        capture_exceptions: bool = False,
         constrain_outputs: Optional[Sequence[Optional[list[str]]]] = None,
     ) -> list[TLMResponse]:
         """Run a batch of prompts through TLM and get responses/scores for each prompt in the batch. The list returned will have the same length as the input list.
@@ -142,33 +140,24 @@ class TLM(BaseTLM):
         Returns:
             list[TLMResponse]: TLM responses/scores for each prompt (in supplied order)
         """
-        if capture_exceptions:
-            per_query_timeout, per_batch_timeout = self._timeout, None
-        else:
-            per_query_timeout, per_batch_timeout = None, self._timeout
-
         # run batch of TLM
         tlm_responses = await self._batch_async(
             [
                 self._prompt_async(
                     prompt,
-                    timeout=per_query_timeout,
-                    capture_exceptions=capture_exceptions,
+                    timeout=self._timeout,
+                    capture_exceptions=True,
                     batch_index=batch_index,
                     constrain_outputs=constrain_output,
                 )
                 for batch_index, (prompt, constrain_output) in enumerate(
                     zip(
                         prompts,
-                        constrain_outputs if constrain_outputs else [None] * len(prompts),
+                        (constrain_outputs if constrain_outputs else [None] * len(prompts)),
                     )
                 )
-            ],
-            per_batch_timeout,
+            ]
         )
-
-        if capture_exceptions:
-            return cast(list[TLMResponse], tlm_responses)
 
         return cast(list[TLMResponse], tlm_responses)
 
@@ -176,30 +165,17 @@ class TLM(BaseTLM):
         self,
         prompts: Sequence[str],
         responses: Sequence[dict[str, Any]],
-        capture_exceptions: bool = False,
     ) -> list[TLMScore]:
         """Run batch of TLM get trustworthiness score.
-
-        capture_exceptions behavior:
-        - If true, the list will contain None in place of the response for any errors or timeout processing some inputs.
-        - Otherwise, the method will raise an exception for any errors or timeout processing some inputs.
-
-        capture_exceptions interaction with timeout:
-        - If true, timeouts are applied on a per-query basis (i.e. some queries may succeed while others fail)
-        - If false, a single timeout is applied to the entire batch (i.e. all queries will fail if the timeout is reached)
 
         Args:
             prompts (Sequence[str]): list of prompts to run get trustworthiness score for
             responses (Sequence[str]): list of responses to run get trustworthiness score for
-            capture_exceptions (bool): if True, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the score for any errors or timeout when processing a particular prompt from the batch.
 
         Returns:
             list[TLMScore]: TLM trustworthiness score for each prompt (in supplied order).
+            Error messages and retryability information in place of the score for any errors or timeout when processing a particular prompt from the batch.
         """
-        if capture_exceptions:
-            per_query_timeout, per_batch_timeout = self._timeout, None
-        else:
-            per_query_timeout, per_batch_timeout = None, self._timeout
 
         # run batch of TLM get trustworthiness score
         tlm_responses = await self._batch_async(
@@ -207,30 +183,24 @@ class TLM(BaseTLM):
                 self._get_trustworthiness_score_async(
                     prompt,
                     response,
-                    timeout=per_query_timeout,
-                    capture_exceptions=capture_exceptions,
+                    timeout=self._timeout,
+                    capture_exceptions=True,
                     batch_index=batch_index,
                 )
                 for batch_index, (prompt, response) in enumerate(zip(prompts, responses))
-            ],
-            per_batch_timeout,
+            ]
         )
-
-        if capture_exceptions:
-            return cast(list[TLMScore], tlm_responses)
 
         return cast(list[TLMScore], tlm_responses)
 
     async def _batch_async(
         self,
         tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, TLMScore]]],
-        batch_timeout: Optional[float] = None,
     ) -> Sequence[Union[TLMResponse, TLMScore]]:
         """Runs batch of TLM queries.
 
         Args:
             tlm_coroutines (list[Coroutine[None, None, Union[TLMResponse, TLMScore]]]): list of query coroutines to run, returning [TLMResponse](#class-tlmresponse) or [TLMScore](#class-tlmscore)
-            batch_timeout (Optional[float], optional): timeout (in seconds) to run all queries, defaults to None (no timeout)
 
         Returns:
             Sequence[Union[TLMResponse, TLMScore]]: list of coroutine results, with preserved order
@@ -253,21 +223,7 @@ class TLM(BaseTLM):
         else:
             gather_task = asyncio.gather(*tlm_query_tasks)  # type: ignore[assignment]
 
-        wait_task = asyncio.wait_for(gather_task, timeout=batch_timeout)
-        try:
-            return cast(
-                Sequence[Union[TLMResponse, TLMScore]],
-                await wait_task,
-            )
-        except Exception:
-            # if exception occurs while awaiting batch results, cancel remaining tasks
-            for query_task in tlm_query_tasks:
-                query_task.cancel()
-
-            # await remaining tasks to ensure they are cancelled
-            await asyncio.gather(*tlm_query_tasks, return_exceptions=True)
-
-            raise
+        return cast(Sequence[Union[TLMResponse, TLMScore]], await gather_task)
 
     def prompt(
         self,
@@ -292,11 +248,9 @@ class TLM(BaseTLM):
         Returns:
             TLMResponse | list[TLMResponse]: [TLMResponse](#class-tlmresponse) object containing the response and trustworthiness score.
                 If multiple prompts were provided in a list, then a list of such objects is returned, one for each prompt.
-                This method will raise an exception if any errors occur or if you hit a timeout (given a timeout is specified).
-                Use it if you want strict error handling and immediate notification of any exceptions/timeouts.
-
-                If running this method on a big batch of prompts, you might lose partially completed results if TLM fails on any one of them.
-                Use the [`try_prompt()`](#method-try_prompt) method instead and run it on multiple smaller batches.
+                The returned list will always have the same length as the input list.
+                In case of TLM failure on any prompt (due to timeouts or other errors),the return list will include a [TLMResponse](#class-tlmresponse)
+                with an error message and retryability information instead of the usual TLMResponse for that failed prompt.
         """
         validate_tlm_prompt(prompt)
         tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
@@ -316,7 +270,6 @@ class TLM(BaseTLM):
         return self._event_loop.run_until_complete(
             self._batch_prompt(
                 prompt,
-                capture_exceptions=False,
                 constrain_outputs=cast(
                     Optional[list[Optional[list[str]]]],
                     kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
@@ -331,39 +284,17 @@ class TLM(BaseTLM):
         **kwargs: Any,
     ) -> list[TLMResponse]:
         """
-        Gets response and trustworthiness score for any batch of prompts, handling any failures (errors or timeouts).
+        lazydocs: ignore
 
-        The list returned will have the same length as the input list. If there are any
-        failures (errors or timeouts) processing some inputs, the [TLMResponse](#class-tlmresponse) objects in the returned list will contain error messages and retryability information instead of the usual response.
-
-        This is the recommended way to run TLM over large datasets with many prompts.
-        It ensures partial results are preserved, even if some individual TLM calls over the dataset fail.
-
-        Args:
-            prompt (Sequence[str]): list of multiple prompts for the TLM
-            kwargs: Optional keyword arguments, the same as for the [`prompt()`](#method-prompt) method.
-        Returns:
-            list[TLMResponse]: list of [TLMResponse](#class-tlmresponse) objects containing the response and trustworthiness score.
-                The returned list will always have the same length as the input list.
-                In case of TLM failure on any prompt (due to timeouts or other errors),
-                the return list will include a [TLMResponse](#class-tlmresponse) with an error message and retryability information instead of the usual TLMResponse for that failed prompt.
-                Use this method to obtain TLM results for as many prompts as possible, while handling errors/timeouts manually.
-                For immediate notification about any errors or timeouts when processing multiple prompts,
-                use [`prompt()`](#method-prompt) instead.
+        Deprecated. Use [`prompt()`](#method-prompt) instead.
         """
-        validate_tlm_try_prompt(prompt)
-        tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
-
-        return self._event_loop.run_until_complete(
-            self._batch_prompt(
-                prompt,
-                capture_exceptions=True,
-                constrain_outputs=cast(
-                    Optional[list[Optional[list[str]]]],
-                    kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
-                ),
-            ),
+        warnings.warn(
+            "Deprecated method. Use `prompt()` instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
+
+        return cast(list[TLMResponse], self.prompt(prompt, **kwargs))
 
     async def prompt_async(
         self,
@@ -404,7 +335,6 @@ class TLM(BaseTLM):
 
             return await self._batch_prompt(
                 prompt,
-                capture_exceptions=False,
                 constrain_outputs=cast(
                     Optional[list[Optional[list[str]]]],
                     kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
@@ -479,11 +409,9 @@ class TLM(BaseTLM):
                 If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and optional log dictionary keys for each prompt-response pair passed in.
 
                 The score quantifies how confident TLM is that the given response is good for the given prompt.
-                If running on many prompt-response pairs simultaneously:
-                this method will raise an exception if any TLM errors or timeouts occur.
-                Use it if immediate notification of any exceptions/timeouts is preferred.
-                You will lose any partial results if an exception is raised.
-                For big datasets, we recommend using [`try_get_trustworthiness_score()`](#method-try_get_trustworthiness_score) instead, and running it in multiple batches.
+                The returned list will always have the same length as the input list.
+                In case of TLM error or timeout on any prompt-response pair,
+                the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the trustworthiness score.
         """
         validate_tlm_prompt_response(prompt, response)
         processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
@@ -504,9 +432,7 @@ class TLM(BaseTLM):
         assert isinstance(prompt, Sequence)
         assert isinstance(processed_response, Sequence)
 
-        return self._event_loop.run_until_complete(
-            self._batch_get_trustworthiness_score(prompt, processed_response, capture_exceptions=False)
-        )
+        return self._event_loop.run_until_complete(self._batch_get_trustworthiness_score(prompt, processed_response))
 
     def try_get_trustworthiness_score(
         self,
@@ -514,42 +440,18 @@ class TLM(BaseTLM):
         response: Sequence[str],
         **kwargs: Any,
     ) -> list[TLMScore]:
-        """Gets trustworthiness score for batches of many prompt-response pairs.
-
-        The list returned will have the same length as the input list, if TLM hits any
-        errors or timeout processing certain inputs, the list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information
-        in place of the TLM score for this failed input.
-
-        This is the recommended way to get TLM trustworthiness scores for big datasets.
-        It ensures partial results are not lost if some individual TLM calls within the dataset fail.
-
-        Args:
-            prompt (Sequence[str]): list of prompts for the TLM to evaluate
-            response (Sequence[str]): list of existing responses corresponding to the input prompts (from any LLM or human-written)
-            kwargs: Optional keyword arguments, it supports the same arguments as the [`prompt()`](#method-prompt) method such as `constrain_outputs`.
-        Returns:
-            list[TLMScore]: If a list of prompt/responses was passed in, method returns a list of [TLMScore](#class-tlmscore) objects each containing the trustworthiness score and the optional log dictionary keys for each prompt-response pair passed in. For all TLM calls that failed, the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information instead.
-
-                The score quantifies how confident TLM is that the given response is good for the given prompt.
-                The returned list will always have the same length as the input list.
-                In case of TLM error or timeout on any prompt-response pair,
-                the returned list will contain [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the trustworthiness score.
-                Use this method if you prioritize obtaining results for as many inputs as possible.
-                To be notified immediately about any errors or timeouts when running many inputs,
-                use the [`get_trustworthiness_score()`](#method-get_trustworthiness_score) method instead.
         """
-        validate_try_tlm_prompt_response(prompt, response)
-        processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
+        lazydocs: ignore
 
-        assert isinstance(processed_response, list)
-
-        return self._event_loop.run_until_complete(
-            self._batch_get_trustworthiness_score(
-                prompt,
-                processed_response,
-                capture_exceptions=True,
-            )
+        Deprecated. Use [`get_trustworthiness_score()`](#method-get_trustworthiness_score) instead.
+        """
+        warnings.warn(
+            "Deprecated method. Use `get_trustworthiness_score()` instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
+
+        return cast(list[TLMScore], self.get_trustworthiness_score(prompt, response, **kwargs))
 
     async def get_trustworthiness_score_async(
         self,
@@ -593,7 +495,7 @@ class TLM(BaseTLM):
             assert isinstance(prompt, Sequence)
             assert isinstance(processed_response, Sequence)
 
-            return await self._batch_get_trustworthiness_score(prompt, processed_response, capture_exceptions=False)
+            return await self._batch_get_trustworthiness_score(prompt, processed_response)
 
     @handle_tlm_exceptions("TLMScore")
     async def _get_trustworthiness_score_async(
