@@ -66,18 +66,17 @@ class TLM(BaseTLM):
 
             The "best" and "high" presets auto-improve LLM responses,
             with "best" also returning more reliable trustworthiness scores than "high".
-            The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
+            The "medium", "low", and "base" presets return standard LLM responses along with associated trustworthiness scores,
             with "medium" producing more reliable trustworthiness scores than "low".
-            The "base" preset provides a standard LLM response and a trustworthiness score in the lowest possible latency/cost.
+            The "base" preset provides the lowest possible latency/cost.
 
-            Higher presets have increased runtime and cost (and may internally consume more tokens).
-            Reduce your preset if you see token-limit errors.
+            Higher presets have increased runtime and cost. Reduce your preset if you see token-limit errors.
             Details about each present are documented in [TLMOptions](#class-tlmoptions).
-            Avoid "best" or "high" presets if you just want trustworthiness scores (i.e. are using `tlm.get_trustworthiness_score()` rather than `tlm.prompt()`).
+            Ignore "best" or "high" presets if you just want trustworthiness scores (i.e. are using `TLM.get_trustworthiness_score()` rather than `TLM.prompt()`).
             These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
-        task ({"default", "classification", "code_generation"}, default = "default"): determines which scoring flow/methodology to use for evaluating the trustworthiness of the response.
-            - "default": use for general tasks such as QA, summarization, etc.
+        task ({"default", "classification", "code_generation"}, default = "default"): determines details of the algorithm used for scoring LLM response trustworthiness (similar to `quality_preset`).
+            - "default": use for general tasks such as question-answering, summarization, extraction, etc.
             - "classification": use for classification tasks, where the response is a categorical prediction. \
                 When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
             - "code_generation": use for code generation tasks.
@@ -94,7 +93,7 @@ class TLM(BaseTLM):
         If a result is not produced within the timeout, a TimeoutError will be raised. Defaults to None, which does not apply a timeout.
 
         verbose (bool, optional): whether to print outputs during execution, i.e. show a progress bar when running TLM over a batch of data.
-        If None, this will be determined automatically based on whether the code is running in an interactive environment such as a Jupyter notebook.
+        If None, this will be auto-determined based on whether the code is running in an interactive environment such as a Jupyter notebook.
     """
 
     def __init__(
