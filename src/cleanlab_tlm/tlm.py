@@ -66,18 +66,17 @@ class TLM(BaseTLM):
 
             The "best" and "high" presets auto-improve LLM responses,
             with "best" also returning more reliable trustworthiness scores than "high".
-            The "medium" and "low" presets return standard LLM responses along with associated trustworthiness scores,
+            The "medium", "low", and "base" presets return standard LLM responses along with associated trustworthiness scores,
             with "medium" producing more reliable trustworthiness scores than "low".
-            The "base" preset provides a standard LLM response and a trustworthiness score in the lowest possible latency/cost.
+            The "base" preset provides the lowest possible latency/cost.
 
-            Higher presets have increased runtime and cost (and may internally consume more tokens).
-            Reduce your preset if you see token-limit errors.
+            Higher presets have increased runtime and cost. Reduce your preset if you see token-limit errors.
             Details about each present are documented in [TLMOptions](#class-tlmoptions).
-            Avoid "best" or "high" presets if you just want trustworthiness scores (i.e. are using `tlm.get_trustworthiness_score()` rather than `tlm.prompt()`).
+            Ignore "best" or "high" presets if you just want trustworthiness scores (i.e. are using `TLM.get_trustworthiness_score()` rather than `TLM.prompt()`).
             These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
-        task ({"default", "classification", "code_generation"}, default = "default"): determines which scoring flow/methodology to use for evaluating the trustworthiness of the response.
-            - "default": use for general tasks such as QA, summarization, etc.
+        task ({"default", "classification", "code_generation"}, default = "default"): determines details of the algorithm used for scoring LLM response trustworthiness (similar to `quality_preset`).
+            - "default": use for general tasks such as question-answering, summarization, extraction, etc.
             - "classification": use for classification tasks, where the response is a categorical prediction. \
                 When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
             - "code_generation": use for code generation tasks.
@@ -94,7 +93,7 @@ class TLM(BaseTLM):
         If a result is not produced within the timeout, a TimeoutError will be raised. Defaults to None, which does not apply a timeout.
 
         verbose (bool, optional): whether to print outputs during execution, i.e. show a progress bar when running TLM over a batch of data.
-        If None, this will be determined automatically based on whether the code is running in an interactive environment such as a Jupyter notebook.
+        If None, this will be auto-determined based on whether the code is running in an interactive environment such as a Jupyter notebook.
     """
 
     def __init__(
@@ -701,53 +700,52 @@ class TLMOptions(TypedDict):
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
-        model ({"gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "o3-mini", "o1", "o1-mini", "o1-preview", \
-        "gpt-3.5-turbo-16k", "gpt-4","gpt-4.5-preview", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", "claude-3.5-haiku", \
+        model ({"gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "o3-mini", "o1", "o1-mini", \
+        "gpt-4", "gpt-4.5-preview", "gpt-3.5-turbo-16k", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", "claude-3.5-haiku", \
         "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"): \
         Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
         - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4.5-preview", \
             "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
-        - Recommended models for accuracy: "gpt-4o", "o3-mini", "o1", "claude-3.7-sonnet".
-        - Recommended models for low latency/costs: "nova-micro", "gpt-4o-mini".
+        - Recommended models for accuracy: "gpt-4.1", "o4-mini", "o3", "claude-3.7-sonnet", "claude-3.5-sonnet-v2".
+        - Recommended models for low latency/costs: "gpt-4.1-nano", "nova-micro".
 
         max_tokens (int, default = 512): the maximum number of tokens that can be generated in the TLM response (and in internal trustworthiness scoring).
-        Higher values here may produce better (more reliable) TLM responses and trustworthiness scores, but at higher costs/runtimes.
+        Higher values here may produce better (more reliable) TLM responses and trustworthiness scores, but at higher runtimes/costs.
         If you experience token/rate limit errors while using TLM, try lowering this number.
         For OpenAI models, this parameter must be between 64 and 4096. For Claude models, this parameter must be between 64 and 512.
 
-        num_candidate_responses (int, default = 1): how many alternative candidate responses are internally generated by TLM.
-        TLM scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
-        Higher values here can produce better (more accurate) responses from the TLM, but at higher costs/runtimes (and internally consumes more tokens).
-        This parameter must be between 1 and 20.
-        When it is 1, TLM simply returns a standard LLM response and does not attempt to auto-improve it.
+        num_candidate_responses (int, default = 1): how many alternative candidate responses are internally generated in `TLM.prompt()`.
+        `TLM.prompt()` scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
+        This parameter must be between 1 and 20. It has no effect on `TLM.score()`.
+        Higher values here can produce more accurate responses from `TLM.prompt()`, but at higher runtimes/costs.
+        When it is 1, `TLM.prompt()` simply returns a standard LLM response and does not attempt to auto-improve it.
 
-        num_consistency_samples (int, default = 8): the amount of internal sampling to evaluate LLM response consistency.
-        Must be between 0 and 20. Higher values produce more reliable TLM trustworthiness scores, but at higher costs/runtimes.
-        This consistency helps quantify the epistemic uncertainty associated with
+        num_consistency_samples (int, default = 8): the amount of internal sampling to measure LLM response consistency, a factor affecting trustworthiness scoring.
+        Must be between 0 and 20. Higher values produce more reliable TLM trustworthiness scores, but at higher runtimes/costs.
+        Measuring consistency helps quantify the epistemic uncertainty associated with
         strange prompts or prompts that are too vague/open-ended to receive a clearly defined 'good' response.
-        TLM internally measures consistency via the degree of contradiction between sampled responses that the model considers equally plausible.
+        TLM measures consistency via the degree of contradiction between sampled responses that the model considers plausible.
 
-        use_self_reflection (bool, default = `True`): whether the LLM is asked to self-reflect upon the response it
-        generated and self-evaluate this response.
-        Setting this False disables self-reflection and may worsen trustworthiness scores, but will reduce costs/runtimes.
-        Self-reflection helps quantify aleatoric uncertainty associated with challenging prompts
-        and catches answers that are obviously incorrect/bad.
+        use_self_reflection (bool, default = `True`): whether the LLM is asked to reflect on the given response and directly evaluate correctness/confidence.
+        Setting this False disables reflection and will reduce runtimes/costs, but potentially also the reliability of trustworthiness scores.
+        Reflection helps quantify aleatoric uncertainty associated with challenging prompts
+        and catches responses that are noticeably incorrect/bad upon further analysis.
 
         similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "semantic"): how the
-        trustworthiness scoring algorithm measures similarity between sampled responses considered by the model in the consistency assessment.
-        Supported similarity measures include "semantic" (based on natural language inference), "string" (based on character/word overlap),
-        "embedding" (based on embedding similarity), "embedding_large" (based on embedding similarity with a larger embedding model),
-        "code" (based on code similarity), and "discrepancy" (based on the similarity or contradiction between sampled responses).
-        Set this to "string" to improve latency/costs.
+        trustworthiness scoring's consistency algorithm measures similarity between alternative responses considered plausible by the model.
+        Supported similarity measures include: "semantic" (based on natural language inference),
+        "embedding" (based on vector embedding similarity), "embedding_large" (based on a larger embedding model),
+        "code" (based on model-based analysis designed to compare code), "discrepancy" (based on model-based analysis of possible discrepancies),
+        and "string" (based on character/word overlap). Set this to "string" for minimal runtimes/costs.
 
-        reasoning_effort ({"none", "low", "medium", "high"}, default = "high"): how much the LLM can reason (number of thinking tokens)
-        when considering alternative possible responses and double-checking responses.
-        Higher efforts here may produce better TLM trustworthiness scores and LLM responses. Reduce this value to improve latency/costs.
+        reasoning_effort ({"none", "low", "medium", "high"}, default = "high"): how much internal LLM calls are allowed to reason (number of thinking tokens)
+        when generating alternative possible responses and reflecting on responses during trustworthiness scoring.
+        Higher reasoning efforts may yield more reliable TLM trustworthiness scores. Reduce this value to reduce runtimes/costs.
 
         log (list[str], default = []): optionally specify additional logs or metadata that TLM should return.
         For instance, include "explanation" here to get explanations of why a response is scored with low trustworthiness.
 
-        custom_eval_criteria (list[dict[str, Any]], default = []): optionally specify custom evalution criteria.
+        custom_eval_criteria (list[dict[str, Any]], default = []): optionally specify custom evalution criteria beyond the built-in trustworthiness scoring.
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: Name of the evaluation criteria.
         - criteria: Instructions specifying the evaluation criteria.
