@@ -717,8 +717,8 @@ class TLMOptions(TypedDict):
 
         num_candidate_responses (int, default = 1): how many alternative candidate responses are internally generated in `TLM.prompt()`.
         `TLM.prompt()` scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
-        Higher values here can produce better (more accurate) responses from the TLM, but at higher runtimes/costs.
         This parameter must be between 1 and 20. It has no effect on `TLM.score()`.
+        Higher values here can produce more accurate responses from `TLM.prompt()`, but at higher runtimes/costs.
         When it is 1, `TLM.prompt()` simply returns a standard LLM response and does not attempt to auto-improve it.
 
         num_consistency_samples (int, default = 8): the amount of internal sampling to measure LLM response consistency, a factor affecting trustworthiness scoring.
