@@ -34,14 +34,14 @@ class TLMLite:
     Args:
         response_model (str): LLM used to produce the response to the given prompt.
             Do not specify the model to use for scoring  trustworthiness here, instead specify that model in the `options` argument.
-            The list of supported model strings can be found in the TLMOptions documentation, by default, the model is "gpt-4o".
+            The list of supported model strings can be found in the [TLMOptions](../tlm/#class-tlmoptions) documentation, by default, the model is "gpt-4o".
 
         quality_preset (TLMQualityPreset, default = "medium"): preset configuration to control the quality of TLM trustworthiness scores vs. runtimes/costs.
             This preset only applies to the model computing the trustworthiness score.
             Supported options are only "medium" or "low", because TLMLite is not intended to improve response accuracy
             (use the regular [TLM](../tlm) for that).
 
-        options (TLMOptions, optional): a typed dict of advanced configuration options.
+        options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configuration options.
             Most of these options only apply to the model scoring  trustworthiness, except for "max_tokens", which applies to the response model as well.
             Specify which model to use for scoring trustworthiness in these options.
             For more details about the options, see the documentation for [TLMOptions](../tlm/#class-tlmoptions).

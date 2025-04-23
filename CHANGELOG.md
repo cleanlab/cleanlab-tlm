@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-04-23
+
 ### Changed
 
-- Improved validation + error messages for TLM's `custom_eval_criteria`
+- Improved validation + error messages for TLM's `custom_eval_criteria`. 
+- Changed TLMOptions text in docs to have link to TLMOptions class
 
 ## [1.1.0] - 2025-04-21
 
@@ -138,7 +141,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.23...v1.1.0
 [1.0.23]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.22...v1.0.23
 [1.0.22]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.21...v1.0.22
