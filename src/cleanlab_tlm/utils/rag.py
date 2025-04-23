@@ -706,7 +706,7 @@ class EvalMetric(TypedDict):
         score (float, optional): score between 0-1 corresponding to the evaluation metric.
         A higher score indicates a higher rating for the specific evaluation criteria being measured.
 
-        log (dict, optional): additional logs and metadata, reported only if the `log` key was specified in `TLMOptions`.
+        log (dict, optional): additional logs and metadata, reported only if the `log` key was specified in [TLMOptions](../tlm/#class-tlmoptions).
     """
 
     score: Optional[float]
