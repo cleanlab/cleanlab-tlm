@@ -73,7 +73,7 @@ class TrustworthyRAG(BaseTLM):
         api_key (str, optional): API key for accessing TLM. If not provided, this client will
             attempt to use the CLEANLAB_TLM_API_KEY environment variable.
 
-        options (TLMOptions, optional): a typed dict of advanced configurations you can optionally specify.
+        options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
