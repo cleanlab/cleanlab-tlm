@@ -155,15 +155,22 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
             if not isinstance(val, list):
                 raise ValidationError(f"Invalid type {type(val)}, custom_eval_criteria must be a list of dictionaries.")
 
+            supported_keys = {"name", "criteria"}
+
             for i, criteria in enumerate(val):
                 if not isinstance(criteria, dict):
                     raise ValidationError(f"Item {i} in custom_eval_criteria is not a dictionary.")
 
-                if "name" not in criteria:
-                    raise ValidationError(f"Missing required key 'name' in custom_eval_criteria item {i}.")
-
-                if "criteria" not in criteria:
-                    raise ValidationError(f"Missing required key 'criteria' in custom_eval_criteria item {i}.")
+                input_keys = set(criteria.keys())
+                if input_keys != supported_keys:
+                    missing = supported_keys - input_keys
+                    extra = input_keys - supported_keys
+                    if missing:
+                        raise ValidationError(f"Missing required keys {missing} in custom_eval_criteria item {i}.")
+                    if extra:
+                        raise ValidationError(
+                            f"Invalid keys {extra} found in custom_eval_criteria item {i}. Supported keys are: {supported_keys}."
+                        )
 
                 if not isinstance(criteria.get("name"), str):
                     raise ValidationError(f"'name' in custom_eval_criteria item {i} must be a string.")

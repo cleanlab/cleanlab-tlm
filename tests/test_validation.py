@@ -624,7 +624,7 @@ def test_custom_eval_criteria_validation(tlm_api_key: str) -> None:
     # Invalid: missing name
     with pytest.raises(
         ValidationError,
-        match="^Missing required key 'name' in custom_eval_criteria item 0.$",
+        match="^Missing required keys {'name'} in custom_eval_criteria item 0.$",
     ):
         TLM(
             api_key=tlm_api_key,
@@ -634,11 +634,21 @@ def test_custom_eval_criteria_validation(tlm_api_key: str) -> None:
     # Invalid: missing criteria
     with pytest.raises(
         ValidationError,
-        match="^Missing required key 'criteria' in custom_eval_criteria item 0.$",
+        match="^Missing required keys {'criteria'} in custom_eval_criteria item 0.$",
     ):
         TLM(
             api_key=tlm_api_key,
             options=TLMOptions(custom_eval_criteria=[{"name": "test"}]),
+        )
+
+    # Invalid: extra keys
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid keys {'extra'} found in custom_eval_criteria item 0. Supported keys are: {'name', 'criteria'}.$",
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options=TLMOptions(custom_eval_criteria=[{"name": "test", "criteria": "test", "extra": "extra"}]),
         )
 
     # Invalid: name not a string
