@@ -80,12 +80,12 @@ class TLM(BaseTLM):
                 When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
             - "code_generation": use for code generation tasks.
 
-        options (TLMOptions, optional): a typed dict of advanced configurations you can optionally specify.
+        options ([TLMOptions](#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
         "similarity_measure", "reasoning_effort", "log", "custom_eval_criteria".
         See detailed documentation under [TLMOptions](#class-tlmoptions).
         If specified, these override any settings from the choice of `quality_preset`
-        (each `quality_preset` is just a certain TLMOptions configuration).
+        (each `quality_preset` is just a certain [TLMOptions](#class-tlmoptions) configuration).
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
         If a batch of data is passed in, the timeout will be applied to each individual item in the batch.
@@ -557,7 +557,7 @@ class TLMResponse(TypedDict):
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
         A higher score indicates a higher confidence that the response is correct/good.
 
-        log (dict, optional): additional logs and metadata returned from the LLM call, only if the `log` key was specified in TLMOptions.
+        log (dict, optional): additional logs and metadata returned from the LLM call, only if the `log` key was specified in [TLMOptions](#class-tlmoptions).
     """
 
     response: Optional[str]
@@ -572,7 +572,7 @@ class TLMScore(TypedDict):
         trustworthiness_score (float, optional): score between 0-1 corresponding to the trustworthiness of the response.
         A higher score indicates a higher confidence that the response is correct/good.
 
-        log (dict, optional): additional logs and metadata returned from the LLM call, only if the `log` key was specified in TLMOptions.
+        log (dict, optional): additional logs and metadata returned from the LLM call, only if the `log` key was specified in [TLMOptions](#class-tlmoptions).
     """
 
     trustworthiness_score: Optional[float]
