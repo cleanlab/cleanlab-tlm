@@ -33,7 +33,7 @@ def get_default_context_limit() -> int:
     return _TLM_DEFAULT_CONTEXT_LIMIT
 
 
-def get_default_max_token() -> int:
+def get_default_max_tokens() -> int:
     """
     Get the default maximum output tokens allowed.
 
