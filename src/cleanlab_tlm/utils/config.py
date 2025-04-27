@@ -7,7 +7,7 @@ from cleanlab_tlm.internal.constants import (
 
 def get_default_model() -> str:
     """
-    Get the default model name for TLM.
+    Get the default based model used in TLM.
 
     Returns:
         str: The default model name for TLM.
@@ -16,7 +16,7 @@ def get_default_model() -> str:
 
 def get_default_quality_preset() -> str:
     """
-    Get the default quality preset for TLM.
+    Get the default quality preset used in TLM.
 
     Returns:
         str: The default quality preset for TLM.
@@ -35,7 +35,7 @@ def get_default_context_limit() -> int:
 
 def get_default_max_tokens() -> int:
     """
-    Get the default maximum output tokens allowed.
+    Get the default maximum output tokens value for TLM.
 
     Returns:
         int: The default maximum output tokens.
