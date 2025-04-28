@@ -1,9 +1,10 @@
 from cleanlab_tlm.internal.constants import (
-    _TLM_DEFAULT_MODEL,
     _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_DEFAULT_CONTEXT_LIMIT,
-    _TLM_MAX_TOKEN_RANGE
+    _TLM_DEFAULT_MODEL,
+    _TLM_MAX_TOKEN_RANGE,
 )
+
 
 def get_default_model() -> str:
     """
@@ -14,6 +15,7 @@ def get_default_model() -> str:
     """
     return _TLM_DEFAULT_MODEL
 
+
 def get_default_quality_preset() -> str:
     """
     Get the default quality preset for TLM.
@@ -22,6 +24,7 @@ def get_default_quality_preset() -> str:
         str: The default quality preset for TLM.
     """
     return _DEFAULT_TLM_QUALITY_PRESET
+
 
 def get_default_context_limit() -> int:
     """
