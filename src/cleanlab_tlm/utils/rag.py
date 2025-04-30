@@ -661,6 +661,7 @@ A Response is considered not helpful if it avoids answering the question. For ex
 A bad User Request will appear either: vague or ambiguous in intent, disgruntled, complex, purposefully tricky or abnormal.
 A good User Request is phrased clearly and expresses an achievable intent, even if it contains pronouns or references to prior context. 
 Vagueness alone does not make a Request bad, the AI Assistant will have access to additional context about the user and can also search a domain-specific knowledge base as necessary, so a User Request that seems to be missing information or context could still be good.""",
+        "query_identifier": "User Request",
         "context_identifier": None,
         "response_identifier": None,
     },
