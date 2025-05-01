@@ -657,7 +657,7 @@ A Response is considered not helpful if it avoids answering the question. For ex
     },
     {
         "name": "query_ease",
-        "criteria": """Determine whether the above User Request appears simple and straightforward. 
+        "criteria": """Determine whether the above User Request appears simple and straightforward.
 A bad User Request will appear either: ambiguous in intent, disgruntled, complex, purposefully tricky or abnormal.
 A good User Request is phrased clearly and expresses an achievable intent, even if it contains pronouns or references to prior context.
 Vagueness alone does not make a Request bad - since an AI assistant responsible for addressing the query could potentially access additional user context, be aware of domain-specific terms or access domain-specific knowledge bases to provide a proper response, so a User Request that seems to be missing information could still be good.""",
