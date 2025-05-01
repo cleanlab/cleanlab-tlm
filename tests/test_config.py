@@ -5,7 +5,6 @@ from cleanlab_tlm.tlm import TLM
 from cleanlab_tlm.utils.config import (
     get_default_context_limit,
     get_default_model,
-    get_default_max_tokens,
 )
 from tests.constants import (
     CHARACTERS_PER_TOKEN,
@@ -28,12 +27,11 @@ def test_prompt_too_long_exception_single_prompt(tlm: TLM) -> None:
     assert exc_info.value.message.startswith("Prompt length exceeds")
     assert exc_info.value.retryable is False
 
+
 def test_prompt_within_context_limit_returns_response(tlm: TLM) -> None:
     """Tests that no error is raised when prompt length is within limit."""
 
-    response = tlm.prompt(
-        "a" * ((get_default_context_limit() - 1000) * CHARACTERS_PER_TOKEN)
-        )
+    response = tlm.prompt("a" * ((get_default_context_limit() - 1000) * CHARACTERS_PER_TOKEN))
 
     assert isinstance(response, dict)
     assert "response" in response
