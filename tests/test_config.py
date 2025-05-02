@@ -1,8 +1,14 @@
 import pytest
+import tiktoken
 
 from cleanlab_tlm.errors import TlmBadRequestError
 from cleanlab_tlm.tlm import TLM
-from cleanlab_tlm.utils.config import get_default_context_limit, get_default_model, get_default_quality_preset, get_default_max_tokens
+from cleanlab_tlm.utils.config import (
+    get_default_context_limit,
+    get_default_max_tokens,
+    get_default_model,
+    get_default_quality_preset,
+)
 from tests.constants import WORD_THAT_EQUALS_ONE_TOKEN
 
 tlm_with_default_setting = TLM()
@@ -32,3 +38,13 @@ def test_prompt_within_context_limit_returns_response(tlm: TLM) -> None:
     assert isinstance(response, dict)
     assert "response" in response
     assert isinstance(response["response"], str)
+
+
+def test_response_within_max_tokens() -> None:
+    """Tests that response is within max tokens limit."""
+    tlm_base = TLM(quality_preset="base")
+    prompt = "write a 100 page book about computer science. make sure it is extremely long and comprehensive."
+    result = tlm_base.prompt(prompt)
+
+    enc = tiktoken.encoding_for_model(get_default_model())
+    assert len(enc.encode(result["response"])) <= get_default_max_tokens()

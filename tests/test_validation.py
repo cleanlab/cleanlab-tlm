@@ -12,13 +12,13 @@ from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 from cleanlab_tlm.utils.rag import Eval, TrustworthyRAG
 from tests.conftest import make_text_unique
 from tests.constants import (
-    CHARACTERS_PER_TOKEN,
     MAX_COMBINED_LENGTH_TOKENS,
     MAX_PROMPT_LENGTH_TOKENS,
     MAX_RESPONSE_LENGTH_TOKENS,
     TEST_PROMPT,
     TEST_PROMPT_BATCH,
     TEST_RESPONSE,
+    WORD_THAT_EQUALS_ONE_TOKEN,
 )
 from tests.test_get_trustworthiness_score import is_tlm_score_response_with_error
 from tests.test_prompt import is_tlm_response_with_error

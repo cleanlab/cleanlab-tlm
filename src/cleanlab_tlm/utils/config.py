@@ -1,8 +1,8 @@
 from cleanlab_tlm.internal.constants import (
+    _DEFAULT_TLM_MAX_TOKENS,
     _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_DEFAULT_CONTEXT_LIMIT,
     _TLM_DEFAULT_MODEL,
-    _TLM_MAX_TOKEN_RANGE,
 )
 
 
@@ -43,4 +43,4 @@ def get_default_max_tokens() -> int:
     Returns:
         int: The default maximum output tokens.
     """
-    return _TLM_MAX_TOKEN_RANGE["default"][1]
+    return _DEFAULT_TLM_MAX_TOKENS

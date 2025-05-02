@@ -57,6 +57,7 @@ allow-direct-references = true
 extra-dependencies = [
   "python-dotenv",
   "pytest-asyncio",
+  "tiktoken",
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]
