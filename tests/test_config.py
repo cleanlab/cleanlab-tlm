@@ -45,7 +45,7 @@ def test_response_within_max_tokens() -> None:
     tlm_base = TLM(quality_preset="base")
     prompt = "write a 100 page book about computer science. make sure it is extremely long and comprehensive."
     result = tlm_base.prompt(prompt)
-    response = result.get("response", "")
+    response = result['response']
 
     assert isinstance(response, str)
     enc = tiktoken.encoding_for_model(get_default_model())
