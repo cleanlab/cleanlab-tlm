@@ -208,7 +208,7 @@ def test_prompt_too_long_exception_single_prompt(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.prompt with a single prompt."""
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.prompt(
-            "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN,
+            WORD_THAT_EQUALS_ONE_TOKEN * (MAX_PROMPT_LENGTH_TOKENS + 1),
         )
 
     assert exc_info.value.message.startswith("Prompt length exceeds")
@@ -221,7 +221,7 @@ def test_prompt_too_long_exception_prompt(tlm: TLM, num_prompts: int) -> None:
     # create batch of prompts with one prompt that is too long
     prompts = [test_prompt] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
-    prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
+    prompts[prompt_too_long_index] = WORD_THAT_EQUALS_ONE_TOKEN * (MAX_PROMPT_LENGTH_TOKENS + 1)
 
     tlm_responses = cast(list[TLMResponse], tlm.prompt(prompts))
 
@@ -232,8 +232,8 @@ def test_response_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when response is too long when calling tlm.get_trustworthiness_score with a single prompt."""
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
-            "a",
-            "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN,
+            WORD_THAT_EQUALS_ONE_TOKEN,
+            WORD_THAT_EQUALS_ONE_TOKEN * (MAX_RESPONSE_LENGTH_TOKENS + 1),
         )
 
     assert exc_info.value.message.startswith("Response length exceeds")
@@ -247,7 +247,7 @@ def test_response_too_long_exception_score(tlm: TLM, num_prompts: int) -> None:
     prompts = [test_prompt] * num_prompts
     responses = [TEST_RESPONSE] * num_prompts
     response_too_long_index = np.random.randint(0, num_prompts)
-    responses[response_too_long_index] = "a" * (MAX_RESPONSE_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
+    responses[response_too_long_index] = WORD_THAT_EQUALS_ONE_TOKEN * (MAX_RESPONSE_LENGTH_TOKENS + 1)
 
     tlm_responses = cast(list[TLMScore], tlm.get_trustworthiness_score(prompts, responses))
 
@@ -258,8 +258,8 @@ def test_prompt_too_long_exception_single_score(tlm: TLM) -> None:
     """Tests that bad request error is raised when prompt is too long when calling tlm.get_trustworthiness_score with a single prompt."""
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
-            "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN,
-            "a",
+            WORD_THAT_EQUALS_ONE_TOKEN * (MAX_PROMPT_LENGTH_TOKENS + 1),
+            WORD_THAT_EQUALS_ONE_TOKEN,
         )
 
     assert exc_info.value.message.startswith("Prompt length exceeds")
@@ -273,7 +273,7 @@ def test_prompt_too_long_exception_score(tlm: TLM, num_prompts: int) -> None:
     prompts = [test_prompt] * num_prompts
     responses = [TEST_RESPONSE] * num_prompts
     prompt_too_long_index = np.random.randint(0, num_prompts)
-    prompts[prompt_too_long_index] = "a" * (MAX_PROMPT_LENGTH_TOKENS + 1) * CHARACTERS_PER_TOKEN
+    prompts[prompt_too_long_index] = WORD_THAT_EQUALS_ONE_TOKEN * (MAX_PROMPT_LENGTH_TOKENS + 1)
 
     tlm_responses = cast(list[TLMScore], tlm.get_trustworthiness_score(prompts, responses))
 
@@ -286,8 +286,8 @@ def test_combined_too_long_exception_single_score(tlm: TLM) -> None:
 
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.get_trustworthiness_score(
-            "a" * max_prompt_length * CHARACTERS_PER_TOKEN,
-            "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN,
+            WORD_THAT_EQUALS_ONE_TOKEN * max_prompt_length,
+            WORD_THAT_EQUALS_ONE_TOKEN * MAX_RESPONSE_LENGTH_TOKENS,
         )
 
     assert exc_info.value.message.startswith("Prompt and response combined length exceeds")
@@ -306,8 +306,8 @@ def test_prompt_and_response_combined_too_long_exception_batch_score(tlm: TLM, n
     combined_too_long_index = np.random.randint(0, num_prompts)
 
     max_prompt_length = MAX_COMBINED_LENGTH_TOKENS - MAX_RESPONSE_LENGTH_TOKENS + 1
-    prompts[combined_too_long_index] = "a" * max_prompt_length * CHARACTERS_PER_TOKEN
-    responses[combined_too_long_index] = "a" * MAX_RESPONSE_LENGTH_TOKENS * CHARACTERS_PER_TOKEN
+    prompts[combined_too_long_index] = WORD_THAT_EQUALS_ONE_TOKEN * max_prompt_length
+    responses[combined_too_long_index] = WORD_THAT_EQUALS_ONE_TOKEN * MAX_RESPONSE_LENGTH_TOKENS
 
     tlm_responses = cast(list[TLMScore], tlm.get_trustworthiness_score(prompts, responses))
 
