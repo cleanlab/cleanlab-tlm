@@ -17,7 +17,7 @@ MAX_RESPONSE_LENGTH_TOKENS: int = 15_000
 MAX_COMBINED_LENGTH_TOKENS: int = 70_000
 
 CHARACTERS_PER_TOKEN: int = 4
-WORD_THAT_EQUALS_ONE_TOKEN = "no "  # noqa: S105
+WORD_THAT_EQUALS_ONE_TOKEN = "hello "  # noqa: S105
 
 # Property tests for TLM
 excluded_tlm_models: list[str] = [
