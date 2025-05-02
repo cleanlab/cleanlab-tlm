@@ -44,10 +44,12 @@ def test_response_within_max_tokens() -> None:
     """Tests that response is within max tokens limit."""
     tlm_base = TLM(quality_preset="base")
     prompt = "write a 100 page book about computer science. make sure it is extremely long and comprehensive."
-    result = tlm_base.prompt(prompt)
-    response = result['response']
 
+    result = tlm_base.prompt(prompt)
+    assert isinstance(result, dict)
+    response = result["response"]
     assert isinstance(response, str)
+
     enc = tiktoken.encoding_for_model(get_default_model())
     tokens_in_response = len(enc.encode(response))
     assert tokens_in_response <= get_default_max_tokens()
