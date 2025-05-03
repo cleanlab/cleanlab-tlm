@@ -50,6 +50,9 @@ def test_response_within_max_tokens() -> None:
     response = result["response"]
     assert isinstance(response, str)
 
-    enc = tiktoken.encoding_for_model(get_default_model())
+    try:
+        enc = tiktoken.encoding_for_model(get_default_model())
+    except:
+        enc = tiktoken.encoding_for_model("gpt-4o")
     tokens_in_response = len(enc.encode(response))
     assert tokens_in_response <= get_default_max_tokens()
