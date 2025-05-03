@@ -27,7 +27,7 @@ def test_prompt_too_long_exception_single_prompt(tlm: TLM) -> None:
     with pytest.raises(TlmBadRequestError) as exc_info:
         tlm.prompt(WORD_THAT_EQUALS_ONE_TOKEN * (get_default_context_limit() + 1))
 
-    assert exc_info.value.message.startswith("Prompt with token count")
+    assert exc_info.value.message.startswith("Prompt length exceeds")
     assert exc_info.value.retryable is False
 
 
