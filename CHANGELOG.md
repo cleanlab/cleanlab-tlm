@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.2] - 2025-05-01
+## [1.1.2] - 2025-05-05
 
+### Changed
+
+- Update `query_ease` default criteria
 - Add getter functions for `_TLM_DEFAULT_MODEL`, `_DEFAULT_TLM_QUALITY_PRESET`, `_TLM_DEFAULT_CONTEXT_LIMIT`, `_TLM_MAX_TOKEN_RANGE`.
 - Add unit tests for the getter functions.
 
@@ -147,7 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 [Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.2...HEAD
-[1.1.1]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.1...v1.1.2
+[1.1.2]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.23...v1.1.0
 [1.0.23]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.0.22...v1.0.23
