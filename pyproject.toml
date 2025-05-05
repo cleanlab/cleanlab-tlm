@@ -47,6 +47,7 @@ extra-dependencies = [
   "pytest",
   "pytest-asyncio",
   "python-dotenv",
+  "tiktoken",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --strict --install-types --non-interactive {args:src/cleanlab_tlm tests}"
@@ -57,6 +58,7 @@ allow-direct-references = true
 extra-dependencies = [
   "python-dotenv",
   "pytest-asyncio",
+  "tiktoken",
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]

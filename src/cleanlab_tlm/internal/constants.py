@@ -5,6 +5,7 @@ from cleanlab_tlm.internal.types import Task, TLMQualityPreset
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
 _VALID_TLM_QUALITY_PRESETS_RAG: list[str] = ["medium", "low", "base"]
 _DEFAULT_TLM_QUALITY_PRESET: TLMQualityPreset = "medium"
+_DEFAULT_TLM_MAX_TOKENS: int = 512
 _VALID_TLM_MODELS: list[str] = [
     "gpt-3.5-turbo-16k",
     "gpt-4",
@@ -32,6 +33,7 @@ _VALID_TLM_MODELS: list[str] = [
     "nova-pro",
 ]
 _TLM_DEFAULT_MODEL: str = "gpt-4o-mini"
+_TLM_DEFAULT_CONTEXT_LIMIT: int = 70000
 _VALID_TLM_TASKS: set[str] = {task.value for task in Task}
 TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS: set[Task] = {
     Task.DEFAULT,
