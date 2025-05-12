@@ -635,7 +635,7 @@ class TLMOptions(TypedDict):
 
         similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "semantic"): how the
         trustworthiness scoring's consistency algorithm measures similarity between alternative responses considered plausible by the model.
-        Supported similarity measures include: "semantic" (based on natural language inference),
+        Supported similarity measures include - "semantic" (based on natural language inference),
         "embedding" (based on vector embedding similarity), "embedding_large" (based on a larger embedding model),
         "code" (based on model-based analysis designed to compare code), "discrepancy" (based on model-based analysis of possible discrepancies),
         and "string" (based on character/word overlap). Set this to "string" for minimal runtimes/costs.
