@@ -84,6 +84,9 @@ class BaseTLM:
         is_notebook_flag = is_notebook()
 
         self._timeout = timeout if timeout is not None and timeout > 0 else None
+        if self._timeout is not None:
+            self._options["max_timeout"] = self._timeout
+
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
         if is_notebook_flag:
