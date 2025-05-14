@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
@@ -75,17 +75,19 @@ class BaseTLM:
 
         self._quality_preset = quality_preset
 
-        if timeout is not None and not (isinstance(timeout, (float, int))):
-            raise ValidationError("timeout must be a integer or float value")
+        self._timeout: Optional[Union[int, float]] = None
+        if timeout is not None:
+            if not isinstance(timeout, (float, int)):
+                raise ValidationError("timeout must be a integer or float value")
+            if timeout <= 0:
+                raise ValidationError("timeout must be a positive value")
+            self._timeout = timeout
+            self._options["max_timeout"] = self._timeout
 
         if verbose is not None and not isinstance(verbose, bool):
             raise ValidationError("verbose must be a boolean value")
 
         is_notebook_flag = is_notebook()
-
-        self._timeout = timeout if timeout is not None and timeout > 0 else None
-        if self._timeout is not None:
-            self._options["max_timeout"] = self._timeout
 
         self._verbose = verbose if verbose is not None else is_notebook_flag
 
