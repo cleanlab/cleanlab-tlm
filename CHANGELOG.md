@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Add server side max_timeout
+- Add validation check for timeout to be > 0
 
 ## [1.1.2] - 2025-05-05
 
