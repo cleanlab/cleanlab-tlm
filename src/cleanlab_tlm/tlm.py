@@ -607,7 +607,7 @@ class TLMOptions(TypedDict):
          "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"): \
         Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
         - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4.5-preview", \
-            "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
+            "nova-micro", "nova-lite", "nova-pro".
         - Recommended models for accuracy: "gpt-4.1", "o4-mini", "o3", "claude-3.7-sonnet", "claude-3.5-sonnet-v2".
         - Recommended models for low latency/costs: "gpt-4.1-nano", "nova-micro".
 
