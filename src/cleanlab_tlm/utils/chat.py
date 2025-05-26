@@ -4,7 +4,8 @@ This module provides helper functions for working with chat messages in the form
 OpenAI's chat models.
 """
 
-def form_prompt_string(messages):
+
+def form_prompt_string(messages: list[dict[str, str]]) -> str:
     """
     Convert a list of chat messages into a single string prompt.
 
@@ -24,17 +25,20 @@ def form_prompt_string(messages):
         ```python
         messages = [
             {"role": "user", "content": "Can you explain how photosynthesis works?"},
-            {"role": "assistant", "content": "Of course! Photosynthesis is the process..."},
-            {"role": "user", "content": "Can you summarize that in one sentence?"}
+            {
+                "role": "assistant",
+                "content": "Of course! Photosynthesis is the process...",
+            },
+            {"role": "user", "content": "Can you summarize that in one sentence?"},
         ]
         result = form_prompt_string(messages)
         print(result)
         # User: Can you explain how photosynthesis works?
-        # 
+        #
         # Assistant: Of course! Photosynthesis is the process...
-        # 
+        #
         # User: Can you summarize that in one sentence?
-        # 
+        #
         # Assistant:
         ```
     """
@@ -55,4 +59,4 @@ def form_prompt_string(messages):
         output += f"{prefix}{msg['content']}\n\n"
 
     output += "Assistant:"
-    return output.strip() 
+    return output.strip()
