@@ -79,12 +79,11 @@ def test_form_prompt_string_with_tools_chat_completions() -> None:
         '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]}}}\n'
         "</tools>\n\n"
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'title': 'FunctionCall', 'type': 'object', 'properties': {'name': {'title': 'Name', 'type': 'string'}, "
-        "'arguments': {'title': 'Arguments', 'type': 'object'}}, 'required': ['arguments', 'name']}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
         "Example:\n"
         "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "</tool_call>\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
@@ -137,12 +136,11 @@ def test_form_prompt_string_with_tools_responses() -> None:
         '"title":"fetch_user_flight_information","type":"object","additionalProperties":false,"required":[]},"strict":true}\n'
         "</tools>\n\n"
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'title': 'FunctionCall', 'type': 'object', 'properties': {'name': {'title': 'Name', 'type': 'string'}, "
-        "'arguments': {'title': 'Arguments', 'type': 'object'}}, 'required': ['arguments', 'name']}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
         "Example:\n"
         "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "</tool_call>\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
@@ -182,7 +180,8 @@ def test_form_prompt_string_with_tool_calls_chat_completions() -> None:
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        "  }\n"
+        "  },\n"
+        '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
         "<tool_response>\n"
@@ -220,7 +219,8 @@ def test_form_prompt_string_with_tool_calls_responses() -> None:
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        "  }\n"
+        "  },\n"
+        '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
         "<tool_response>\n"
@@ -269,7 +269,8 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_chat_completions()
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        "  }\n"
+        "  },\n"
+        '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
         "<tool_response>\n"
@@ -311,7 +312,8 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_responses() -> Non
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        "  }\n"
+        "  },\n"
+        '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
         "<tool_response>\n"
@@ -354,7 +356,8 @@ def test_form_prompt_string_warns_on_tool_call_last_chat_completions() -> None:
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        "  }\n"
+        "  },\n"
+        '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
         "Assistant:"
@@ -385,7 +388,8 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        "  }\n"
+        "  },\n"
+        '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
         "Assistant:"
@@ -396,6 +400,7 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         "This prompt should not be used for trustworthiness scoring.",
     ):
         assert form_prompt_string(messages) == expected
+
     """Test that form_prompt_string correctly handles tools in the responses API format."""
     responses_tools = [
         {
@@ -425,12 +430,11 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         '"additionalProperties":false,"required":[]},"strict":true}\n'
         "</tools>\n\n"
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'title': 'FunctionCall', 'type': 'object', 'properties': {'name': {'title': 'Name', 'type': 'string'}, "
-        "'arguments': {'title': 'Arguments', 'type': 'object'}}, 'required': ['arguments', 'name']}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
         "Example:\n"
         "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "</tool_call>\n\n"
         "User: What can you do?\n\n"
         "Assistant:"

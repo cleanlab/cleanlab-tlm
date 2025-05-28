@@ -57,12 +57,11 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     # Add function call schema and example
     system_message += (
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'title': 'FunctionCall', 'type': 'object', 'properties': {'name': {'title': 'Name', 'type': 'string'}, "
-        "'arguments': {'title': 'Arguments', 'type': 'object'}}, 'required': ['arguments', 'name']}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
         "Example:\n"
         "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
         "</tool_call>"
     )
 
@@ -150,8 +149,12 @@ def form_prompt_string(
                 if msg["type"] == "function_call":
                     call_id = msg.get("call_id", "")
                     function_names[call_id] = msg["name"]
-                    # Format function call as JSON within XML tags
-                    function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"])}
+                    # Format function call as JSON within XML tags, now including call_id
+                    function_call = {
+                        "name": msg["name"],
+                        "arguments": json.loads(msg["arguments"]),
+                        "call_id": call_id
+                    }
                     output += f"Assistant: <tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
                 elif msg["type"] == "function_call_output":
                     call_id = msg.get("call_id", "")
@@ -177,10 +180,11 @@ def form_prompt_string(
                     for tool_call in msg["tool_calls"]:
                         call_id = tool_call["id"]
                         function_names[call_id] = tool_call["function"]["name"]
-                        # Format function call as JSON within XML tags
+                        # Format function call as JSON within XML tags, now including call_id
                         function_call = {
                             "name": tool_call["function"]["name"],
                             "arguments": json.loads(tool_call["function"]["arguments"]),
+                            "call_id": call_id
                         }
                         output += f"Assistant: <tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
                 # Handle content if present
