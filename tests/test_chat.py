@@ -2,8 +2,12 @@ import pytest
 
 from cleanlab_tlm.utils.chat import form_prompt_string
 
+def test_form_prompt_string_single_user_message() -> None:
+    messages = [{"role": "user", "content": "Just one message."}]
+    assert form_prompt_string(messages) == "Just one message."
 
-def test_form_prompt_string_multiple_messages() -> None:
+
+def test_form_prompt_string_two_user_messages() -> None:
     messages = [
         {"role": "user", "content": "Hello!"},
         {"role": "assistant", "content": "Hi there!"},
@@ -20,11 +24,6 @@ def test_form_prompt_string_with_system_prompt() -> None:
     ]
     expected = "System: You are a helpful assistant.\n\n" "User: What is the weather?\n\n" "Assistant:"
     assert form_prompt_string(messages) == expected
-
-
-def test_form_prompt_string_single_message() -> None:
-    messages = [{"role": "user", "content": "Just one message."}]
-    assert form_prompt_string(messages) == "Just one message."
 
 
 def test_form_prompt_string_missing_content() -> None:
@@ -50,18 +49,22 @@ def test_form_prompt_string_warns_on_assistant_last() -> None:
         assert form_prompt_string(messages) == expected
 
 
-def test_form_prompt_string_with_tools() -> None:
+def test_form_prompt_string_with_tools_chat_completions() -> None:
+    """Test formatting with tools in chat completions format."""
     messages = [
         {"role": "user", "content": "What can you do?"},
     ]
     tools = [
         {
-            "name": "search",
-            "description": "Search the web for information",
-            "parameters": {
-                "type": "object",
-                "properties": {"query": {"type": "string", "description": "The search query"}},
-                "required": ["query"],
+            "type": "function",
+            "function": {
+                "name": "search",
+                "description": "Search the web for information",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string", "description": "The search query"}},
+                    "required": ["query"],
+                },
             },
         }
     ]
@@ -89,20 +92,31 @@ def test_form_prompt_string_with_tools() -> None:
     assert form_prompt_string(messages, tools) == expected
 
 
-def test_form_prompt_string_with_tools_and_system() -> None:
+def test_form_prompt_string_with_tools_responses() -> None:
+    """Test formatting with tools in responses format."""
     messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What can you do?"},
     ]
     tools = [
         {
-            "name": "calculator",
-            "description": "Perform mathematical calculations",
+            "type": "function",
+            "name": "fetch_user_flight_information",
+            "description": "Fetch all tickets for the user along with corresponding flight information and seat assignments.\n\n"
+            "Returns:\n"
+            "    A list of dictionaries where each dictionary contains the ticket details,\n"
+            "    associated flight details, and the seat assignments for each ticket belonging to the user.",
             "parameters": {
+                "description": "Fetch all tickets for the user along with corresponding flight information and seat assignments.\n\n"
+                "Returns:\n"
+                "    A list of dictionaries where each dictionary contains the ticket details,\n"
+                "    associated flight details, and the seat assignments for each ticket belonging to the user.",
+                "properties": {},
+                "title": "fetch_user_flight_information",
                 "type": "object",
-                "properties": {"expression": {"type": "string", "description": "The mathematical expression"}},
-                "required": ["expression"],
+                "additionalProperties": False,
+                "required": [],
             },
+            "strict": True,
         }
     ]
     expected = (
@@ -112,8 +126,15 @@ def test_form_prompt_string_with_tools_and_system() -> None:
         "into functions. After calling & executing the functions, you will be provided with function results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
-        '{"type":"function","function":{"name":"calculator","description":"Perform mathematical calculations","parameters":'
-        '{"type":"object","properties":{"expression":{"type":"string","description":"The mathematical expression"}},"required":["expression"]}}}\n'
+        '{"type":"function","name":"fetch_user_flight_information","description":"Fetch all tickets for the user along with corresponding flight information and seat assignments.\\n\\n'
+        'Returns:\\n'
+        '    A list of dictionaries where each dictionary contains the ticket details,\\n'
+        '    associated flight details, and the seat assignments for each ticket belonging to the user.","parameters":'
+        '{"description":"Fetch all tickets for the user along with corresponding flight information and seat assignments.\\n\\n'
+        'Returns:\\n'
+        '    A list of dictionaries where each dictionary contains the ticket details,\\n'
+        '    associated flight details, and the seat assignments for each ticket belonging to the user.","properties":{},'
+        '"title":"fetch_user_flight_information","type":"object","additionalProperties":false,"required":[]},"strict":true}\n'
         "</tools>\n\n"
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
         "{'title': 'FunctionCall', 'type': 'object', 'properties': {'name': {'title': 'Name', 'type': 'string'}, "
@@ -123,23 +144,35 @@ def test_form_prompt_string_with_tools_and_system() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n\n"
-        "System: You are a helpful assistant.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
     assert form_prompt_string(messages, tools) == expected
 
 
-def test_form_prompt_string_warns_on_tool_call_last() -> None:
-    """Test that a warning is raised when the last message is a tool call."""
+def test_form_prompt_string_with_tool_calls_chat_completions() -> None:
+    """Test formatting with tool calls in chat completions format."""
     messages = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
-            "type": "function_call",
-            "id": "fc_12345xyz",
-            "call_id": "call_12345xyz",
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "type": "function",
+                    "id": "call_123",
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": '{"location": "Paris"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
             "name": "get_weather",
-            "arguments": '{"latitude":48.8566,"longitude":2.3522}',
+            "tool_call_id": "call_123",
+            "content": "22.1",
         },
     ]
     expected = (
@@ -148,8 +181,179 @@ def test_form_prompt_string_warns_on_tool_call_last() -> None:
         "{\n"
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
-        '    "latitude": 48.8566,\n'
-        '    "longitude": 2.3522\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "22.1"\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_tool_calls_responses() -> None:
+    """Test formatting with tool calls in responses format."""
+    messages = [
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "type": "function_call",
+            "name": "get_weather",
+            "arguments": '{"location": "Paris"}',
+            "call_id": "call_123",
+        },
+        {
+            "type": "function_call_output",
+            "call_id": "call_123",
+            "output": "22.1",
+        },
+    ]
+    expected = (
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "22.1"\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_tool_calls_two_user_messages_chat_completions() -> None:
+    """Test formatting with tool calls and multiple user messages in chat completions format."""
+    messages = [
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "type": "function",
+                    "id": "call_123",
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": '{"location": "Paris"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "name": "get_weather",
+            "tool_call_id": "call_123",
+            "content": "22.1",
+        },
+        {"role": "assistant", "content": "The temperature in Paris is 22.1°C."},
+        {"role": "user", "content": "What about London?"},
+    ]
+    expected = (
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "22.1"\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant: The temperature in Paris is 22.1°C.\n\n"
+        "User: What about London?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_tool_calls_two_user_messages_responses() -> None:
+    """Test formatting with tool calls and multiple user messages in responses format."""
+    messages = [
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "type": "function_call",
+            "name": "get_weather",
+            "arguments": '{"location": "Paris"}',
+            "call_id": "call_123",
+        },
+        {
+            "type": "function_call_output",
+            "call_id": "call_123",
+            "output": "22.1",
+        },
+        {"role": "assistant", "content": "The temperature in Paris is 22.1°C."},
+        {"role": "user", "content": "What about London?"},
+    ]
+    expected = (
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "22.1"\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant: The temperature in Paris is 22.1°C.\n\n"
+        "User: What about London?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_warns_on_tool_call_last_chat_completions() -> None:
+    """Test that a warning is raised when the last message is a tool call in chat completions format."""
+    messages = [
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "type": "function",
+                    "id": "call_123",
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": '{"location": "Paris"}',
+                    },
+                }
+            ],
+        },
+    ]
+    expected = (
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
         "  }\n"
         "}\n"
         "</tool_call>\n\n"
@@ -163,46 +367,62 @@ def test_form_prompt_string_warns_on_tool_call_last() -> None:
         assert form_prompt_string(messages) == expected
 
 
-def test_form_prompt_string_with_function_call_output() -> None:
+def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
+    """Test that a warning is raised when the last message is a tool call in responses format."""
     messages = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "type": "function_call",
-            "id": "fc_12345xyz",
-            "call_id": "call_12345xyz",
             "name": "get_weather",
-            "arguments": '{"latitude":48.8566,"longitude":2.3522}',
+            "arguments": '{"location": "Paris"}',
+            "call_id": "call_123",
         },
-        {
-            "type": "function_call_output",
-            "call_id": "call_12345xyz",
-            "output": "22.1",
-        },
-    ]
-    tools = [
-        {
-            "name": "get_weather",
-            "description": "Get weather for a location using latitude and longitude",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "latitude": {"type": "number", "description": "The latitude coordinate"},
-                    "longitude": {"type": "number", "description": "The longitude coordinate"},
-                },
-                "required": ["latitude", "longitude"],
-            },
-        }
     ]
     expected = (
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>\n\n"
+        "Assistant:"
+    )
+    with pytest.warns(
+        UserWarning,
+        match="The last message is a tool call or assistant message. The next message should not be an LLM response. "
+        "This prompt should not be used for trustworthiness scoring.",
+    ):
+        assert form_prompt_string(messages) == expected
+    """Test that form_prompt_string correctly handles tools in the responses API format."""
+    responses_tools = [
+        {
+            "type": "function",
+            "name": "fetch_user_flight_information",
+            "description": "Fetch flight information",
+            "parameters": {
+                "description": "Fetch flight information",
+                "properties": {},
+                "title": "fetch_user_flight_information",
+                "type": "object",
+                "additionalProperties": False,
+                "required": [],
+            },
+            "strict": True,
+        }
+    ]
+    responses_tools_expected = (
         "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
         "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
         "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
         "into functions. After calling & executing the functions, you will be provided with function results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
-        '{"type":"function","function":{"name":"get_weather","description":"Get weather for a location using latitude and longitude",'
-        '"parameters":{"type":"object","properties":{"latitude":{"type":"number","description":"The latitude coordinate"},'
-        '"longitude":{"type":"number","description":"The longitude coordinate"}},"required":["latitude","longitude"]}}}\n'
+        '{"type":"function","name":"fetch_user_flight_information","description":"Fetch flight information","parameters":'
+        '{"description":"Fetch flight information","properties":{},"title":"fetch_user_flight_information","type":"object",'
+        '"additionalProperties":false,"required":[]},"strict":true}\n'
         "</tools>\n\n"
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
         "{'title': 'FunctionCall', 'type': 'object', 'properties': {'name': {'title': 'Name', 'type': 'string'}, "
@@ -212,23 +432,7 @@ def test_form_prompt_string_with_function_call_output() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n\n"
-        "User: What's the weather in Paris?\n\n"
-        "Assistant: <tool_call>\n"
-        "{\n"
-        '  "name": "get_weather",\n'
-        '  "arguments": {\n'
-        '    "latitude": 48.8566,\n'
-        '    "longitude": 2.3522\n'
-        "  }\n"
-        "}\n"
-        "</tool_call>\n\n"
-        "<tool_response>\n"
-        "{\n"
-        '  "name": "get_weather",\n'
-        '  "call_id": "call_12345xyz",\n'
-        '  "output": "22.1"\n'
-        "}\n"
-        "</tool_response>\n\n"
+        "User: What can you do?\n\n"
         "Assistant:"
     )
-    assert form_prompt_string(messages, tools) == expected
+    assert form_prompt_string([{"role": "user", "content": "What can you do?"}], responses_tools) == responses_tools_expected
