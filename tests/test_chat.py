@@ -333,6 +333,100 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_responses() -> Non
     assert form_prompt_string(messages) == expected
 
 
+def test_form_prompt_string_with_tools_and_system_chat_completions() -> None:
+    """Test formatting with tools and system message in chat completions format."""
+    messages: list[dict[str, Any]] = [
+        {
+            "role": "system",
+            "content": "You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.",
+        },
+        {"role": "user", "content": "What's the latest news about AI?"},
+    ]
+    tools: list[dict[str, Any]] = [
+        {
+            "type": "function",
+            "function": {
+                "name": "search",
+                "description": "Search the web for information",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string", "description": "The search query"}},
+                    "required": ["query"],
+                },
+            },
+        }
+    ]
+    expected = (
+        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","function":{"name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]}}}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
+        "</tool_call>\n\n"
+        "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
+        "User: What's the latest news about AI?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, tools) == expected
+
+
+def test_form_prompt_string_with_tools_and_system_responses() -> None:
+    """Test formatting with tools and system message in responses format."""
+    messages: list[dict[str, Any]] = [
+        {
+            "role": "system",
+            "content": "You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.",
+        },
+        {"role": "user", "content": "What's the latest news about AI?"},
+    ]
+    tools: list[dict[str, Any]] = [
+        {
+            "type": "function",
+            "name": "search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query"}},
+                "required": ["query"],
+            },
+            "strict": True,
+        }
+    ]
+    expected = (
+        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},'
+        '"strict":true}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
+        "</tool_call>\n\n"
+        "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
+        "User: What's the latest news about AI?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, tools) == expected
+
+
 def test_form_prompt_string_warns_on_tool_call_last_chat_completions() -> None:
     """Test that a warning is raised when the last message is a tool call in chat completions format."""
     messages: list[dict[str, Any]] = [
