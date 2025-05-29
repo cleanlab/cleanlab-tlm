@@ -1,6 +1,9 @@
+from typing import Any
+
 import pytest
 
 from cleanlab_tlm.utils.chat import form_prompt_string
+
 
 def test_form_prompt_string_single_user_message() -> None:
     messages = [{"role": "user", "content": "Just one message."}]
@@ -126,12 +129,12 @@ def test_form_prompt_string_with_tools_responses() -> None:
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"fetch_user_flight_information","description":"Fetch all tickets for the user along with corresponding flight information and seat assignments.\\n\\n'
-        'Returns:\\n'
-        '    A list of dictionaries where each dictionary contains the ticket details,\\n'
+        "Returns:\\n"
+        "    A list of dictionaries where each dictionary contains the ticket details,\\n"
         '    associated flight details, and the seat assignments for each ticket belonging to the user.","parameters":'
         '{"description":"Fetch all tickets for the user along with corresponding flight information and seat assignments.\\n\\n'
-        'Returns:\\n'
-        '    A list of dictionaries where each dictionary contains the ticket details,\\n'
+        "Returns:\\n"
+        "    A list of dictionaries where each dictionary contains the ticket details,\\n"
         '    associated flight details, and the seat assignments for each ticket belonging to the user.","properties":{},'
         '"title":"fetch_user_flight_information","type":"object","additionalProperties":false,"required":[]},"strict":true}\n'
         "</tools>\n\n"
@@ -150,7 +153,7 @@ def test_form_prompt_string_with_tools_responses() -> None:
 
 def test_form_prompt_string_with_tool_calls_chat_completions() -> None:
     """Test formatting with tool calls in chat completions format."""
-    messages = [
+    messages: list[dict[str, Any]] = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "role": "assistant",
@@ -198,7 +201,7 @@ def test_form_prompt_string_with_tool_calls_chat_completions() -> None:
 
 def test_form_prompt_string_with_tool_calls_responses() -> None:
     """Test formatting with tool calls in responses format."""
-    messages = [
+    messages: list[dict[str, Any]] = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "type": "function_call",
@@ -237,7 +240,7 @@ def test_form_prompt_string_with_tool_calls_responses() -> None:
 
 def test_form_prompt_string_with_tool_calls_two_user_messages_chat_completions() -> None:
     """Test formatting with tool calls and multiple user messages in chat completions format."""
-    messages = [
+    messages: list[dict[str, Any]] = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "role": "assistant",
@@ -289,7 +292,7 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_chat_completions()
 
 def test_form_prompt_string_with_tool_calls_two_user_messages_responses() -> None:
     """Test formatting with tool calls and multiple user messages in responses format."""
-    messages = [
+    messages: list[dict[str, Any]] = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "type": "function_call",
@@ -332,7 +335,7 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_responses() -> Non
 
 def test_form_prompt_string_warns_on_tool_call_last_chat_completions() -> None:
     """Test that a warning is raised when the last message is a tool call in chat completions format."""
-    messages = [
+    messages: list[dict[str, Any]] = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "role": "assistant",
@@ -372,7 +375,7 @@ def test_form_prompt_string_warns_on_tool_call_last_chat_completions() -> None:
 
 def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
     """Test that a warning is raised when the last message is a tool call in responses format."""
-    messages = [
+    messages: list[dict[str, Any]] = [
         {"role": "user", "content": "What's the weather in Paris?"},
         {
             "type": "function_call",
@@ -439,4 +442,7 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         "User: What can you do?\n\n"
         "Assistant:"
     )
-    assert form_prompt_string([{"role": "user", "content": "What can you do?"}], responses_tools) == responses_tools_expected
+    assert (
+        form_prompt_string([{"role": "user", "content": "What can you do?"}], responses_tools)
+        == responses_tools_expected
+    )

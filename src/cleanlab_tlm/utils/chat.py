@@ -105,9 +105,7 @@ def form_prompt_string(
         str: A formatted string representing the chat history as a single prompt.
     """
     # Check which format we're using by looking for responses format indicators in both messages and tools
-    is_responses = any(
-        msg.get("type") in ["function_call", "function_call_output"] for msg in messages
-    ) or any(
+    is_responses = any(msg.get("type") in ["function_call", "function_call_output"] for msg in messages) or any(
         "name" in tool and "function" not in tool for tool in tools or []
     )
 
@@ -130,14 +128,13 @@ def form_prompt_string(
                     UserWarning,
                     stacklevel=2,
                 )
-        else:  # chat completions
-            if last_msg.get("role") == "assistant" or "tool_calls" in last_msg:
-                warnings.warn(
-                    "The last message is a tool call or assistant message. The next message should not be an LLM response. "
-                    "This prompt should not be used for trustworthiness scoring.",
-                    UserWarning,
-                    stacklevel=2,
-                )
+        elif last_msg.get("role") == "assistant" or "tool_calls" in last_msg:
+            warnings.warn(
+                "The last message is a tool call or assistant message. The next message should not be an LLM response. "
+                "This prompt should not be used for trustworthiness scoring.",
+                UserWarning,
+                stacklevel=2,
+            )
 
     # Track function names by call_id for function call outputs
     function_names = {}
@@ -150,11 +147,7 @@ def form_prompt_string(
                     call_id = msg.get("call_id", "")
                     function_names[call_id] = msg["name"]
                     # Format function call as JSON within XML tags, now including call_id
-                    function_call = {
-                        "name": msg["name"],
-                        "arguments": json.loads(msg["arguments"]),
-                        "call_id": call_id
-                    }
+                    function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"]), "call_id": call_id}
                     output += f"Assistant: <tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
                 elif msg["type"] == "function_call_output":
                     call_id = msg.get("call_id", "")
@@ -173,39 +166,38 @@ def form_prompt_string(
                 else:
                     prefix = role.capitalize() + ": "
                 output += f"{prefix}{msg['content']}\n\n"
-        else:  # chat_completions format
-            if msg["role"] == "assistant":
-                # Handle tool calls if present
-                if "tool_calls" in msg:
-                    for tool_call in msg["tool_calls"]:
-                        call_id = tool_call["id"]
-                        function_names[call_id] = tool_call["function"]["name"]
-                        # Format function call as JSON within XML tags, now including call_id
-                        function_call = {
-                            "name": tool_call["function"]["name"],
-                            "arguments": json.loads(tool_call["function"]["arguments"]),
-                            "call_id": call_id
-                        }
-                        output += f"Assistant: <tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
-                # Handle content if present
-                if msg.get("content"):
-                    output += f"Assistant: {msg['content']}\n\n"
-            elif msg["role"] == "tool":
-                # Handle tool responses
-                call_id = msg["tool_call_id"]
-                name = function_names.get(call_id, "function")
-                # Format function response as JSON within XML tags
-                tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
-                output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
+        elif msg["role"] == "assistant":
+            # Handle tool calls if present
+            if "tool_calls" in msg:
+                for tool_call in msg["tool_calls"]:
+                    call_id = tool_call["id"]
+                    function_names[call_id] = tool_call["function"]["name"]
+                    # Format function call as JSON within XML tags, now including call_id
+                    function_call = {
+                        "name": tool_call["function"]["name"],
+                        "arguments": json.loads(tool_call["function"]["arguments"]),
+                        "call_id": call_id,
+                    }
+                    output += f"Assistant: <tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
+            # Handle content if present
+            if msg.get("content"):
+                output += f"Assistant: {msg['content']}\n\n"
+        elif msg["role"] == "tool":
+            # Handle tool responses
+            call_id = msg["tool_call_id"]
+            name = function_names.get(call_id, "function")
+            # Format function response as JSON within XML tags
+            tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
+            output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
+        else:
+            role = msg["role"]
+            if role == "system":
+                prefix = "System: "
+            elif role == "user":
+                prefix = "User: "
             else:
-                role = msg["role"]
-                if role == "system":
-                    prefix = "System: "
-                elif role == "user":
-                    prefix = "User: "
-                else:
-                    prefix = role.capitalize() + ": "
-                output += f"{prefix}{msg['content']}\n\n"
+                prefix = role.capitalize() + ": "
+            output += f"{prefix}{msg['content']}\n\n"
 
     output += "Assistant:"
     return output.strip()
