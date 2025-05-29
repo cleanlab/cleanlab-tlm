@@ -598,16 +598,16 @@ class TLMOptions(TypedDict):
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False.
         When using `get_trustworthiness_score()` on "base" preset, a cheaper self-reflection will be used to compute the trustworthiness score.
 
-    By default, TLM uses the: "medium" `quality_preset`, "gpt-4o-mini" base `model`, and `max_tokens` is set to 512.
+    By default, TLM uses the: "medium" `quality_preset`, "gpt-4.1-mini" base `model`, and `max_tokens` is set to 512.
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
         model ({"gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "gpt-4.5-preview", "gpt-4o-mini", "gpt-4o", "o3-mini", \
          "o1", "o1-mini", "gpt-4", "gpt-3.5-turbo-16k", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", \
-         "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"): \
+         "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4.1-mini"): \
         Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
-        - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4.5-preview", \
-            "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
+        - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.5-preview", \
+            "claude-3.7-sonnet", "claude-3.5-haiku".
         - Recommended models for accuracy: "gpt-4.1", "o4-mini", "o3", "claude-3.7-sonnet", "claude-3.5-sonnet-v2".
         - Recommended models for low latency/costs: "gpt-4.1-nano", "nova-micro".
 

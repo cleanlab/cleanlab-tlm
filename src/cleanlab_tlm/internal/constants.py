@@ -32,7 +32,7 @@ _VALID_TLM_MODELS: list[str] = [
     "nova-lite",
     "nova-pro",
 ]
-_TLM_DEFAULT_MODEL: str = "gpt-4o-mini"
+_TLM_DEFAULT_MODEL: str = "gpt-4.1-mini"
 _TLM_DEFAULT_CONTEXT_LIMIT: int = 70000
 _VALID_TLM_TASKS: set[str] = {task.value for task in Task}
 TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS: set[Task] = {
