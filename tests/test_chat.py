@@ -540,3 +540,93 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         form_prompt_string([{"role": "user", "content": "What can you do?"}], responses_tools)
         == responses_tools_expected
     )
+
+
+def test_form_prompt_string_assistant_content_before_tool_calls() -> None:
+    """Test that assistant messages with both content and tool calls have content before tool calls."""
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": "Can you help me find information about ACME's warranty policy?"},
+        {
+            "role": "assistant",
+            "content": "I'll help you find information about our warranty policy. Let me search our knowledge base for the details.",
+            "tool_calls": [
+                {
+                    "type": "function",
+                    "id": "call_123",
+                    "function": {
+                        "name": "search_knowledge_base",
+                        "arguments": '{"query": "ACME warranty policy terms and conditions"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "name": "search_knowledge_base",
+            "tool_call_id": "call_123",
+            "content": "ACME offers a 2-year warranty on all products. The warranty covers manufacturing defects and normal wear and tear.",
+        },
+    ]
+    expected = (
+        "User: Can you help me find information about ACME's warranty policy?\n\n"
+        "Assistant: I'll help you find information about our warranty policy. Let me search our knowledge base for the details.\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "search_knowledge_base",\n'
+        '  "arguments": {\n'
+        '    "query": "ACME warranty policy terms and conditions"\n'
+        "  },\n"
+        '  "call_id": "call_123"\n'
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "search_knowledge_base",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "ACME offers a 2-year warranty on all products. The warranty covers manufacturing defects and normal wear and tear."\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> None:
+    """Test that assistant messages with both content and tool calls have content before tool calls in responses format."""
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": "Can you help me find information about ACME's warranty policy?"},
+        {
+            "type": "function_call",
+            "name": "search_knowledge_base",
+            "arguments": '{"query": "ACME warranty policy terms and conditions"}',
+            "call_id": "call_123",
+            "content": "I'll help you find information about our warranty policy. Let me search our knowledge base for the details.",
+        },
+        {
+            "type": "function_call_output",
+            "call_id": "call_123",
+            "output": "ACME offers a 2-year warranty on all products. The warranty covers manufacturing defects and normal wear and tear.",
+        },
+    ]
+    expected = (
+        "User: Can you help me find information about ACME's warranty policy?\n\n"
+        "Assistant: I'll help you find information about our warranty policy. Let me search our knowledge base for the details.\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "search_knowledge_base",\n'
+        '  "arguments": {\n'
+        '    "query": "ACME warranty policy terms and conditions"\n'
+        "  },\n"
+        '  "call_id": "call_123"\n'
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "search_knowledge_base",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "ACME offers a 2-year warranty on all products. The warranty covers manufacturing defects and normal wear and tear."\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages) == expected

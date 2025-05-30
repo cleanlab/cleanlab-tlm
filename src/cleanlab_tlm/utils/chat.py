@@ -144,6 +144,9 @@ def form_prompt_string(
         if is_responses:
             if "type" in msg:
                 if msg["type"] == "function_call":
+                    # If there's content in the message, add it before the tool call
+                    if msg.get("content"):
+                        output += f"Assistant: {msg['content']}\n\n"
                     call_id = msg.get("call_id", "")
                     function_names[call_id] = msg["name"]
                     # Format function call as JSON within XML tags, now including call_id
@@ -167,6 +170,9 @@ def form_prompt_string(
                     prefix = role.capitalize() + ": "
                 output += f"{prefix}{msg['content']}\n\n"
         elif msg["role"] == "assistant":
+            # Handle content if present
+            if msg.get("content"):
+                output += f"Assistant: {msg['content']}\n\n"
             # Handle tool calls if present
             if "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
@@ -179,9 +185,6 @@ def form_prompt_string(
                         "call_id": call_id,
                     }
                     output += f"Assistant: <tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
-            # Handle content if present
-            if msg.get("content"):
-                output += f"Assistant: {msg['content']}\n\n"
         elif msg["role"] == "tool":
             # Handle tool responses
             call_id = msg["tool_call_id"]
