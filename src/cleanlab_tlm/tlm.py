@@ -81,12 +81,12 @@ class TLM(BaseTLM):
             - "code_generation": for code generation tasks.
             - For Retrieval-Augmented Generation (RAG) tasks: try using [TrustworthyRAG](/tlm/use-cases/tlm_rag) instead of a TLM object (TrustworthyRAG has trust scoring configurations optimized for RAG).
 
-        options ([TLMOptions](#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
-        Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
-        "similarity_measure", "reasoning_effort", "log", "custom_eval_criteria".
+        options ([TLMOptions](#class-tlmoptions), optional): a typed dict of configurations you can optionally specify.
+        Available options (keys in this dict) include "model", "max_tokens",
+        "similarity_measure", "reasoning_effort", "log", "custom_eval_criteria", ...
         See detailed documentation under [TLMOptions](#class-tlmoptions).
-        If specified, these override any settings from the choice of `quality_preset`
-        (each `quality_preset` is just a certain [TLMOptions](#class-tlmoptions) configuration).
+        If specified, these configurations override any settings from the `quality_preset`
+        (each `quality_preset` is just a predefined set of [TLMOptions](#class-tlmoptions) configurations).
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM prompt.
         If a batch of data is passed in, the timeout will be applied to each individual item in the batch.
@@ -537,7 +537,9 @@ class TLM(BaseTLM):
         return {"trustworthiness_score": response_json["confidence_score"]}
 
     def get_model_name(self) -> str:
-        """Returns the underlying LLM used to generate responses and score their trustworthiness."""
+        """Returns the underlying LLM used to generate responses and score their trustworthiness.
+        Available base LLMs that you can run TLM with are listed under "model" configuration in [TLMOptions](#class-tlmoptions).
+        """
         return cast(str, self._options["model"])
 
 
@@ -589,7 +591,7 @@ class TLMOptions(TypedDict):
     - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
     - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False.
-        When using `get_trustworthiness_score()` on "base" preset, a cheaper self-reflection will be used to compute the trustworthiness score.
+        When using `get_trustworthiness_score()` on "base" preset, a faster self-reflection is employed.
 
     By default, TLM uses the: "medium" `quality_preset`, "gpt-4.1-mini" base `model`, and `max_tokens` is set to 512.
     You can set custom values for these arguments regardless of the quality preset specified.
@@ -598,7 +600,7 @@ class TLMOptions(TypedDict):
         model ({"gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "gpt-4.5-preview", "gpt-4o-mini", "gpt-4o", "o3-mini", \
          "o1", "o1-mini", "gpt-4", "gpt-3.5-turbo-16k", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", \
          "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4.1-mini"): \
-        Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
+        Underlying base LLM to use (better models yield better results, faster models yield faster results).
         - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.5-preview", \
             "claude-3.7-sonnet", "claude-3.5-haiku".
         - Recommended models for accuracy: "gpt-4.1", "o4-mini", "o3", "claude-3.7-sonnet", "claude-3.5-sonnet-v2".
