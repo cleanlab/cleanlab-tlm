@@ -255,16 +255,13 @@ class TLM(BaseTLM):
         validate_tlm_prompt(prompt)
         tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
         if isinstance(prompt, str):
-            return cast(
-                TLMResponse,
-                self._event_loop.run_until_complete(
-                    self._prompt_async(
-                        prompt,
-                        timeout=self._timeout,
-                        capture_exceptions=False,
-                        constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
-                    ),
-                ),
+            return self._event_loop.run_until_complete(
+                self._prompt_async(
+                    prompt,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
+                    constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
+                )
             )
 
         return self._event_loop.run_until_complete(
@@ -324,14 +321,13 @@ class TLM(BaseTLM):
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
-                tlm_response = await self._prompt_async(
+                return await self._prompt_async(
                     prompt,
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
                     constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                 )
-                return cast(TLMResponse, tlm_response)
 
             return await self._batch_prompt(
                 prompt,
@@ -417,16 +413,13 @@ class TLM(BaseTLM):
         processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
 
         if isinstance(prompt, str) and isinstance(processed_response, dict):
-            return cast(
-                TLMScore,
-                self._event_loop.run_until_complete(
-                    self._get_trustworthiness_score_async(
-                        prompt,
-                        processed_response,
-                        timeout=self._timeout,
-                        capture_exceptions=False,
-                    )
-                ),
+            return self._event_loop.run_until_complete(
+                self._get_trustworthiness_score_async(
+                    prompt,
+                    processed_response,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
+                )
             )
 
         assert isinstance(prompt, Sequence)
@@ -483,14 +476,13 @@ class TLM(BaseTLM):
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(processed_response, dict):
-                trustworthiness_score = await self._get_trustworthiness_score_async(
+                return await self._get_trustworthiness_score_async(
                     prompt,
                     processed_response,
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
                 )
-                return cast(TLMScore, trustworthiness_score)
 
             assert isinstance(prompt, Sequence)
             assert isinstance(processed_response, Sequence)
