@@ -255,16 +255,13 @@ class TLM(BaseTLM):
         validate_tlm_prompt(prompt)
         tlm_prompt_process_and_validate_kwargs(prompt, self._task, kwargs)
         if isinstance(prompt, str):
-            return cast(
-                TLMResponse,
-                self._event_loop.run_until_complete(
-                    self._prompt_async(
-                        prompt,
-                        timeout=self._timeout,
-                        capture_exceptions=False,
-                        constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
-                    ),
-                ),
+            return self._event_loop.run_until_complete(
+                self._prompt_async(
+                    prompt,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
+                    constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
+                )
             )
 
         return self._event_loop.run_until_complete(
@@ -324,14 +321,13 @@ class TLM(BaseTLM):
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str):
-                tlm_response = await self._prompt_async(
+                return await self._prompt_async(
                     prompt,
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
                     constrain_outputs=kwargs.get(_TLM_CONSTRAIN_OUTPUTS_KEY),
                 )
-                return cast(TLMResponse, tlm_response)
 
             return await self._batch_prompt(
                 prompt,
@@ -417,16 +413,13 @@ class TLM(BaseTLM):
         processed_response = tlm_score_process_response_and_kwargs(prompt, response, self._task, kwargs)
 
         if isinstance(prompt, str) and isinstance(processed_response, dict):
-            return cast(
-                TLMScore,
-                self._event_loop.run_until_complete(
-                    self._get_trustworthiness_score_async(
-                        prompt,
-                        processed_response,
-                        timeout=self._timeout,
-                        capture_exceptions=False,
-                    )
-                ),
+            return self._event_loop.run_until_complete(
+                self._get_trustworthiness_score_async(
+                    prompt,
+                    processed_response,
+                    timeout=self._timeout,
+                    capture_exceptions=False,
+                )
             )
 
         assert isinstance(prompt, Sequence)
@@ -483,14 +476,13 @@ class TLM(BaseTLM):
 
         async with aiohttp.ClientSession() as session:
             if isinstance(prompt, str) and isinstance(processed_response, dict):
-                trustworthiness_score = await self._get_trustworthiness_score_async(
+                return await self._get_trustworthiness_score_async(
                     prompt,
                     processed_response,
                     session,
                     timeout=self._timeout,
                     capture_exceptions=False,
                 )
-                return cast(TLMScore, trustworthiness_score)
 
             assert isinstance(prompt, Sequence)
             assert isinstance(processed_response, Sequence)
@@ -598,16 +590,16 @@ class TLMOptions(TypedDict):
     - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False.
         When using `get_trustworthiness_score()` on "base" preset, a cheaper self-reflection will be used to compute the trustworthiness score.
 
-    By default, TLM uses the: "medium" `quality_preset`, "gpt-4o-mini" base `model`, and `max_tokens` is set to 512.
+    By default, TLM uses the: "medium" `quality_preset`, "gpt-4.1-mini" base `model`, and `max_tokens` is set to 512.
     You can set custom values for these arguments regardless of the quality preset specified.
 
     Args:
         model ({"gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o4-mini", "o3", "gpt-4.5-preview", "gpt-4o-mini", "gpt-4o", "o3-mini", \
          "o1", "o1-mini", "gpt-4", "gpt-3.5-turbo-16k", "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-sonnet", \
-         "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4o-mini"): \
+         "claude-3.5-haiku", "claude-3-haiku", "nova-micro", "nova-lite", "nova-pro"}, default = "gpt-4.1-mini"): \
         Underlying base LLM to use (better models yield better results, faster models yield faster/cheaper results).
-        - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4.5-preview", \
-            "claude-3.7-sonnet", "claude-3.5-sonnet-v2", "claude-3.5-haiku", "nova-micro", "nova-lite", "nova-pro".
+        - Models still in beta: "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.5-preview", \
+            "claude-3.7-sonnet", "claude-3.5-haiku".
         - Recommended models for accuracy: "gpt-4.1", "o4-mini", "o3", "claude-3.7-sonnet", "claude-3.5-sonnet-v2".
         - Recommended models for low latency/costs: "gpt-4.1-nano", "nova-micro".
 

@@ -644,7 +644,7 @@ def test_custom_eval_criteria_validation(tlm_api_key: str) -> None:
     # Invalid: extra keys
     with pytest.raises(
         ValidationError,
-        match="^Invalid keys {'extra'} found in custom_eval_criteria item 0. Supported keys are: {'name', 'criteria'}.$",
+        match="^Invalid keys {'extra'} found in custom_eval_criteria item 0. Supported keys are: ({'name', 'criteria'}|{'criteria', 'name'}).$",
     ):
         TLM(
             api_key=tlm_api_key,

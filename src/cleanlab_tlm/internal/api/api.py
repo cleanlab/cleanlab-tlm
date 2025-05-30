@@ -436,7 +436,7 @@ async def tlm_rag_generate(
         if evaluation.name not in [_TLM_RESPONSE_KEY, _TLM_TRUSTWORTHINESS_KEY]:
             ordered_res[evaluation.name] = res_json[evaluation.name]
 
-    return cast(JSONDict, ordered_res)
+    return ordered_res
 
 
 @tlm_retry
@@ -526,4 +526,4 @@ async def tlm_rag_score(
         if evaluation.name not in [_TLM_RESPONSE_KEY, _TLM_TRUSTWORTHINESS_KEY]:
             ordered_res[evaluation.name] = res_json[evaluation.name]
 
-    return cast(JSONDict, ordered_res)
+    return ordered_res
