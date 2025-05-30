@@ -74,11 +74,12 @@ class TLM(BaseTLM):
             Ignore "best" or "high" presets if you just want trustworthiness scores (i.e. are using `TLM.get_trustworthiness_score()` rather than `TLM.prompt()`).
             These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
-        task ({"default", "classification", "code_generation"}, default = "default"): determines details of the algorithm used for scoring LLM response trustworthiness (similar to `quality_preset`).
-            - "default": use for general tasks such as question-answering, summarization, extraction, etc.
-            - "classification": use for classification tasks, where the response is a categorical prediction. \
+        task ({"default", "classification", "code_generation"}, default = "default"): determines configurations used for scoring LLM response trustworthiness (similar to `quality_preset`).
+            - "default": for general tasks such as question-answering, summarization, extraction, etc.
+            - "classification": for classification tasks, where the response is a categorical prediction. \
                 When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
-            - "code_generation": use for code generation tasks.
+            - "code_generation": for code generation tasks.
+            - For Retrieval-Augmented Generation (RAG) tasks: try using [TrustworthyRAG](/tlm/use-cases/tlm_rag) instead of a TLM object (TrustworthyRAG has trust scoring configurations optimized for RAG).
 
         options ([TLMOptions](#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
         Available options (keys in this dict) include "model", "max_tokens", "num_candidate_responses", "num_consistency_samples", "use_self_reflection",
