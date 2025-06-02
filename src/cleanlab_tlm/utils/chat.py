@@ -57,12 +57,14 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     # Add function call schema and example
     system_message += (
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
         "Example:\n"
         "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>, 'call_id': <call-id>}\n"
-        "</tool_call>"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call."
     )
 
     return f"System: {system_message}"
