@@ -552,8 +552,8 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
     )
 
 
-def test_form_prompt_string_assistant_content_before_tool_calls() -> None:
-    """Test that assistant messages with both content and tool calls have content before tool calls."""
+def test_form_prompt_string_assistant_content_before_tool_calls_chat_completions() -> None:
+    """Test that assistant messages with both content and tool calls have content before tool calls in chat completions format."""
     messages: list[dict[str, Any]] = [
         {"role": "user", "content": "Can you help me find information about ACME's warranty policy?"},
         {
@@ -580,7 +580,7 @@ def test_form_prompt_string_assistant_content_before_tool_calls() -> None:
     expected = (
         "User: Can you help me find information about ACME's warranty policy?\n\n"
         "Assistant: I'll help you find information about our warranty policy. Let me search our knowledge base for the details.\n\n"
-        "Assistant: <tool_call>\n"
+        "<tool_call>\n"
         "{\n"
         '  "name": "search_knowledge_base",\n'
         '  "arguments": {\n'
@@ -621,7 +621,7 @@ def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> N
     expected = (
         "User: Can you help me find information about ACME's warranty policy?\n\n"
         "Assistant: I'll help you find information about our warranty policy. Let me search our knowledge base for the details.\n\n"
-        "Assistant: <tool_call>\n"
+        "<tool_call>\n"
         "{\n"
         '  "name": "search_knowledge_base",\n'
         '  "arguments": {\n'
