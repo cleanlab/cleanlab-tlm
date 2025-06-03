@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2025-06-03
+
+- Update link in docstring
+
 ## [1.1.4] - 2025-05-30
 
 ### Changed
@@ -32,25 +36,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Improved validation + error messages for TLM's `custom_eval_criteria`. 
+- Improved validation + error messages for TLM's `custom_eval_criteria`.
 - Changed TLMOptions text in docs to have link to TLMOptions class
 
 ## [1.1.0] - 2025-04-21
 
-### Changed 
+### Changed
 
 - All `.prompt()` / `.get_trustworthiness_score()` / `.generate()` / `.score()` methods will now catch any errors and return `null` values alongside a log of why the exception occurred
 - `try_` methods are deprecated and will share the same functionality as the "non-try" methods
 
 ## [1.0.22] - 2025-04-18
 
-### Added 
+### Added
 
 - Update `response_helpfulness` default criteria
 
 ## [1.0.21] - 2025-04-17
 
-### Added 
+### Added
 
 - Add new OpenAI models: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `o3`, `o4-mini`
 
