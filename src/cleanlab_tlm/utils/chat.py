@@ -14,10 +14,9 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     Format a list of tool definitions into a system message with tools.
 
     Args:
-        tools (List[Dict[str, Any]]): List of tool/function specifications that can be in either:
-            - OpenAI's Chat Completions API format: Each tool dict has 'type': 'function' and a 'function' object with
-              'name', 'description', and 'parameters' keys.
-            - OpenAI's Responses API format: Each tool dict has 'name', 'description', 'parameters', and 'strict' keys.
+        tools (List[Dict[str, Any]]): The list of tools made available for the LLM to use when responding to the messages.
+            This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
+            This list of tool definitions will be formatted into a system message.
         is_responses (bool): Whether the tools are in responses API format.
 
     Returns:
@@ -103,10 +102,9 @@ def form_prompt_string(
             - 'role': 'user', 'assistant', 'system', or 'tool' and appropriate content
             - For assistant messages with tool calls: 'tool_calls' containing function calls
             - For tool messages: 'tool_call_id' and 'content' for tool responses
-        tools (Optional[List[Dict[str, Any]]]): Optional list of tool/function specifications that can be in either:
-            - OpenAI's Chat Completions API format: Each tool dict has 'type': 'function' and a 'function' object with
-              'name', 'description', and 'parameters' keys.
-            - OpenAI's Responses API format: Each tool dict has 'name', 'description', 'parameters', and 'strict' keys.
+        tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
+            This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
+            This list of tool definitions will be formatted into a system message.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
