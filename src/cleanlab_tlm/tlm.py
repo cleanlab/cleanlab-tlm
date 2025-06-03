@@ -79,7 +79,7 @@ class TLM(BaseTLM):
             - "classification": for classification tasks, where the response is a categorical prediction. \
                 When using this task type, `constrain_outputs` must be provided in the `prompt()` and `get_trustworthiness_score()` methods.
             - "code_generation": for code generation tasks.
-            - For Retrieval-Augmented Generation (RAG) tasks: try using [TrustworthyRAG](/tlm/use-cases/tlm_rag) instead of a TLM object (TrustworthyRAG has trust scoring configurations optimized for RAG).
+            - For Retrieval-Augmented Generation (RAG) tasks: try using [TrustworthyRAG](/tlm/use-cases/tlm_rag) instead of a TLM object (TrustworthyRAG has trust scoring configurations optimized for RAG).
 
         options ([TLMOptions](#class-tlmoptions), optional): a typed dict of configurations you can optionally specify.
         Available options (keys in this dict) include "model", "max_tokens",
