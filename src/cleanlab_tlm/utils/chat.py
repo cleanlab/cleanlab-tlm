@@ -245,9 +245,7 @@ def form_prompt_string(
     of the prompt. In this case, even a single message will use role prefixes since
     there will be at least one system message (the tools section).
 
-    Handles both OpenAI's responses API and chat completions API formats:
-    - responses API: Uses 'type' field with 'function_call' and 'function_call_output'
-    - chat completions API: Uses 'role' field with 'assistant' and 'tool', and 'tool_calls' for function calls
+    Handles both OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) and [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
