@@ -90,7 +90,7 @@ def _uses_responses_api(messages: list[dict[str, Any]], tools: Optional[list[dic
 
 def _form_prompt_responses_api(messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None) -> str:
     """
-    Format messages in responses API format into a prompt string.
+    Convert messages in [OpenAI Responses API format](https://platform.openai.com/docs/api-reference/responses) into a single prompt string.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages in responses API format.
@@ -159,7 +159,7 @@ def _form_prompt_chat_completions_api(
     messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None
 ) -> str:
     """
-    Format messages in chat completions API format into a prompt string.
+    Convert messages in [OpenAI Chat Completions API format](https://platform.openai.com/docs/api-reference/chat) into a single prompt string.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages in chat completions API format.
