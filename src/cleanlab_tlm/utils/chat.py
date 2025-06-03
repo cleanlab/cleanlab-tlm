@@ -245,7 +245,7 @@ def form_prompt_string(
     of the prompt. In this case, even a single message will use role prefixes since
     there will be at least one system message (the tools section).
 
-    Handles both OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) and [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
+    Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
