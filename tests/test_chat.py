@@ -506,7 +506,7 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
     ):
         assert form_prompt_string(messages) == expected
 
-    """Test that form_prompt_string correctly handles tools in the responses API format."""
+    """Test that form_prompt_string correctly handles tools in the Responses API format."""
     responses_tools = [
         {
             "type": "function",
@@ -739,13 +739,13 @@ def test_form_prompt_string_with_instructions_and_tool_calls_responses() -> None
 
 
 def test_form_prompt_string_with_instructions_chat_completions_throws_error() -> None:
-    """Test that responses API parameters cannot be used with use_responses=False."""
+    """Test that Responses API parameters cannot be used with use_responses=False."""
     messages = [
         {"role": "user", "content": "What can you do?"},
     ]
     with pytest.raises(
         ValueError,
-        match="Responses API kwargs are only supported in responses API format. Cannot use with use_responses=False.",
+        match="Responses API kwargs are only supported in Responses API format. Cannot use with use_responses=False.",
     ):
         form_prompt_string(
             messages, instructions="Always be concise and direct in your responses.", use_responses=False
