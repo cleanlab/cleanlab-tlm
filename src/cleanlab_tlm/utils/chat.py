@@ -20,7 +20,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
         tools (List[Dict[str, Any]]): The list of tools made available for the LLM to use when responding to the messages.
             This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
             This list of tool definitions will be formatted into a system message.
-        is_responses (bool): Whether the tools are in responses API format.
+        is_responses (bool): Whether the tools are in Responses API format.
 
     Returns:
         str: Formatted string with tools as a system message.
@@ -82,42 +82,42 @@ def _uses_responses_api(
     **responses_api_kwargs: Any,
 ) -> bool:
     """
-    Determine if the messages and parameters indicate responses API format.
+    Determine if the messages and parameters indicate Responses API format.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
-        use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
-            Cannot be set to False when responses API kwargs are provided.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
+            Cannot be set to False when Responses API kwargs are provided.
         **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
-        bool: True if using responses API format, False if using chat completions API format.
+        bool: True if using Responses API format, False if using chat completions API format.
 
     Raises:
-        ValueError: If responses API kwargs are provided with use_responses=False.
+        ValueError: If Responses API kwargs are provided with use_responses=False.
     """
-    # First check if explicitly set to False while having responses API kwargs
+    # First check if explicitly set to False while having Responses API kwargs
     if use_responses is False and responses_api_kwargs:
         raise ValueError(
-            "Responses API kwargs are only supported in responses API format. Cannot use with use_responses=False."
+            "Responses API kwargs are only supported in Responses API format. Cannot use with use_responses=False."
         )
 
     # If explicitly set to True or False, respect that (after validation above)
     if use_responses is not None:
         return use_responses
 
-    # Check for responses API kwargs
+    # Check for Responses API kwargs
     responses_api_keywords = {"instructions"}
     if any(key in responses_api_kwargs for key in responses_api_keywords):
         return True
 
-    # Check messages for responses API format indicators
+    # Check messages for Responses API format indicators
     if any(msg.get("type") in ["function_call", "function_call_output"] for msg in messages):
         return True
 
-    # Check tools for responses API format indicators
+    # Check tools for Responses API format indicators
     if tools and any("name" in tool and "function" not in tool for tool in tools):
         return True
 
@@ -133,7 +133,7 @@ def _form_prompt_responses_api(
     Convert messages in [OpenAI Responses API format](https://platform.openai.com/docs/api-reference/responses) into a single prompt string.
 
     Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages in responses API format.
+        messages (List[Dict]): A list of dictionaries representing chat messages in Responses API format.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
             This is the same argument as the tools argument for OpenAI's Responses API.
             This list of tool definitions will be formatted into a system message.
@@ -292,16 +292,16 @@ def form_prompt_string(
     of the prompt. In this case, even a single message will use role prefixes since
     there will be at least one system message (the tools section).
 
-    If responses API kwargs (like instructions) are provided, they will be
-    formatted for the responses API format. These kwargs are only supported
-    for the responses API format.
+    If Responses API kwargs (like instructions) are provided, they will be
+    formatted for the Responses API format. These kwargs are only supported
+    for the Responses API format.
 
     Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
             Each dictionary should contain either:
-            For responses API:
+            For Responses API:
             - 'role' and 'content' for regular messages
             - 'type': 'function_call' and function call details for tool calls
             - 'type': 'function_call_output' and output details for tool results
@@ -312,9 +312,9 @@ def form_prompt_string(
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
             This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
             This list of tool definitions will be formatted into a system message.
-        use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
             If None, the format is automatically detected using _uses_responses_api.
-            Cannot be set to False when responses API kwargs are provided.
+            Cannot be set to False when Responses API kwargs are provided.
         **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
@@ -322,7 +322,7 @@ def form_prompt_string(
         str: A formatted string representing the chat history as a single prompt.
 
     Raises:
-        ValueError: If responses API kwargs are provided with use_responses=False.
+        ValueError: If Responses API kwargs are provided with use_responses=False.
     """
     is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
     return (
