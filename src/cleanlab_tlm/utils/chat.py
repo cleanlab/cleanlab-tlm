@@ -200,9 +200,17 @@ def _form_prompt_responses_api(
     """
     output = ""
 
-    # Insert tool definitions and instructions as system messages if needed
+    # Find the index after the last system message
+    last_system_idx = -1
+    for i, msg in enumerate(messages):
+        if msg.get("role") in SYSTEM_ROLES:
+            last_system_idx = i
+
+    # Insert tool definitions and instructions after system messages if needed
     if tools is not None:
-        messages.insert(0, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)})
+        messages.insert(
+            last_system_idx + 1, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)}
+        )
 
     if "instructions" in responses_api_kwargs:
         messages.insert(0, {"role": SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
@@ -269,8 +277,17 @@ def _form_prompt_chat_completions_api(
         str: A formatted string representing the chat history as a single prompt.
     """
     output = ""
+
+    # Find the index after the last system message
+    last_system_idx = -1
+    for i, msg in enumerate(messages):
+        if msg.get("role") in SYSTEM_ROLES:
+            last_system_idx = i
+
     if tools is not None:
-        messages.insert(0, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)})
+        messages.insert(
+            last_system_idx + 1, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)}
+        )
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == USER_ROLE and tools is None:
