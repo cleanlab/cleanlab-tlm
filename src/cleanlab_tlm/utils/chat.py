@@ -138,17 +138,23 @@ def _uses_responses_api(
     return False
 
 
-def _get_prefix(msg: dict[str, Any]) -> str:
+def _get_prefix(msg: dict[str, Any], prev_msg_role: Optional[str] = None) -> str:
     """
     Get the appropriate prefix for a message based on its role.
 
     Args:
         msg (Dict[str, Any]): A message dictionary containing at least a 'role' key.
+        prev_msg_role (Optional[str]): The role of the previous message, if any.
 
     Returns:
         str: The appropriate prefix for the message role.
     """
     role = str(msg.get("name", msg["role"]))
+
+    # Skip prefix for system messages if the previous message was also a system message
+    if role in SYSTEM_ROLES and prev_msg_role in SYSTEM_ROLES:
+        return ""
+
     if role in SYSTEM_ROLES:
         return SYSTEM_PREFIX
     if role == USER_ROLE:
@@ -179,6 +185,7 @@ def _form_prompt_responses_api(
     """
     output = ""
 
+    # Insert tool definitions and instructions as system messages if needed
     if tools is not None:
         messages.insert(0, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)})
 
@@ -200,6 +207,7 @@ def _form_prompt_responses_api(
 
     # Track function names by call_id for function call outputs
     function_names = {}
+    prev_msg_role = None
 
     for msg in messages:
         if "type" in msg:
@@ -220,7 +228,9 @@ def _form_prompt_responses_api(
                 tool_response = {"name": name, "call_id": call_id, "output": msg["output"]}
                 output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
         else:
-            output += f"{_get_prefix(msg)}{msg['content']}\n\n"
+            prefix = _get_prefix(msg, prev_msg_role)
+            output += f"{prefix}{msg['content']}\n\n"
+            prev_msg_role = msg["role"]
 
     output += ASSISTANT_PREFIX
     return output.strip()
@@ -260,6 +270,7 @@ def _form_prompt_chat_completions_api(
 
     # Track function names by call_id for function call outputs
     function_names = {}
+    prev_msg_role = None
 
     for msg in messages:
         if msg["role"] == ASSISTANT_ROLE:
@@ -287,7 +298,9 @@ def _form_prompt_chat_completions_api(
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
             output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
         else:
-            output += f"{_get_prefix(msg)}{msg['content']}\n\n"
+            prefix = _get_prefix(msg, prev_msg_role)
+            output += f"{prefix}{msg['content']}\n\n"
+            prev_msg_role = msg["role"]
 
     output += ASSISTANT_PREFIX
     return output.strip()
