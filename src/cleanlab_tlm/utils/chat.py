@@ -11,6 +11,33 @@ from typing import Any, Optional
 # Define system roles as a set for efficient lookups
 SYSTEM_ROLES = {"system", "developer"}
 
+# Define message prefixes
+SYSTEM_PREFIX = "System: "
+USER_PREFIX = "User: "
+ASSISTANT_PREFIX = "Assistant: "
+
+# Define tool-related message prefixes
+TOOL_DEFINITIONS_PREFIX = (
+    "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+    "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+    "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+    "into functions. After calling & executing the functions, you will be provided with function results within "
+    "<tool_response> </tool_response> XML tags.\n\n"
+    "<tools>\n"
+)
+
+TOOL_CALL_SCHEMA_PREFIX = (
+    "For each function call return a JSON object, with the following pydantic model json schema:\n"
+    "{'name': <function-name>, 'arguments': <args-dict>}\n"
+    "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+    "Example:\n"
+    "<tool_call>\n"
+    "{'name': <function-name>, 'arguments': <args-dict>}\n"
+    "</tool_call>\n\n"
+    "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+    "However, do not generate your own call_id when making a function call."
+)
+
 
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
     """
@@ -25,14 +52,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     Returns:
         str: Formatted string with tools as a system message.
     """
-    system_message = (
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
-        "<tool_response> </tool_response> XML tags.\n\n"
-        "<tools>\n"
-    )
+    system_message = TOOL_DEFINITIONS_PREFIX
 
     # Format each tool as a function spec
     tool_strings = []
@@ -58,19 +78,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
 
     system_message += "\n".join(tool_strings)
     system_message += "\n</tools>\n\n"
-
-    # Add function call schema and example
-    system_message += (
-        "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
-        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
-        "Example:\n"
-        "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
-        "</tool_call>\n\n"
-        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
-        "However, do not generate your own call_id when making a function call."
-    )
+    system_message += TOOL_CALL_SCHEMA_PREFIX
 
     return system_message
 
@@ -124,6 +132,26 @@ def _uses_responses_api(
     return False
 
 
+def _get_prefix(msg: dict[str, Any]) -> str:
+    """
+    Get the appropriate prefix for a message based on its role.
+
+    Args:
+        msg (Dict[str, Any]): A message dictionary containing at least a 'role' key.
+
+    Returns:
+        str: The appropriate prefix for the message role.
+    """
+    role = str(msg.get("name", msg["role"]))
+    if role in SYSTEM_ROLES:
+        return SYSTEM_PREFIX
+    if role == "user":
+        return USER_PREFIX
+    if role == "assistant":
+        return ASSISTANT_PREFIX
+    return role.capitalize() + ": "
+
+
 def _form_prompt_responses_api(
     messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
@@ -170,7 +198,7 @@ def _form_prompt_responses_api(
     for msg in messages:
         if "type" in msg:
             if msg["type"] == "function_call":
-                output += "Assistant: "
+                output += ASSISTANT_PREFIX
                 # If there's content in the message, add it before the tool call
                 if msg.get("content"):
                     output += f"{msg['content']}\n\n"
@@ -186,18 +214,9 @@ def _form_prompt_responses_api(
                 tool_response = {"name": name, "call_id": call_id, "output": msg["output"]}
                 output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
         else:
-            role = msg.get("name", msg["role"])
-            if role in SYSTEM_ROLES:
-                prefix = "System: "
-            elif role == "user":
-                prefix = "User: "
-            elif role == "assistant":
-                prefix = "Assistant: "
-            else:
-                prefix = role.capitalize() + ": "
-            output += f"{prefix}{msg['content']}\n\n"
+            output += f"{_get_prefix(msg)}{msg['content']}\n\n"
 
-    output += "Assistant:"
+    output += ASSISTANT_PREFIX
     return output.strip()
 
 
@@ -238,7 +257,7 @@ def _form_prompt_chat_completions_api(
 
     for msg in messages:
         if msg["role"] == "assistant":
-            output += "Assistant: "
+            output += ASSISTANT_PREFIX
             # Handle content if present
             if msg.get("content"):
                 output += f"{msg['content']}\n\n"
@@ -262,16 +281,9 @@ def _form_prompt_chat_completions_api(
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
             output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
         else:
-            role = msg["role"]
-            if role in SYSTEM_ROLES:
-                prefix = "System: "
-            elif role == "user":
-                prefix = "User: "
-            else:
-                prefix = role.capitalize() + ": "
-            output += f"{prefix}{msg['content']}\n\n"
+            output += f"{_get_prefix(msg)}{msg['content']}\n\n"
 
-    output += "Assistant:"
+    output += ASSISTANT_PREFIX
     return output.strip()
 
 
