@@ -3,11 +3,13 @@ from cleanlab_tlm.internal.constants import _VALID_TLM_MODELS
 # Test TLM
 TEST_PROMPT: str = "What is the capital of France?"
 TEST_RESPONSE: str = "Paris"
+TEST_EMPTY_RESPONSE: str = ""
 TEST_PROMPT_BATCH: list[str] = [
     "What is the capital of France?",
     "What is the capital of Ukraine?",
 ]
 TEST_RESPONSE_BATCH: list[str] = ["Paris", "Kyiv"]
+TEST_EMPTY_RESPONSE_BATCH: list[str] = ["", "Kyiv"]
 TEST_CONSTRAIN_OUTPUTS_BINARY = ["Paris", "Kyiv"]
 TEST_CONSTRAIN_OUTPUTS = ["Paris", "Kyiv", "London", "New York"]
 

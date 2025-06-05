@@ -7,6 +7,8 @@ from cleanlab_tlm.errors import APITimeoutError
 from cleanlab_tlm.tlm import TLM
 from tests.conftest import make_text_unique
 from tests.constants import (
+    TEST_EMPTY_RESPONSE,
+    TEST_EMPTY_RESPONSE_BATCH,
     TEST_PROMPT,
     TEST_PROMPT_BATCH,
     TEST_RESPONSE,
@@ -29,6 +31,11 @@ def is_trustworthiness_score_json_format(response: Any, allow_null_trustworthine
             )
         )
     )
+
+
+def is_trustworthiness_score_zero(response: Any) -> bool:
+    """Returns True if the response has a trustworthiness score of 0.0."""
+    return isinstance(response["trustworthiness_score"], float) and response["trustworthiness_score"] == 0.0
 
 
 def is_tlm_score_response_with_error(response: Any) -> bool:
@@ -104,6 +111,49 @@ def test_single_get_trustworthiness_score_force_timeouts(tlm: TLM) -> None:
             test_prompt,
             TEST_RESPONSE,
         )
+
+
+def test_single_get_trustworthiness_score_empty_response(tlm: TLM) -> None:
+    """Tests running a single get_trustworthiness_score in the TLM with an empty response.
+    Expected:
+    - TLM should return a single response
+    - Response should be non-None
+    - No exceptions are raised
+    """
+    # act -- run a single get_trustworthiness_score
+    response = tlm.get_trustworthiness_score(test_prompt, TEST_EMPTY_RESPONSE)
+
+    # assert
+    # - response is not None
+    # - a single response of type TLMResponse is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert is_trustworthiness_score_json_format(response)
+
+    # - response should have a trustworthiness score of 0.0
+    assert is_trustworthiness_score_zero(response)
+
+
+def test_batch_get_trustworthiness_score_empty_response(tlm: TLM) -> None:
+    """Tests running a batch get_trustworthiness_score in the TLM with an empty responses in the batch.
+    - TLM should return a list of responses
+    - Responses should be non-None
+    - No exceptions are raised
+    - Empty responses should have a trustworthiness score of 0.0
+    """
+    # act -- run a single get_trustworthiness_score
+    response = tlm.get_trustworthiness_score(test_prompt_batch, TEST_EMPTY_RESPONSE_BATCH)
+
+    # assert
+    # - response is not None
+    # - a list of responses of type TLMResponse is returned
+    # - no exceptions are raised (implicit)
+    assert response is not None
+    assert isinstance(response, list)
+    assert all(is_trustworthiness_score_json_format(r) for r in response)
+
+    # - response should have a trustworthiness score of 0.0
+    assert is_trustworthiness_score_zero(response[0])
 
 
 def test_batch_get_trustworthiness_score_constrain_outputs(tlm: TLM) -> None:

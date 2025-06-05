@@ -512,6 +512,9 @@ class TLM(BaseTLM):
         Returns:
             [TLMScore](#class-tlmscore) objects with error messages and retryability information in place of the trustworthiness score
         """
+        if not response["response"].strip():
+            return {"trustworthiness_score": 0.0}
+
         response_json = await asyncio.wait_for(
             api.tlm_get_confidence_score(
                 self._api_key,
