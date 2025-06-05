@@ -8,6 +8,57 @@ import json
 import warnings
 from typing import Any, Optional
 
+# Define message prefixes
+SYSTEM_PREFIX = "System: "
+USER_PREFIX = "User: "
+ASSISTANT_PREFIX = "Assistant: "
+
+# Define role constants
+SYSTEM_ROLE = "system"
+DEVELOPER_ROLE = "developer"
+USER_ROLE = "user"
+TOOL_ROLE = "tool"
+ASSISTANT_ROLE = "assistant"
+
+# Define system roles
+SYSTEM_ROLES = [SYSTEM_ROLE, DEVELOPER_ROLE]
+
+# Define message type constants
+FUNCTION_CALL_TYPE = "function_call"
+FUNCTION_CALL_OUTPUT_TYPE = "function_call_output"
+
+# Define XML tag constants
+TOOLS_TAG_START = "<tools>"
+TOOLS_TAG_END = "</tools>"
+TOOL_CALL_TAG_START = "<tool_call>"
+TOOL_CALL_TAG_END = "</tool_call>"
+TOOL_RESPONSE_TAG_START = "<tool_response>"
+TOOL_RESPONSE_TAG_END = "</tool_response>"
+
+# Define tool-related message prefixes
+TOOL_DEFINITIONS_PREFIX = (
+    "You are a function calling AI model. You are provided with function signatures within "
+    f"{TOOLS_TAG_START} {TOOLS_TAG_END} XML tags. "
+    "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+    "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+    "into functions. After calling & executing the functions, you will be provided with function results within "
+    f"{TOOL_RESPONSE_TAG_START} {TOOL_RESPONSE_TAG_END} XML tags.\n\n"
+    f"{TOOLS_TAG_START}\n"
+)
+
+TOOL_CALL_SCHEMA_PREFIX = (
+    "For each function call return a JSON object, with the following pydantic model json schema:\n"
+    "{'name': <function-name>, 'arguments': <args-dict>}\n"
+    f"Each function call should be enclosed within {TOOL_CALL_TAG_START} {TOOL_CALL_TAG_END} XML tags.\n"
+    "Example:\n"
+    f"{TOOL_CALL_TAG_START}\n"
+    "{'name': <function-name>, 'arguments': <args-dict>}\n"
+    f"{TOOL_CALL_TAG_END}\n\n"
+    "Note: Your past messages will include a call_id in the "
+    f"{TOOL_CALL_TAG_START} XML tags. "
+    "However, do not generate your own call_id when making a function call."
+)
+
 
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
     """
@@ -17,19 +68,12 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
         tools (List[Dict[str, Any]]): The list of tools made available for the LLM to use when responding to the messages.
             This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
             This list of tool definitions will be formatted into a system message.
-        is_responses (bool): Whether the tools are in responses API format.
+        is_responses (bool): Whether the tools are in Responses API format.
 
     Returns:
         str: Formatted string with tools as a system message.
     """
-    system_message = (
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
-        "<tool_response> </tool_response> XML tags.\n\n"
-        "<tools>\n"
-    )
+    system_message = TOOL_DEFINITIONS_PREFIX
 
     # Format each tool as a function spec
     tool_strings = []
@@ -54,63 +98,129 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
         tool_strings.append(json.dumps(tool_dict, separators=(",", ":")))
 
     system_message += "\n".join(tool_strings)
-    system_message += "\n</tools>\n\n"
+    system_message += f"\n{TOOLS_TAG_END}\n\n"
+    system_message += TOOL_CALL_SCHEMA_PREFIX
 
-    # Add function call schema and example
-    system_message += (
-        "For each function call return a JSON object, with the following pydantic model json schema:\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
-        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
-        "Example:\n"
-        "<tool_call>\n"
-        "{'name': <function-name>, 'arguments': <args-dict>}\n"
-        "</tool_call>\n\n"
-        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
-        "However, do not generate your own call_id when making a function call."
-    )
-
-    return f"System: {system_message}"
+    return system_message
 
 
-def _uses_responses_api(messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None) -> bool:
+def _uses_responses_api(
+    messages: list[dict[str, Any]],
+    tools: Optional[list[dict[str, Any]]] = None,
+    use_responses: Optional[bool] = None,
+    **responses_api_kwargs: Any,
+) -> bool:
     """
-    Determine if the messages and tools are in responses API format.
+    Determine if the messages and parameters indicate Responses API format.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
+            Cannot be set to False when Responses API kwargs are provided.
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
-        bool: True if using responses API format, False if using chat completions API format.
+        bool: True if using Responses API format, False if using chat completions API format.
+
+    Raises:
+        ValueError: If Responses API kwargs are provided with use_responses=False.
     """
-    return any(msg.get("type") in ["function_call", "function_call_output"] for msg in messages) or any(
-        "name" in tool and "function" not in tool for tool in tools or []
-    )
+    # First check if explicitly set to False while having Responses API kwargs
+    if use_responses is False and responses_api_kwargs:
+        raise ValueError(
+            "Responses API kwargs are only supported in Responses API format. Cannot use with use_responses=False."
+        )
+
+    # If explicitly set to True or False, respect that (after validation above)
+    if use_responses is not None:
+        return use_responses
+
+    # Check for Responses API kwargs
+    responses_api_keywords = {"instructions"}
+    if any(key in responses_api_kwargs for key in responses_api_keywords):
+        return True
+
+    # Check messages for Responses API format indicators
+    if any(msg.get("type") in [FUNCTION_CALL_TYPE, FUNCTION_CALL_OUTPUT_TYPE] for msg in messages):
+        return True
+
+    # Check tools for Responses API format indicators
+    if tools and any("name" in tool and "function" not in tool for tool in tools):
+        return True
+
+    return False
 
 
-def _form_prompt_responses_api(messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None) -> str:
+def _get_prefix(msg: dict[str, Any], prev_msg_role: Optional[str] = None) -> str:
+    """
+    Get the appropriate prefix for a message based on its role.
+
+    Args:
+        msg (Dict[str, Any]): A message dictionary containing at least a 'role' key.
+        prev_msg_role (Optional[str]): The role of the previous message, if any.
+
+    Returns:
+        str: The appropriate prefix for the message role.
+    """
+    role = str(msg.get("name", msg["role"]))
+
+    # Skip prefix for system messages if the previous message was also a system message
+    if role in SYSTEM_ROLES and prev_msg_role in SYSTEM_ROLES:
+        return ""
+
+    if role in SYSTEM_ROLES:
+        return SYSTEM_PREFIX
+    if role == USER_ROLE:
+        return USER_PREFIX
+    if role == ASSISTANT_ROLE:
+        return ASSISTANT_PREFIX
+    return role.capitalize() + ": "
+
+
+def _form_prompt_responses_api(
+    messages: list[dict[str, Any]],
+    tools: Optional[list[dict[str, Any]]] = None,
+    **responses_api_kwargs: Any,
+) -> str:
     """
     Convert messages in [OpenAI Responses API format](https://platform.openai.com/docs/api-reference/responses) into a single prompt string.
 
     Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages in responses API format.
+        messages (List[Dict]): A list of dictionaries representing chat messages in Responses API format.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
-        This is the same argument as the tools argument for OpenAI's Responses API.
-        This list of tool definitions will be formatted into a system message.
+            This is the same argument as the tools argument for OpenAI's Responses API.
+            This list of tool definitions will be formatted into a system message.
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
     """
     output = ""
-    if tools is not None:
-        output = _format_tools_prompt(tools, is_responses=True) + "\n\n"
 
-    # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == "user" and tools is None:
-        return str(output + messages[0]["content"])
+    # Find the index after the last system message
+    last_system_idx = -1
+    for i, msg in enumerate(messages):
+        if msg.get("role") in SYSTEM_ROLES:
+            last_system_idx = i
+
+    # Insert tool definitions and instructions after system messages if needed
+    if tools is not None:
+        messages.insert(
+            last_system_idx + 1, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)}
+        )
+
+    if "instructions" in responses_api_kwargs:
+        messages.insert(0, {"role": SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
+
+    # Only return content directly if there's a single user message AND no prepended content
+    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and not output:
+        return str(messages[0]["content"])
 
     # Warn if the last message is a tool call
-    if messages and messages[-1].get("type") == "function_call":
+    if messages and messages[-1].get("type") == FUNCTION_CALL_TYPE:
         warnings.warn(
             "The last message is a tool call or assistant message. The next message should not be an LLM response. "
             "This prompt should not be used for trustworthiness scoring.",
@@ -120,11 +230,12 @@ def _form_prompt_responses_api(messages: list[dict[str, Any]], tools: Optional[l
 
     # Track function names by call_id for function call outputs
     function_names = {}
+    prev_msg_role = None
 
     for msg in messages:
         if "type" in msg:
-            if msg["type"] == "function_call":
-                output += "Assistant: "
+            if msg["type"] == FUNCTION_CALL_TYPE:
+                output += ASSISTANT_PREFIX
                 # If there's content in the message, add it before the tool call
                 if msg.get("content"):
                     output += f"{msg['content']}\n\n"
@@ -132,26 +243,21 @@ def _form_prompt_responses_api(messages: list[dict[str, Any]], tools: Optional[l
                 function_names[call_id] = msg["name"]
                 # Format function call as JSON within XML tags, now including call_id
                 function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"]), "call_id": call_id}
-                output += f"<tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
-            elif msg["type"] == "function_call_output":
+                output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
+            elif msg["type"] == FUNCTION_CALL_OUTPUT_TYPE:
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
                 tool_response = {"name": name, "call_id": call_id, "output": msg["output"]}
-                output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
+                output += (
+                    f"{TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{TOOL_RESPONSE_TAG_END}\n\n"
+                )
         else:
-            role = msg.get("name", msg["role"])
-            if role == "system":
-                prefix = "System: "
-            elif role == "user":
-                prefix = "User: "
-            elif role == "assistant":
-                prefix = "Assistant: "
-            else:
-                prefix = role.capitalize() + ": "
+            prefix = _get_prefix(msg, prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
+            prev_msg_role = msg["role"]
 
-    output += "Assistant:"
+    output += ASSISTANT_PREFIX
     return output.strip()
 
 
@@ -171,15 +277,24 @@ def _form_prompt_chat_completions_api(
         str: A formatted string representing the chat history as a single prompt.
     """
     output = ""
+
+    # Find the index after the last system message
+    last_system_idx = -1
+    for i, msg in enumerate(messages):
+        if msg.get("role") in SYSTEM_ROLES:
+            last_system_idx = i
+
     if tools is not None:
-        output = _format_tools_prompt(tools, is_responses=False) + "\n\n"
+        messages.insert(
+            last_system_idx + 1, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)}
+        )
 
     # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == "user" and tools is None:
+    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and tools is None:
         return str(output + messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls
-    if messages and (messages[-1].get("role") == "assistant" or "tool_calls" in messages[-1]):
+    if messages and (messages[-1].get("role") == ASSISTANT_ROLE or "tool_calls" in messages[-1]):
         warnings.warn(
             "The last message is a tool call or assistant message. The next message should not be an LLM response. "
             "This prompt should not be used for trustworthiness scoring.",
@@ -189,10 +304,11 @@ def _form_prompt_chat_completions_api(
 
     # Track function names by call_id for function call outputs
     function_names = {}
+    prev_msg_role = None
 
     for msg in messages:
-        if msg["role"] == "assistant":
-            output += "Assistant: "
+        if msg["role"] == ASSISTANT_ROLE:
+            output += ASSISTANT_PREFIX
             # Handle content if present
             if msg.get("content"):
                 output += f"{msg['content']}\n\n"
@@ -207,25 +323,20 @@ def _form_prompt_chat_completions_api(
                         "arguments": json.loads(tool_call["function"]["arguments"]),
                         "call_id": call_id,
                     }
-                    output += f"<tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
-        elif msg["role"] == "tool":
+                    output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
+        elif msg["role"] == TOOL_ROLE:
             # Handle tool responses
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
             # Format function response as JSON within XML tags
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
-            output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
+            output += f"{TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{TOOL_RESPONSE_TAG_END}\n\n"
         else:
-            role = msg["role"]
-            if role == "system":
-                prefix = "System: "
-            elif role == "user":
-                prefix = "User: "
-            else:
-                prefix = role.capitalize() + ": "
+            prefix = _get_prefix(msg, prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
+            prev_msg_role = msg["role"]
 
-    output += "Assistant:"
+    output += ASSISTANT_PREFIX
     return output.strip()
 
 
@@ -233,6 +344,7 @@ def form_prompt_string(
     messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
     use_responses: Optional[bool] = None,
+    **responses_api_kwargs: Any,
 ) -> str:
     """
     Convert a list of chat messages into a single string prompt.
@@ -245,12 +357,16 @@ def form_prompt_string(
     of the prompt. In this case, even a single message will use role prefixes since
     there will be at least one system message (the tools section).
 
+    If Responses API kwargs (like instructions) are provided, they will be
+    formatted for the Responses API format. These kwargs are only supported
+    for the Responses API format.
+
     Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
             Each dictionary should contain either:
-            For responses API:
+            For Responses API:
             - 'role' and 'content' for regular messages
             - 'type': 'function_call' and function call details for tool calls
             - 'type': 'function_call_output' and output details for tool results
@@ -261,15 +377,21 @@ def form_prompt_string(
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
             This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
             This list of tool definitions will be formatted into a system message.
-        use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
             If None, the format is automatically detected using _uses_responses_api.
+            Cannot be set to False when Responses API kwargs are provided.
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
+
+    Raises:
+        ValueError: If Responses API kwargs are provided with use_responses=False.
     """
-    is_responses = use_responses if use_responses is not None else _uses_responses_api(messages, tools)
+    is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
     return (
-        _form_prompt_responses_api(messages, tools)
+        _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
         if is_responses
         else _form_prompt_chat_completions_api(messages, tools)
     )
