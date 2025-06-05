@@ -16,6 +16,12 @@ SYSTEM_PREFIX = "System: "
 USER_PREFIX = "User: "
 ASSISTANT_PREFIX = "Assistant: "
 
+# Define role constants
+SYSTEM_ROLE = "system"
+USER_ROLE = "user"
+TOOL_ROLE = "tool"
+ASSISTANT_ROLE = "assistant"
+
 # Define tool-related message prefixes
 TOOL_DEFINITIONS_PREFIX = (
     "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
@@ -145,9 +151,9 @@ def _get_prefix(msg: dict[str, Any]) -> str:
     role = str(msg.get("name", msg["role"]))
     if role in SYSTEM_ROLES:
         return SYSTEM_PREFIX
-    if role == "user":
+    if role == USER_ROLE:
         return USER_PREFIX
-    if role == "assistant":
+    if role == ASSISTANT_ROLE:
         return ASSISTANT_PREFIX
     return role.capitalize() + ": "
 
@@ -174,13 +180,13 @@ def _form_prompt_responses_api(
     output = ""
 
     if tools is not None:
-        messages.insert(0, {"role": SYSTEM_ROLES[0], "content": _format_tools_prompt(tools, is_responses=True)})
+        messages.insert(0, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)})
 
     if "instructions" in responses_api_kwargs:
-        messages.insert(0, {"role": SYSTEM_ROLES[0], "content": responses_api_kwargs["instructions"]})
+        messages.insert(0, {"role": SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
 
     # Only return content directly if there's a single user message AND no prepended content
-    if len(messages) == 1 and messages[0].get("role") == "user" and not output:
+    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and not output:
         return str(messages[0]["content"])
 
     # Warn if the last message is a tool call
@@ -237,14 +243,14 @@ def _form_prompt_chat_completions_api(
     """
     output = ""
     if tools is not None:
-        messages.insert(0, {"role": SYSTEM_ROLES[0], "content": _format_tools_prompt(tools, is_responses=False)})
+        messages.insert(0, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)})
 
     # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == "user" and tools is None:
+    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and tools is None:
         return str(output + messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls
-    if messages and (messages[-1].get("role") == "assistant" or "tool_calls" in messages[-1]):
+    if messages and (messages[-1].get("role") == ASSISTANT_ROLE or "tool_calls" in messages[-1]):
         warnings.warn(
             "The last message is a tool call or assistant message. The next message should not be an LLM response. "
             "This prompt should not be used for trustworthiness scoring.",
@@ -256,7 +262,7 @@ def _form_prompt_chat_completions_api(
     function_names = {}
 
     for msg in messages:
-        if msg["role"] == "assistant":
+        if msg["role"] == ASSISTANT_ROLE:
             output += ASSISTANT_PREFIX
             # Handle content if present
             if msg.get("content"):
@@ -273,7 +279,7 @@ def _form_prompt_chat_completions_api(
                         "call_id": call_id,
                     }
                     output += f"<tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
-        elif msg["role"] == "tool":
+        elif msg["role"] == TOOL_ROLE:
             # Handle tool responses
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
