@@ -26,25 +26,35 @@ ASSISTANT_ROLE = "assistant"
 FUNCTION_CALL_TYPE = "function_call"
 FUNCTION_CALL_OUTPUT_TYPE = "function_call_output"
 
+# Define XML tag constants
+TOOLS_TAG_START = "<tools>"
+TOOLS_TAG_END = "</tools>"
+TOOL_CALL_TAG_START = "<tool_call>"
+TOOL_CALL_TAG_END = "</tool_call>"
+TOOL_RESPONSE_TAG_START = "<tool_response>"
+TOOL_RESPONSE_TAG_END = "</tool_response>"
+
 # Define tool-related message prefixes
 TOOL_DEFINITIONS_PREFIX = (
-    "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+    "You are a function calling AI model. You are provided with function signatures within "
+    f"{TOOLS_TAG_START} {TOOLS_TAG_END} XML tags. "
     "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
     "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
     "into functions. After calling & executing the functions, you will be provided with function results within "
-    "<tool_response> </tool_response> XML tags.\n\n"
-    "<tools>\n"
+    f"{TOOL_RESPONSE_TAG_START} {TOOL_RESPONSE_TAG_END} XML tags.\n\n"
+    f"{TOOLS_TAG_START}\n"
 )
 
 TOOL_CALL_SCHEMA_PREFIX = (
     "For each function call return a JSON object, with the following pydantic model json schema:\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
-    "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+    f"Each function call should be enclosed within {TOOL_CALL_TAG_START} {TOOL_CALL_TAG_END} XML tags.\n"
     "Example:\n"
-    "<tool_call>\n"
+    f"{TOOL_CALL_TAG_START}\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
-    "</tool_call>\n\n"
-    "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+    f"{TOOL_CALL_TAG_END}\n\n"
+    "Note: Your past messages will include a call_id in the "
+    f"{TOOL_CALL_TAG_START} XML tags. "
     "However, do not generate your own call_id when making a function call."
 )
 
@@ -87,7 +97,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
         tool_strings.append(json.dumps(tool_dict, separators=(",", ":")))
 
     system_message += "\n".join(tool_strings)
-    system_message += "\n</tools>\n\n"
+    system_message += f"\n{TOOLS_TAG_END}\n\n"
     system_message += TOOL_CALL_SCHEMA_PREFIX
 
     return system_message
@@ -224,13 +234,15 @@ def _form_prompt_responses_api(
                 function_names[call_id] = msg["name"]
                 # Format function call as JSON within XML tags, now including call_id
                 function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"]), "call_id": call_id}
-                output += f"<tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
+                output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
             elif msg["type"] == FUNCTION_CALL_OUTPUT_TYPE:
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
                 tool_response = {"name": name, "call_id": call_id, "output": msg["output"]}
-                output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
+                output += (
+                    f"{TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{TOOL_RESPONSE_TAG_END}\n\n"
+                )
         else:
             prefix = _get_prefix(msg, prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
@@ -293,14 +305,14 @@ def _form_prompt_chat_completions_api(
                         "arguments": json.loads(tool_call["function"]["arguments"]),
                         "call_id": call_id,
                     }
-                    output += f"<tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
+                    output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
         elif msg["role"] == TOOL_ROLE:
             # Handle tool responses
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
             # Format function response as JSON within XML tags
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
-            output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
+            output += f"{TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{TOOL_RESPONSE_TAG_END}\n\n"
         else:
             prefix = _get_prefix(msg, prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
