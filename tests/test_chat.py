@@ -647,11 +647,7 @@ def test_form_prompt_string_with_instructions_responses() -> None:
     messages = [
         {"role": "user", "content": "What can you do?"},
     ]
-    expected = (
-        "Developer instruction (prioritize ahead of other roles): Always be concise and direct in your responses.\n\n"
-        "User: What can you do?\n\n"
-        "Assistant:"
-    )
+    expected = "System: Always be concise and direct in your responses.\n\n" "User: What can you do?\n\n" "Assistant:"
     assert form_prompt_string(messages, instructions="Always be concise and direct in your responses.") == expected
 
 
@@ -674,7 +670,7 @@ def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
         }
     ]
     expected = (
-        "Developer instruction (prioritize ahead of other roles): Always be concise and direct in your responses.\n\n"
+        "System: Always be concise and direct in your responses.\n\n"
         "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
         "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
         "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
@@ -719,7 +715,7 @@ def test_form_prompt_string_with_instructions_and_tool_calls_responses() -> None
         },
     ]
     expected = (
-        "Developer instruction (prioritize ahead of other roles): Always be concise and direct in your responses.\n\n"
+        "System: Always be concise and direct in your responses.\n\n"
         "User: What's the weather in Paris?\n\n"
         "Assistant: <tool_call>\n"
         "{\n"
@@ -749,8 +745,28 @@ def test_form_prompt_string_with_instructions_chat_completions_throws_error() ->
     ]
     with pytest.raises(
         ValueError,
-        match="Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False.",
+        match="Responses API kwargs are only supported in responses API format. Cannot use with use_responses=False.",
     ):
         form_prompt_string(
             messages, instructions="Always be concise and direct in your responses.", use_responses=False
         )
+
+
+def test_form_prompt_string_with_developer_role_begin() -> None:
+    """Test formatting with developer role in the beginning of the messages list."""
+    messages = [
+        {"role": "developer", "content": "Always be concise and direct in your responses."},
+        {"role": "user", "content": "What can you do?"},
+    ]
+    expected = "System: Always be concise and direct in your responses.\n\n" "User: What can you do?\n\n" "Assistant:"
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_developer_role_middle() -> None:
+    """Test formatting with developer role in the middle of the messages list."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+        {"role": "developer", "content": "Always be concise and direct in your responses."},
+    ]
+    expected = "User: What can you do?\n\n" "System: Always be concise and direct in your responses.\n\n" "Assistant:"
+    assert form_prompt_string(messages) == expected

@@ -8,6 +8,9 @@ import json
 import warnings
 from typing import Any, Optional
 
+# Define system roles as a set for efficient lookups
+SYSTEM_ROLES = {"system", "developer"}
+
 
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
     """
@@ -69,7 +72,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
         "However, do not generate your own call_id when making a function call."
     )
 
-    return f"System: {system_message}"
+    return system_message
 
 
 def _uses_responses_api(
@@ -85,7 +88,7 @@ def _uses_responses_api(
         messages (List[Dict]): A list of dictionaries representing chat messages.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
         use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
-            Cannot be set to False when responses API specific parameters are provided.
+            Cannot be set to False when responses API kwargs are provided.
         **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
@@ -93,19 +96,19 @@ def _uses_responses_api(
         bool: True if using responses API format, False if using chat completions API format.
 
     Raises:
-        ValueError: If responses API specific parameters are provided with use_responses=False.
+        ValueError: If responses API kwargs are provided with use_responses=False.
     """
     # First check if explicitly set to False while having responses API kwargs
     if use_responses is False and responses_api_kwargs:
         raise ValueError(
-            "Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False."
+            "Responses API kwargs are only supported in responses API format. Cannot use with use_responses=False."
         )
 
     # If explicitly set to True or False, respect that (after validation above)
     if use_responses is not None:
         return use_responses
 
-    # Check for responses API specific parameters
+    # Check for responses API kwargs
     responses_api_keywords = {"instructions"}
     if any(key in responses_api_kwargs for key in responses_api_keywords):
         return True
@@ -141,11 +144,12 @@ def _form_prompt_responses_api(
         str: A formatted string representing the chat history as a single prompt.
     """
     output = ""
-    if "instructions" in responses_api_kwargs:
-        output = f"Developer instruction (prioritize ahead of other roles): {responses_api_kwargs['instructions']}\n\n"
 
     if tools is not None:
-        output += _format_tools_prompt(tools, is_responses=True) + "\n\n"
+        messages.insert(0, {"role": "system", "content": _format_tools_prompt(tools, is_responses=True)})
+
+    if "instructions" in responses_api_kwargs:
+        messages.insert(0, {"role": "system", "content": responses_api_kwargs["instructions"]})
 
     # Only return content directly if there's a single user message AND no prepended content
     if len(messages) == 1 and messages[0].get("role") == "user" and not output:
@@ -183,7 +187,7 @@ def _form_prompt_responses_api(
                 output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
         else:
             role = msg.get("name", msg["role"])
-            if role == "system":
+            if role in SYSTEM_ROLES:
                 prefix = "System: "
             elif role == "user":
                 prefix = "User: "
@@ -214,7 +218,7 @@ def _form_prompt_chat_completions_api(
     """
     output = ""
     if tools is not None:
-        output = _format_tools_prompt(tools, is_responses=False) + "\n\n"
+        messages.insert(0, {"role": "system", "content": _format_tools_prompt(tools, is_responses=False)})
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == "user" and tools is None:
@@ -259,7 +263,7 @@ def _form_prompt_chat_completions_api(
             output += f"<tool_response>\n{json.dumps(tool_response, indent=2)}\n</tool_response>\n\n"
         else:
             role = msg["role"]
-            if role == "system":
+            if role in SYSTEM_ROLES:
                 prefix = "System: "
             elif role == "user":
                 prefix = "User: "
@@ -288,8 +292,8 @@ def form_prompt_string(
     of the prompt. In this case, even a single message will use role prefixes since
     there will be at least one system message (the tools section).
 
-    If responses API specific parameters (like instructions) are provided, they will be
-    formatted for the responses API format. These parameters are only supported
+    If responses API kwargs (like instructions) are provided, they will be
+    formatted for the responses API format. These kwargs are only supported
     for the responses API format.
 
     Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
@@ -310,15 +314,15 @@ def form_prompt_string(
             This list of tool definitions will be formatted into a system message.
         use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
             If None, the format is automatically detected using _uses_responses_api.
-            Cannot be set to False when responses API specific parameters are provided.
-        **responses_api_kwargs: Responses API specific parameters. Currently supported:
+            Cannot be set to False when responses API kwargs are provided.
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
 
     Raises:
-        ValueError: If responses API specific parameters are provided with use_responses=False.
+        ValueError: If responses API kwargs are provided with use_responses=False.
     """
     is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
     return (
