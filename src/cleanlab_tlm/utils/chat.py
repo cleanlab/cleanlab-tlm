@@ -9,7 +9,7 @@ import warnings
 from typing import Any, Optional
 
 # Define system roles as a set for efficient lookups
-SYSTEM_ROLES = {"system", "developer"}
+SYSTEM_ROLES = ["system", "developer"]
 
 # Define message prefixes
 SYSTEM_PREFIX = "System: "
@@ -174,10 +174,10 @@ def _form_prompt_responses_api(
     output = ""
 
     if tools is not None:
-        messages.insert(0, {"role": "system", "content": _format_tools_prompt(tools, is_responses=True)})
+        messages.insert(0, {"role": SYSTEM_ROLES[0], "content": _format_tools_prompt(tools, is_responses=True)})
 
     if "instructions" in responses_api_kwargs:
-        messages.insert(0, {"role": "system", "content": responses_api_kwargs["instructions"]})
+        messages.insert(0, {"role": SYSTEM_ROLES[0], "content": responses_api_kwargs["instructions"]})
 
     # Only return content directly if there's a single user message AND no prepended content
     if len(messages) == 1 and messages[0].get("role") == "user" and not output:
@@ -237,7 +237,7 @@ def _form_prompt_chat_completions_api(
     """
     output = ""
     if tools is not None:
-        messages.insert(0, {"role": "system", "content": _format_tools_prompt(tools, is_responses=False)})
+        messages.insert(0, {"role": SYSTEM_ROLES[0], "content": _format_tools_prompt(tools, is_responses=False)})
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == "user" and tools is None:
