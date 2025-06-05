@@ -86,7 +86,7 @@ def _uses_responses_api(
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
         use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
             Cannot be set to False when responses API specific parameters are provided.
-        **responses_api_params: Responses API specific parameters. Currently supported:
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
