@@ -696,7 +696,10 @@ def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
         "User: What can you do?\n\n"
         "Assistant:"
     )
-    assert form_prompt_string(messages, tools=tools, instructions="Always be concise and direct in your responses.") == expected
+    assert (
+        form_prompt_string(messages, tools=tools, instructions="Always be concise and direct in your responses.")
+        == expected
+    )
 
 
 def test_form_prompt_string_with_instructions_and_tool_calls_responses() -> None:
@@ -748,4 +751,6 @@ def test_form_prompt_string_with_instructions_chat_completions_throws_error() ->
         ValueError,
         match="Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False.",
     ):
-        form_prompt_string(messages, instructions="Always be concise and direct in your responses.", use_responses=False)
+        form_prompt_string(
+            messages, instructions="Always be concise and direct in your responses.", use_responses=False
+        )

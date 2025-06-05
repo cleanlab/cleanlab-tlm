@@ -73,7 +73,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
 
 
 def _uses_responses_api(
-    messages: list[dict[str, Any]], 
+    messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
     use_responses: Optional[bool] = None,
     **responses_api_params: Any,
@@ -97,7 +97,9 @@ def _uses_responses_api(
     """
     # First check if explicitly set to False while having responses API params
     if use_responses is False and responses_api_params:
-        raise ValueError("Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False.")
+        raise ValueError(
+            "Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False."
+        )
 
     # If explicitly set to True or False, respect that (after validation above)
     if use_responses is not None:
@@ -120,7 +122,7 @@ def _uses_responses_api(
 
 
 def _form_prompt_responses_api(
-    messages: list[dict[str, Any]], 
+    messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
     **responses_api_params: Any,
 ) -> str:
@@ -141,13 +143,13 @@ def _form_prompt_responses_api(
     output = ""
     if "instructions" in responses_api_params:
         output = f"Developer instruction (prioritize ahead of other roles): {responses_api_params['instructions']}\n\n"
-    
+
     if tools is not None:
         output += _format_tools_prompt(tools, is_responses=True) + "\n\n"
 
     # Only return content directly if there's a single user message AND no prepended content
     if len(messages) == 1 and messages[0].get("role") == "user" and not output:
-        return messages[0]["content"]
+        return str(messages[0]["content"])
 
     # Warn if the last message is a tool call
     if messages and messages[-1].get("type") == "function_call":
