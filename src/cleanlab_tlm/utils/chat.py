@@ -22,6 +22,10 @@ USER_ROLE = "user"
 TOOL_ROLE = "tool"
 ASSISTANT_ROLE = "assistant"
 
+# Define message type constants
+FUNCTION_CALL_TYPE = "function_call"
+FUNCTION_CALL_OUTPUT_TYPE = "function_call_output"
+
 # Define tool-related message prefixes
 TOOL_DEFINITIONS_PREFIX = (
     "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
@@ -128,7 +132,7 @@ def _uses_responses_api(
         return True
 
     # Check messages for Responses API format indicators
-    if any(msg.get("type") in ["function_call", "function_call_output"] for msg in messages):
+    if any(msg.get("type") in [FUNCTION_CALL_TYPE, FUNCTION_CALL_OUTPUT_TYPE] for msg in messages):
         return True
 
     # Check tools for Responses API format indicators
@@ -197,7 +201,7 @@ def _form_prompt_responses_api(
         return str(messages[0]["content"])
 
     # Warn if the last message is a tool call
-    if messages and messages[-1].get("type") == "function_call":
+    if messages and messages[-1].get("type") == FUNCTION_CALL_TYPE:
         warnings.warn(
             "The last message is a tool call or assistant message. The next message should not be an LLM response. "
             "This prompt should not be used for trustworthiness scoring.",
@@ -211,7 +215,7 @@ def _form_prompt_responses_api(
 
     for msg in messages:
         if "type" in msg:
-            if msg["type"] == "function_call":
+            if msg["type"] == FUNCTION_CALL_TYPE:
                 output += ASSISTANT_PREFIX
                 # If there's content in the message, add it before the tool call
                 if msg.get("content"):
@@ -221,7 +225,7 @@ def _form_prompt_responses_api(
                 # Format function call as JSON within XML tags, now including call_id
                 function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"]), "call_id": call_id}
                 output += f"<tool_call>\n{json.dumps(function_call, indent=2)}\n</tool_call>\n\n"
-            elif msg["type"] == "function_call_output":
+            elif msg["type"] == FUNCTION_CALL_OUTPUT_TYPE:
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
