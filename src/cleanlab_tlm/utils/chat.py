@@ -8,9 +8,6 @@ import json
 import warnings
 from typing import Any, Optional
 
-# Define system roles as a set for efficient lookups
-SYSTEM_ROLES = ["system", "developer"]
-
 # Define message prefixes
 SYSTEM_PREFIX = "System: "
 USER_PREFIX = "User: "
@@ -18,9 +15,13 @@ ASSISTANT_PREFIX = "Assistant: "
 
 # Define role constants
 SYSTEM_ROLE = "system"
+DEVELOPER_ROLE = "developer"
 USER_ROLE = "user"
 TOOL_ROLE = "tool"
 ASSISTANT_ROLE = "assistant"
+
+# Define system roles
+SYSTEM_ROLES = [SYSTEM_ROLE, DEVELOPER_ROLE]
 
 # Define message type constants
 FUNCTION_CALL_TYPE = "function_call"
