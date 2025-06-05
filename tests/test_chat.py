@@ -640,3 +640,112 @@ def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> N
         "Assistant:"
     )
     assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_instructions_responses() -> None:
+    """Test formatting with developer instructions in responses format."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+    ]
+    expected = (
+        "Developer instruction (prioritize ahead of other roles): Always be concise and direct in your responses.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, instructions="Always be concise and direct in your responses.") == expected
+
+
+def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
+    """Test formatting with developer instructions and tools in responses format."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "name": "search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query"}},
+                "required": ["query"],
+            },
+            "strict": True,
+        }
+    ]
+    expected = (
+        "Developer instruction (prioritize ahead of other roles): Always be concise and direct in your responses.\n\n"
+        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},"strict":true}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, tools=tools, instructions="Always be concise and direct in your responses.") == expected
+
+
+def test_form_prompt_string_with_instructions_and_tool_calls_responses() -> None:
+    """Test formatting with developer instructions and tool calls in responses format."""
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "type": "function_call",
+            "name": "get_weather",
+            "arguments": '{"location": "Paris"}',
+            "call_id": "call_123",
+        },
+        {
+            "type": "function_call_output",
+            "call_id": "call_123",
+            "output": "22.1",
+        },
+    ]
+    expected = (
+        "Developer instruction (prioritize ahead of other roles): Always be concise and direct in your responses.\n\n"
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  },\n"
+        '  "call_id": "call_123"\n'
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "22.1"\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, instructions="Always be concise and direct in your responses.") == expected
+
+
+def test_form_prompt_string_with_instructions_chat_completions_throws_error() -> None:
+    """Test that responses API parameters cannot be used with use_responses=False."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+    ]
+    with pytest.raises(
+        ValueError,
+        match="Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False.",
+    ):
+        form_prompt_string(messages, instructions="Always be concise and direct in your responses.", use_responses=False)

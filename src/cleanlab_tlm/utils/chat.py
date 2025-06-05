@@ -72,42 +72,82 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     return f"System: {system_message}"
 
 
-def _uses_responses_api(messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None) -> bool:
+def _uses_responses_api(
+    messages: list[dict[str, Any]], 
+    tools: Optional[list[dict[str, Any]]] = None,
+    use_responses: Optional[bool] = None,
+    **responses_api_params: Any,
+) -> bool:
     """
-    Determine if the messages and tools are in responses API format.
+    Determine if the messages and parameters indicate responses API format.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
+            Cannot be set to False when responses API specific parameters are provided.
+        **responses_api_params: Responses API specific parameters. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         bool: True if using responses API format, False if using chat completions API format.
+
+    Raises:
+        ValueError: If responses API specific parameters are provided with use_responses=False.
     """
-    return any(msg.get("type") in ["function_call", "function_call_output"] for msg in messages) or any(
-        "name" in tool and "function" not in tool for tool in tools or []
-    )
+    # First check if explicitly set to False while having responses API params
+    if use_responses is False and responses_api_params:
+        raise ValueError("Responses API specific parameters are only supported in responses API format. Cannot use with use_responses=False.")
+
+    # If explicitly set to True or False, respect that (after validation above)
+    if use_responses is not None:
+        return use_responses
+
+    # Check for responses API specific parameters
+    responses_api_param_keys = {"instructions"}
+    if any(key in responses_api_params for key in responses_api_param_keys):
+        return True
+
+    # Check messages for responses API format indicators
+    if any(msg.get("type") in ["function_call", "function_call_output"] for msg in messages):
+        return True
+
+    # Check tools for responses API format indicators
+    if tools and any("name" in tool and "function" not in tool for tool in tools):
+        return True
+
+    return False
 
 
-def _form_prompt_responses_api(messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None) -> str:
+def _form_prompt_responses_api(
+    messages: list[dict[str, Any]], 
+    tools: Optional[list[dict[str, Any]]] = None,
+    **responses_api_params: Any,
+) -> str:
     """
     Convert messages in [OpenAI Responses API format](https://platform.openai.com/docs/api-reference/responses) into a single prompt string.
 
     Args:
         messages (List[Dict]): A list of dictionaries representing chat messages in responses API format.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
-        This is the same argument as the tools argument for OpenAI's Responses API.
-        This list of tool definitions will be formatted into a system message.
+            This is the same argument as the tools argument for OpenAI's Responses API.
+            This list of tool definitions will be formatted into a system message.
+        **responses_api_params: Responses API specific parameters. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
     """
     output = ""
+    if "instructions" in responses_api_params:
+        output = f"Developer instruction (prioritize ahead of other roles): {responses_api_params['instructions']}\n\n"
+    
     if tools is not None:
-        output = _format_tools_prompt(tools, is_responses=True) + "\n\n"
+        output += _format_tools_prompt(tools, is_responses=True) + "\n\n"
 
-    # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == "user" and tools is None:
-        return str(output + messages[0]["content"])
+    # Only return content directly if there's a single user message AND no prepended content
+    if len(messages) == 1 and messages[0].get("role") == "user" and not output:
+        return messages[0]["content"]
 
     # Warn if the last message is a tool call
     if messages and messages[-1].get("type") == "function_call":
@@ -233,6 +273,7 @@ def form_prompt_string(
     messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
     use_responses: Optional[bool] = None,
+    **responses_api_params: Any,
 ) -> str:
     """
     Convert a list of chat messages into a single string prompt.
@@ -244,6 +285,10 @@ def form_prompt_string(
     If tools are provided, they will be formatted as a system message at the start
     of the prompt. In this case, even a single message will use role prefixes since
     there will be at least one system message (the tools section).
+
+    If responses API specific parameters (like instructions) are provided, they will be
+    formatted for the responses API format. These parameters are only supported
+    for the responses API format.
 
     Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
 
@@ -263,13 +308,19 @@ def form_prompt_string(
             This list of tool definitions will be formatted into a system message.
         use_responses (Optional[bool]): If provided, explicitly specifies whether to use responses API format.
             If None, the format is automatically detected using _uses_responses_api.
+            Cannot be set to False when responses API specific parameters are provided.
+        **responses_api_params: Responses API specific parameters. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
+
+    Raises:
+        ValueError: If responses API specific parameters are provided with use_responses=False.
     """
-    is_responses = use_responses if use_responses is not None else _uses_responses_api(messages, tools)
+    is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_params)
     return (
-        _form_prompt_responses_api(messages, tools)
+        _form_prompt_responses_api(messages, tools, **responses_api_params)
         if is_responses
         else _form_prompt_chat_completions_api(messages, tools)
     )
