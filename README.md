@@ -1,12 +1,12 @@
-# Cleanlab Trustworthy Language Model (TLM) - Reliability and explainability added to every LLM output
+# Cleanlab Trustworthy Language Model (TLM) - Trust Scores for every LLM output
 
 [![Build Status](https://github.com/cleanlab/cleanlab-tlm/actions/workflows/ci.yml/badge.svg)](https://github.com/cleanlab/cleanlab-tlm/actions/workflows/ci.yml) [![PyPI - Version](https://img.shields.io/pypi/v/cleanlab-tlm.svg)](https://pypi.org/project/cleanlab-tlm) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cleanlab-tlm.svg)](https://pypi.org/project/cleanlab-tlm)
 
-In one line of code, Cleanlab TLM adds real-time evaluation of every response in GenAI, RAG, LLM, and Agent systems.
+In one line of code, Cleanlab TLM adds real-time evaluation of every response in LLM, RAG, and Agent systems.
 
 ## Setup
 
-This tutorial requires a TLM API key. Get one [here](https://tlm.cleanlab.ai/).
+TLM requires an API key. Get one [here](https://tlm.cleanlab.ai/) for free.
 
 ```console
 export CLEANLAB_TLM_API_KEY=<YOUR_API_KEY_HERE>
@@ -20,34 +20,54 @@ pip install cleanlab-tlm
 
 ## Usage
 
-To get started, copy the code below to try your own prompt or score existing prompt/response pairs with ease.
+TLM automatically scores the trustworthiness of responses generated from your own LLM in real-time:
 
 ```python
 from cleanlab_tlm import TLM
-tlm = TLM(options={"log": ["explanation"], "model": "gpt-4.1-mini"}) # GPT, Claude, etc.
-out = tlm.prompt("What's the third month of the year alphabetically?")
-print(out)
+
+tlm = TLM(options={"log": ["explanation"]})
+tlm.get_trustworthiness_score(
+    prompt="What's the third month of the year alphabetically?",
+    response="August"  # generated from any LLM model using the same prompt
+)
 ```
 
-TLM returns a dictionary containing `response`, `trustworthiness_score`, and any requested optional fields like `explanation`.
+This returns a dictionary with `trustworthiness_score` and optionally requested fields like `explanation`.
+
+```json
+{
+  "trustworthiness_score": 0.02993446111679077,
+  "explanation": "Found alternate plausible response: December"
+}
+```
+
+
+Alternatively, you generate responses and simultaneously score them with TLM:
+
+```python
+tlm = TLM(options={"log": ["explanation"], "model": "gpt-4.1-mini"})  # GPT, Claude, etc.
+tlm.prompt("What's the third month of the year alphabetically?")
+```
+
+This additionally returns a `response`.
 
 ```json
 {
   "response": "March.",
   "trustworthiness_score": 0.4590804375945598,
-  "explanation": "Found an alternate response: December"
+  "explanation": "Found alternate plausible response: December"
 }
 ```
 
 ## Why TLM?
 
-- **Trustworthiness Scores**: Each response comes with a trustworthiness score, helping you [reliably](https://cleanlab.ai/blog/trustworthy-language-model/) gauge the likelihood of hallucinations.
-- **Higher accuracy**: Rigorous [benchmarks](https://cleanlab.ai/blog/trustworthy-language-model/) show TLM consistently produces more accurate results than other LLMs like o3/o1, GPT 4o, and Claude.
-- **Scalable API**: Designed to handle large datasets, TLM is suitable for most enterprise applications, including data extraction, tagging/labeling, Q&A (RAG), and more.
+- **Trustworthiness Scores**: Every LLM response is scored via [state-of-the-art](https://cleanlab.ai/blog/trustworthy-language-model/) uncertainty estimation, helping you reliably gauge the likelihood of hallucinated/incorrect responses.
+- **Higher accuracy**: Rigorous [benchmarks](https://cleanlab.ai/blog/trustworthy-language-model/) show TLM consistently produces more accurate scores than other hallucination detectors and responses than other LLMs.
+- **Scalable API**: TLM is suitable for all enterprise applications where correct LLM responses are vital, including data extraction, tagging/labeling, Q&A (RAG), Agents, and more.
 
 ## Documentation
 
-Comprehensive documentation along with tutorials and examples can be found [here](https://help.cleanlab.ai/tlm).
+Comprehensive documentation and tutorials can be found [here](https://help.cleanlab.ai/tlm).
 
 ## License
 
