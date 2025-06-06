@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.7] - 2025-06-05
+
+- Updated `chat.py` to handle the Responses API `instructions` parameter
+
 ## [1.1.6] - 2025-06-04
 
 - Added `chat.py` for formatting OpenAI chat messages into prompt strings.
@@ -170,7 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.6...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.7...HEAD
+[1.1.7]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.6...v1.1.7
 [1.1.6]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.3...v1.1.4
