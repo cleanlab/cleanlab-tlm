@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add new Claude models: `claude-opus-4-0`, `claude-sonnet-4-0`
+
 ## [1.1.7] - 2025-06-05
 
 - Updated `chat.py` to handle the Responses API `instructions` parameter
