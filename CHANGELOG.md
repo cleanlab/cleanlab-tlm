@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.8] - 2025-06-09
+
 ### Added
 
 - Add new Claude models: `claude-opus-4-0`, `claude-sonnet-4-0`
@@ -178,7 +180,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.7...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.8...HEAD
+[1.1.8]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.7...v1.1.8
 [1.1.7]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.6...v1.1.7
 [1.1.6]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.4...v1.1.5
