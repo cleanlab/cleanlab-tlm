@@ -28,6 +28,8 @@ _VALID_TLM_MODELS: list[str] = [
     "claude-3.5-sonnet",
     "claude-3.5-sonnet-v2",
     "claude-3.7-sonnet",
+    "claude-opus-4-0",
+    "claude-sonnet-4-0",
     "nova-micro",
     "nova-lite",
     "nova-pro",
