@@ -46,7 +46,7 @@ class TLMChatCompletion:
 
     def score(
         self,
-        completion: ChatCompletion,
+        response: ChatCompletion,
         **openai_kwargs: Any,
     ) -> JSONDict:
         if BASE_URL is None:
@@ -56,7 +56,7 @@ class TLMChatCompletion:
             f"{BASE_URL}/score",
             json={
                 "tlm_options": self._tlm_options,
-                "completion": completion.model_dump(),
+                "completion": response.model_dump(),
                 **openai_kwargs,
             },
             timeout=self._timeout,
@@ -64,4 +64,4 @@ class TLMChatCompletion:
 
         res_json = res.json()
 
-        return {"trustworthiness_score": res_json["tlm_metadata"]["score"]}
+        return {"trustworthiness_score": res_json["tlm_metadata"]["trustworthiness_score"]}
