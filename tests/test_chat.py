@@ -2,7 +2,11 @@ from typing import Any
 
 import pytest
 
-from cleanlab_tlm.utils.chat import form_prompt_string
+from cleanlab_tlm.utils.chat import (
+    form_prompt_string,
+    _form_prompt_responses_api,
+    _form_prompt_chat_completions_api,
+)
 
 
 def test_form_prompt_string_single_user_message() -> None:
@@ -898,4 +902,74 @@ def test_form_prompt_string_does_not_mutate_messages(use_tools: bool) -> None:
     for original, current in zip(original_messages, messages):
         assert current == original, (
             f"form_prompt_string mutated message content: " f"expected {original}, got {current}"
+        )
+
+
+@pytest.mark.parametrize("use_tools", [False, True])
+@pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
+def test_form_prompt_chat_completions_api_does_not_mutate_messages(use_tools: bool) -> None:
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "Paris"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_capital",
+                "description": "Get the capital of a country",
+                "parameters": {"type": "object", "properties": {"country": {"type": "string"}}},
+            },
+        },
+    ]
+
+    original_messages = [dict(msg) for msg in messages]
+    original_len = len(messages)
+
+    _form_prompt_chat_completions_api(messages=messages, tools=tools if use_tools else None)
+
+    # Verify length hasn't changed
+    assert len(messages) == original_len, (
+        f"_form_prompt_chat_completions_api mutated messages: " f"expected length {original_len}, got {len(messages)}"
+    )
+
+    # Verify message contents haven't changed
+    for original, current in zip(original_messages, messages):
+        assert current == original, (
+            f"_form_prompt_chat_completions_api mutated message content: " f"expected {original}, got {current}"
+        )
+
+
+@pytest.mark.parametrize("use_tools", [False, True])
+@pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
+def test_form_prompt_responses_api_does_not_mutate_messages(use_tools: bool) -> None:
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "Paris"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "name": "get_capital",
+            "description": "Get the capital of a country",
+            "parameters": {"type": "object", "properties": {"country": {"type": "string"}}},
+        },
+    ]
+
+    original_messages = [dict(msg) for msg in messages]
+    original_len = len(messages)
+
+    _form_prompt_responses_api(messages=messages, tools=tools if use_tools else None)
+
+    # Verify length hasn't changed
+    assert len(messages) == original_len, (
+        f"_form_prompt_responses_api mutated messages: " f"expected length {original_len}, got {len(messages)}"
+    )
+
+    # Verify message contents haven't changed
+    for original, current in zip(original_messages, messages):
+        assert current == original, (
+            f"_form_prompt_responses_api mutated message content: " f"expected {original}, got {current}"
         )
