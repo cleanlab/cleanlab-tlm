@@ -4,9 +4,10 @@ from cleanlab_tlm.internal.types import Task, TLMQualityPreset
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
 _VALID_TLM_QUALITY_PRESETS_RAG: list[str] = ["medium", "low", "base"]
+_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS: list[str] = ["medium", "low", "base"]
 _DEFAULT_TLM_QUALITY_PRESET: TLMQualityPreset = "medium"
 _DEFAULT_TLM_MAX_TOKENS: int = 512
-_VALID_TLM_MODELS: list[str] = [
+_VALID_OPENAI_MODELS: list[str] = [
     "gpt-3.5-turbo-16k",
     "gpt-4",
     "gpt-4.5-preview",
@@ -22,6 +23,9 @@ _VALID_TLM_MODELS: list[str] = [
     "o3",
     "o3-mini",
     "o4-mini",
+]
+_VALID_TLM_MODELS: list[str] = [
+    *_VALID_OPENAI_MODELS,
     "claude-3-haiku",
     "claude-3.5-haiku",
     "claude-3-sonnet",
