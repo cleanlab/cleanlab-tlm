@@ -867,7 +867,7 @@ def test_form_prompt_string_with_instructions_developer_role_and_tools() -> None
 
 @pytest.mark.parametrize("use_tools", [False, True])
 @pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
-def test_form_prompt_string_does_not_change_message_length(use_tools):
+def test_form_prompt_string_does_not_change_message_length(use_tools: bool) -> None:
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is the capital of France?"},
