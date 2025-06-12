@@ -9,53 +9,53 @@ import warnings
 from typing import Any, Optional
 
 # Define message prefixes
-SYSTEM_PREFIX = "System: "
-USER_PREFIX = "User: "
-ASSISTANT_PREFIX = "Assistant: "
+_SYSTEM_PREFIX = "System: "
+_USER_PREFIX = "User: "
+_ASSISTANT_PREFIX = "Assistant: "
 
 # Define role constants
-SYSTEM_ROLE = "system"
-DEVELOPER_ROLE = "developer"
-USER_ROLE = "user"
-TOOL_ROLE = "tool"
-ASSISTANT_ROLE = "assistant"
+_SYSTEM_ROLE = "system"
+_DEVELOPER_ROLE = "developer"
+_USER_ROLE = "user"
+_TOOL_ROLE = "tool"
+_ASSISTANT_ROLE = "assistant"
 
 # Define system roles
-SYSTEM_ROLES = [SYSTEM_ROLE, DEVELOPER_ROLE]
+_SYSTEM_ROLES = [_SYSTEM_ROLE, _DEVELOPER_ROLE]
 
 # Define message type constants
-FUNCTION_CALL_TYPE = "function_call"
-FUNCTION_CALL_OUTPUT_TYPE = "function_call_output"
+_FUNCTION_CALL_TYPE = "function_call"
+_FUNCTION_CALL_OUTPUT_TYPE = "function_call_output"
 
 # Define XML tag constants
-TOOLS_TAG_START = "<tools>"
-TOOLS_TAG_END = "</tools>"
-TOOL_CALL_TAG_START = "<tool_call>"
-TOOL_CALL_TAG_END = "</tool_call>"
-TOOL_RESPONSE_TAG_START = "<tool_response>"
-TOOL_RESPONSE_TAG_END = "</tool_response>"
+_TOOLS_TAG_START = "<tools>"
+_TOOLS_TAG_END = "</tools>"
+_TOOL_CALL_TAG_START = "<tool_call>"
+_TOOL_CALL_TAG_END = "</tool_call>"
+_TOOL_RESPONSE_TAG_START = "<tool_response>"
+_TOOL_RESPONSE_TAG_END = "</tool_response>"
 
 # Define tool-related message prefixes
-TOOL_DEFINITIONS_PREFIX = (
+_TOOL_DEFINITIONS_PREFIX = (
     "You are a function calling AI model. You are provided with function signatures within "
-    f"{TOOLS_TAG_START} {TOOLS_TAG_END} XML tags. "
+    f"{_TOOLS_TAG_START} {_TOOLS_TAG_END} XML tags. "
     "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
     "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
     "into functions. After calling & executing the functions, you will be provided with function results within "
-    f"{TOOL_RESPONSE_TAG_START} {TOOL_RESPONSE_TAG_END} XML tags.\n\n"
-    f"{TOOLS_TAG_START}\n"
+    f"{_TOOL_RESPONSE_TAG_START} {_TOOL_RESPONSE_TAG_END} XML tags.\n\n"
+    f"{_TOOLS_TAG_START}\n"
 )
 
-TOOL_CALL_SCHEMA_PREFIX = (
+_TOOL_CALL_SCHEMA_PREFIX = (
     "For each function call return a JSON object, with the following pydantic model json schema:\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
-    f"Each function call should be enclosed within {TOOL_CALL_TAG_START} {TOOL_CALL_TAG_END} XML tags.\n"
+    f"Each function call should be enclosed within {_TOOL_CALL_TAG_START} {_TOOL_CALL_TAG_END} XML tags.\n"
     "Example:\n"
-    f"{TOOL_CALL_TAG_START}\n"
+    f"{_TOOL_CALL_TAG_START}\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
-    f"{TOOL_CALL_TAG_END}\n\n"
+    f"{_TOOL_CALL_TAG_END}\n\n"
     "Note: Your past messages will include a call_id in the "
-    f"{TOOL_CALL_TAG_START} XML tags. "
+    f"{_TOOL_CALL_TAG_START} XML tags. "
     "However, do not generate your own call_id when making a function call."
 )
 
@@ -73,7 +73,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     Returns:
         str: Formatted string with tools as a system message.
     """
-    system_message = TOOL_DEFINITIONS_PREFIX
+    system_message = _TOOL_DEFINITIONS_PREFIX
 
     # Format each tool as a function spec
     tool_strings = []
@@ -98,8 +98,8 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
         tool_strings.append(json.dumps(tool_dict, separators=(",", ":")))
 
     system_message += "\n".join(tool_strings)
-    system_message += f"\n{TOOLS_TAG_END}\n\n"
-    system_message += TOOL_CALL_SCHEMA_PREFIX
+    system_message += f"\n{_TOOLS_TAG_END}\n\n"
+    system_message += _TOOL_CALL_SCHEMA_PREFIX
 
     return system_message
 
@@ -143,7 +143,7 @@ def _uses_responses_api(
         return True
 
     # Check messages for Responses API format indicators
-    if any(msg.get("type") in [FUNCTION_CALL_TYPE, FUNCTION_CALL_OUTPUT_TYPE] for msg in messages):
+    if any(msg.get("type") in [_FUNCTION_CALL_TYPE, _FUNCTION_CALL_OUTPUT_TYPE] for msg in messages):
         return True
 
     # Check tools for Responses API format indicators
@@ -167,15 +167,15 @@ def _get_prefix(msg: dict[str, Any], prev_msg_role: Optional[str] = None) -> str
     role = str(msg.get("name", msg["role"]))
 
     # Skip prefix for system messages if the previous message was also a system message
-    if role in SYSTEM_ROLES and prev_msg_role in SYSTEM_ROLES:
+    if role in _SYSTEM_ROLES and prev_msg_role in _SYSTEM_ROLES:
         return ""
 
-    if role in SYSTEM_ROLES:
-        return SYSTEM_PREFIX
-    if role == USER_ROLE:
-        return USER_PREFIX
-    if role == ASSISTANT_ROLE:
-        return ASSISTANT_PREFIX
+    if role in _SYSTEM_ROLES:
+        return _SYSTEM_PREFIX
+    if role == _USER_ROLE:
+        return _USER_PREFIX
+    if role == _ASSISTANT_ROLE:
+        return _ASSISTANT_PREFIX
     return role.capitalize() + ": "
 
 
@@ -203,24 +203,24 @@ def _form_prompt_responses_api(
     # Find the index after the last system message
     last_system_idx = -1
     for i, msg in enumerate(messages):
-        if msg.get("role") in SYSTEM_ROLES:
+        if msg.get("role") in _SYSTEM_ROLES:
             last_system_idx = i
 
     # Insert tool definitions and instructions after system messages if needed
     if tools is not None:
         messages.insert(
-            last_system_idx + 1, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)}
+            last_system_idx + 1, {"role": _SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)}
         )
 
     if "instructions" in responses_api_kwargs:
-        messages.insert(0, {"role": SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
+        messages.insert(0, {"role": _SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
 
     # Only return content directly if there's a single user message AND no prepended content
-    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and not output:
+    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and not output:
         return str(messages[0]["content"])
 
     # Warn if the last message is a tool call
-    if messages and messages[-1].get("type") == FUNCTION_CALL_TYPE:
+    if messages and messages[-1].get("type") == _FUNCTION_CALL_TYPE:
         warnings.warn(
             "The last message is a tool call or assistant message. The next message should not be an LLM response. "
             "This prompt should not be used for trustworthiness scoring.",
@@ -234,8 +234,8 @@ def _form_prompt_responses_api(
 
     for msg in messages:
         if "type" in msg:
-            if msg["type"] == FUNCTION_CALL_TYPE:
-                output += ASSISTANT_PREFIX
+            if msg["type"] == _FUNCTION_CALL_TYPE:
+                output += _ASSISTANT_PREFIX
                 # If there's content in the message, add it before the tool call
                 if msg.get("content"):
                     output += f"{msg['content']}\n\n"
@@ -243,21 +243,21 @@ def _form_prompt_responses_api(
                 function_names[call_id] = msg["name"]
                 # Format function call as JSON within XML tags, now including call_id
                 function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"]), "call_id": call_id}
-                output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
-            elif msg["type"] == FUNCTION_CALL_OUTPUT_TYPE:
+                output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+            elif msg["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
                 tool_response = {"name": name, "call_id": call_id, "output": msg["output"]}
                 output += (
-                    f"{TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{TOOL_RESPONSE_TAG_END}\n\n"
+                    f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}\n\n"
                 )
         else:
             prefix = _get_prefix(msg, prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
             prev_msg_role = msg["role"]
 
-    output += ASSISTANT_PREFIX
+    output += _ASSISTANT_PREFIX
     return output.strip()
 
 
@@ -281,20 +281,20 @@ def _form_prompt_chat_completions_api(
     # Find the index after the last system message
     last_system_idx = -1
     for i, msg in enumerate(messages):
-        if msg.get("role") in SYSTEM_ROLES:
+        if msg.get("role") in _SYSTEM_ROLES:
             last_system_idx = i
 
     if tools is not None:
         messages.insert(
-            last_system_idx + 1, {"role": SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)}
+            last_system_idx + 1, {"role": _SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)}
         )
 
     # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and tools is None:
+    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and tools is None:
         return str(output + messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls
-    if messages and (messages[-1].get("role") == ASSISTANT_ROLE or "tool_calls" in messages[-1]):
+    if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
         warnings.warn(
             "The last message is a tool call or assistant message. The next message should not be an LLM response. "
             "This prompt should not be used for trustworthiness scoring.",
@@ -307,8 +307,8 @@ def _form_prompt_chat_completions_api(
     prev_msg_role = None
 
     for msg in messages:
-        if msg["role"] == ASSISTANT_ROLE:
-            output += ASSISTANT_PREFIX
+        if msg["role"] == _ASSISTANT_ROLE:
+            output += _ASSISTANT_PREFIX
             # Handle content if present
             if msg.get("content"):
                 output += f"{msg['content']}\n\n"
@@ -323,20 +323,20 @@ def _form_prompt_chat_completions_api(
                         "arguments": json.loads(tool_call["function"]["arguments"]),
                         "call_id": call_id,
                     }
-                    output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
-        elif msg["role"] == TOOL_ROLE:
+                    output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+        elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
             # Format function response as JSON within XML tags
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
-            output += f"{TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{TOOL_RESPONSE_TAG_END}\n\n"
+            output += f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}\n\n"
         else:
             prefix = _get_prefix(msg, prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
             prev_msg_role = msg["role"]
 
-    output += ASSISTANT_PREFIX
+    output += _ASSISTANT_PREFIX
     return output.strip()
 
 
