@@ -60,6 +60,7 @@ extra-dependencies = [
   "python-dotenv",
   "pytest-asyncio",
   "tiktoken",
+  "openai",
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]
