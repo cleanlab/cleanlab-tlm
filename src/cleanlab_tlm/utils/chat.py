@@ -390,7 +390,6 @@ def form_prompt_string(
         ValueError: If Responses API kwargs are provided with use_responses=False.
     """
     is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
-    messages = messages.copy()
     return (
         _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
         if is_responses
