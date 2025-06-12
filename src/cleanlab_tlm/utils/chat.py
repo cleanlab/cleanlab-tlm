@@ -198,6 +198,7 @@ def _form_prompt_responses_api(
     Returns:
         str: A formatted string representing the chat history as a single prompt.
     """
+    messages = messages.copy()
     output = ""
 
     # Find the index after the last system message
@@ -276,6 +277,7 @@ def _form_prompt_chat_completions_api(
     Returns:
         str: A formatted string representing the chat history as a single prompt.
     """
+    messages = messages.copy()
     output = ""
 
     # Find the index after the last system message
