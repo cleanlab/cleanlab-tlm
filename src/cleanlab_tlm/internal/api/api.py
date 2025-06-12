@@ -53,7 +53,6 @@ if TYPE_CHECKING:
 base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api")
 tlm_base_url = f"{base_url}/v0/trustworthy_llm"
 tlm_rag_base_url = f"{base_url}/v1/rag_trustworthy_llm"
-tlm_openai_base_url = f"{base_url}/v1/openai_trustworthy_llm"
 
 
 def _construct_headers(api_key: Optional[str], content_type: Optional[str] = "application/json") -> JSONDict:
@@ -116,7 +115,7 @@ def handle_rate_limit_error_from_resp(resp: aiohttp.ClientResponse) -> None:
         )
 
 
-async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse, batch_index: Optional[int] = None) -> None:
+async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse, batch_index: Optional[int]) -> None:
     """Catches 4XX (client error) errors."""
     if 400 <= resp.status < 500:  # noqa: PLR2004
         try:
@@ -134,7 +133,7 @@ async def handle_tlm_client_error_from_resp(resp: aiohttp.ClientResponse, batch_
         raise TlmBadRequestError(error_message, retryable)
 
 
-async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse, batch_index: Optional[int] = None) -> None:
+async def handle_tlm_api_error_from_resp(resp: aiohttp.ClientResponse, batch_index: Optional[int]) -> None:
     """Catches 5XX (server error) errors."""
     if 500 <= resp.status < 600:  # noqa: PLR2004
         try:
