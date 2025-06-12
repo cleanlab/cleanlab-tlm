@@ -888,7 +888,7 @@ def test_form_prompt_string_does_not_mutate_messages(use_tools: bool) -> None:
     original_len = len(messages)
 
     form_prompt_string(messages=messages, tools=tools if use_tools else None)
-    
+
     # Verify length hasn't changed
     assert len(messages) == original_len, (
         f"form_prompt_string mutated messages: " f"expected length {original_len}, got {len(messages)}"
@@ -897,6 +897,5 @@ def test_form_prompt_string_does_not_mutate_messages(use_tools: bool) -> None:
     # Verify message contents haven't changed
     for original, current in zip(original_messages, messages):
         assert current == original, (
-            f"form_prompt_string mutated message content: "
-            f"expected {original}, got {current}"
+            f"form_prompt_string mutated message content: " f"expected {original}, got {current}"
         )
