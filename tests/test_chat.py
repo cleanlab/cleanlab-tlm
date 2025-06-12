@@ -3,9 +3,9 @@ from typing import Any
 import pytest
 
 from cleanlab_tlm.utils.chat import (
-    form_prompt_string,
-    _form_prompt_responses_api,
     _form_prompt_chat_completions_api,
+    _form_prompt_responses_api,
+    form_prompt_string,
 )
 
 
