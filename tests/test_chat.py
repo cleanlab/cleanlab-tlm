@@ -610,7 +610,6 @@ def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> N
             "name": "search_knowledge_base",
             "arguments": '{"query": "ACME warranty policy terms and conditions"}',
             "call_id": "call_123",
-            "content": "I'll help you find information about our warranty policy. Let me search our knowledge base for the details.",
         },
         {
             "type": "function_call_output",
@@ -620,8 +619,7 @@ def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> N
     ]
     expected = (
         "User: Can you help me find information about ACME's warranty policy?\n\n"
-        "Assistant: I'll help you find information about our warranty policy. Let me search our knowledge base for the details.\n\n"
-        "<tool_call>\n"
+        "Assistant: <tool_call>\n"
         "{\n"
         '  "name": "search_knowledge_base",\n'
         '  "arguments": {\n'
