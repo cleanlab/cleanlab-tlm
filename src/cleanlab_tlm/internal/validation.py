@@ -22,9 +22,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import Task
 
-SKIP_VALIDATE_TLM_OPTIONS: bool = (
-    os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
-)
+SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 
 
 def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:
@@ -37,9 +35,7 @@ def validate_tlm_prompt(prompt: Union[str, Sequence[str]]) -> None:
         )
 
 
-def validate_tlm_prompt_response(
-    prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]
-) -> None:
+def validate_tlm_prompt_response(prompt: Union[str, Sequence[str]], response: Union[str, Sequence[str]]) -> None:
     if isinstance(prompt, str):
         if not isinstance(response, str):
             raise ValidationError(
@@ -68,9 +64,7 @@ def validate_tlm_prompt_response(
             )
 
 
-def validate_tlm_options(
-    options: Any, support_custom_eval_criteria: bool = True
-) -> None:
+def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True) -> None:
     from cleanlab_tlm.tlm import TLMOptions
 
     if SKIP_VALIDATE_TLM_OPTIONS:
@@ -92,14 +86,10 @@ def validate_tlm_options(
     for option, val in options.items():
         if option == "max_tokens":
             if not isinstance(val, int):
-                raise ValidationError(
-                    f"Invalid type {type(val)}, max_tokens must be an integer"
-                )
+                raise ValidationError(f"Invalid type {type(val)}, max_tokens must be an integer")
 
             model = options.get("model", _TLM_DEFAULT_MODEL)
-            max_tokens_range = _TLM_MAX_TOKEN_RANGE.get(
-                model, _TLM_MAX_TOKEN_RANGE["default"]
-            )
+            max_tokens_range = _TLM_MAX_TOKEN_RANGE.get(model, _TLM_MAX_TOKEN_RANGE["default"])
             if val < max_tokens_range[0] or val > max_tokens_range[1]:
                 raise ValidationError(
                     f"Invalid value {val}, max_tokens for {model} must be in the range {max_tokens_range}"
@@ -107,43 +97,29 @@ def validate_tlm_options(
 
         elif option == "model":
             if val not in _VALID_TLM_MODELS:
-                raise ValidationError(
-                    f"{val} is not a supported model, valid models include: {_VALID_TLM_MODELS}"
-                )
+                raise ValidationError(f"{val} is not a supported model, valid models include: {_VALID_TLM_MODELS}")
 
         elif option == "num_candidate_responses":
             if not isinstance(val, int):
-                raise ValidationError(
-                    f"Invalid type {type(val)}, num_candidate_responses must be an integer"
-                )
+                raise ValidationError(f"Invalid type {type(val)}, num_candidate_responses must be an integer")
 
-            if (
-                val < TLM_NUM_CANDIDATE_RESPONSES_RANGE[0]
-                or val > TLM_NUM_CANDIDATE_RESPONSES_RANGE[1]
-            ):
+            if val < TLM_NUM_CANDIDATE_RESPONSES_RANGE[0] or val > TLM_NUM_CANDIDATE_RESPONSES_RANGE[1]:
                 raise ValidationError(
                     f"Invalid value {val}, num_candidate_responses must be in the range {TLM_NUM_CANDIDATE_RESPONSES_RANGE}"
                 )
 
         elif option == "num_consistency_samples":
             if not isinstance(val, int):
-                raise ValidationError(
-                    f"Invalid type {type(val)}, num_consistency_samples must be an integer"
-                )
+                raise ValidationError(f"Invalid type {type(val)}, num_consistency_samples must be an integer")
 
-            if (
-                val < TLM_NUM_CONSISTENCY_SAMPLES_RANGE[0]
-                or val > TLM_NUM_CONSISTENCY_SAMPLES_RANGE[1]
-            ):
+            if val < TLM_NUM_CONSISTENCY_SAMPLES_RANGE[0] or val > TLM_NUM_CONSISTENCY_SAMPLES_RANGE[1]:
                 raise ValidationError(
                     f"Invalid value {val}, num_consistency_samples must be in the range {TLM_NUM_CONSISTENCY_SAMPLES_RANGE}"
                 )
 
         elif option == "use_self_reflection":
             if not isinstance(val, bool):
-                raise ValidationError(
-                    f"Invalid type {type(val)}, use_self_reflection must be a boolean"
-                )
+                raise ValidationError(f"Invalid type {type(val)}, use_self_reflection must be a boolean")
 
         elif option == "similarity_measure":
             if val not in TLM_SIMILARITY_MEASURES:
@@ -159,17 +135,13 @@ def validate_tlm_options(
 
         elif option == "log":
             if not isinstance(val, list):
-                raise ValidationError(
-                    f"Invalid type {type(val)}, log must be a list of strings."
-                )
+                raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
 
             model = options.get("model", _TLM_DEFAULT_MODEL)
             if "explanation" in val and model in TLM_MODELS_NOT_SUPPORTING_EXPLANATION:
-                raise ValidationError(
-                    f"Explanation is not supported for this model: {model}. "
-                )
+                raise ValidationError(f"Explanation is not supported for this model: {model}. ")
 
             if invalid_log_options:
                 raise ValidationError(
@@ -178,45 +150,33 @@ def validate_tlm_options(
 
         elif option == "custom_eval_criteria":
             if not support_custom_eval_criteria:
-                raise ValidationError(
-                    "custom_eval_criteria is not supported for this class"
-                )
+                raise ValidationError("custom_eval_criteria is not supported for this class")
 
             if not isinstance(val, list):
-                raise ValidationError(
-                    f"Invalid type {type(val)}, custom_eval_criteria must be a list of dictionaries."
-                )
+                raise ValidationError(f"Invalid type {type(val)}, custom_eval_criteria must be a list of dictionaries.")
 
             supported_keys = {"name", "criteria"}
 
             for i, criteria in enumerate(val):
                 if not isinstance(criteria, dict):
-                    raise ValidationError(
-                        f"Item {i} in custom_eval_criteria is not a dictionary."
-                    )
+                    raise ValidationError(f"Item {i} in custom_eval_criteria is not a dictionary.")
 
                 input_keys = set(criteria.keys())
                 if input_keys != supported_keys:
                     missing = supported_keys - input_keys
                     extra = input_keys - supported_keys
                     if missing:
-                        raise ValidationError(
-                            f"Missing required keys {missing} in custom_eval_criteria item {i}."
-                        )
+                        raise ValidationError(f"Missing required keys {missing} in custom_eval_criteria item {i}.")
                     if extra:
                         raise ValidationError(
                             f"Invalid keys {extra} found in custom_eval_criteria item {i}. Supported keys are: {supported_keys}."
                         )
 
                 if not isinstance(criteria.get("name"), str):
-                    raise ValidationError(
-                        f"'name' in custom_eval_criteria item {i} must be a string."
-                    )
+                    raise ValidationError(f"'name' in custom_eval_criteria item {i} must be a string.")
 
                 if not isinstance(criteria.get("criteria"), str):
-                    raise ValidationError(
-                        f"'criteria' in custom_eval_criteria item {i} must be a string."
-                    )
+                    raise ValidationError(f"'criteria' in custom_eval_criteria item {i} must be a string.")
 
 
 def process_and_validate_kwargs_constrain_outputs(
@@ -228,21 +188,15 @@ def process_and_validate_kwargs_constrain_outputs(
     constrain_outputs = kwargs_dict.get(_TLM_CONSTRAIN_OUTPUTS_KEY)
     if constrain_outputs is None:
         if task == Task.CLASSIFICATION:
-            raise ValidationError(
-                "constrain_outputs must be provided for classification tasks"
-            )
+            raise ValidationError("constrain_outputs must be provided for classification tasks")
 
         return
 
     if task not in TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS:
-        raise ValidationError(
-            "constrain_outputs is only supported for classification tasks"
-        )
+        raise ValidationError("constrain_outputs is only supported for classification tasks")
 
     if isinstance(prompt, str):
-        if not isinstance(constrain_outputs, list) or not all(
-            isinstance(s, str) for s in constrain_outputs
-        ):
+        if not isinstance(constrain_outputs, list) or not all(isinstance(s, str) for s in constrain_outputs):
             raise ValidationError("constrain_outputs must be a list of strings")
     elif isinstance(prompt, Sequence):
         if not isinstance(constrain_outputs, list):
@@ -252,15 +206,10 @@ def process_and_validate_kwargs_constrain_outputs(
         if all(isinstance(co, str) for co in constrain_outputs):
             constrain_outputs = [constrain_outputs] * len(prompt)
         # Check if it's a list of lists of strings
-        elif all(
-            isinstance(co, list) and all(isinstance(s, str) for s in co)
-            for co in constrain_outputs
-        ):
+        elif all(isinstance(co, list) and all(isinstance(s, str) for s in co) for co in constrain_outputs):
             pass
         else:
-            raise ValidationError(
-                "constrain_outputs must be a list of strings or a list of lists of strings"
-            )
+            raise ValidationError("constrain_outputs must be a list of strings or a list of lists of strings")
 
         if len(constrain_outputs) != len(prompt):
             raise ValidationError("constrain_outputs must have same length as prompt")
@@ -296,9 +245,7 @@ def tlm_prompt_process_and_validate_kwargs(
                 f"Supported keyword arguments are: {supported_kwargs}"
             )
 
-    process_and_validate_kwargs_constrain_outputs(
-        prompt=prompt, task=task, kwargs_dict=kwargs_dict
-    )
+    process_and_validate_kwargs_constrain_outputs(prompt=prompt, task=task, kwargs_dict=kwargs_dict)
 
 
 def tlm_score_process_response_and_kwargs(
@@ -307,14 +254,10 @@ def tlm_score_process_response_and_kwargs(
     task: Optional[Task],
     kwargs_dict: dict[str, Any],
 ) -> Union[dict[str, Any], list[dict[str, Any]]]:
-    process_and_validate_kwargs_constrain_outputs(
-        prompt=prompt, task=task, kwargs_dict=kwargs_dict, response=response
-    )
+    process_and_validate_kwargs_constrain_outputs(prompt=prompt, task=task, kwargs_dict=kwargs_dict, response=response)
 
     if not SKIP_VALIDATE_TLM_OPTIONS:
-        invalid_kwargs = (
-            set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS
-        )
+        invalid_kwargs = set(kwargs_dict.keys()) - TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS
         if invalid_kwargs:
             raise ValidationError(
                 f"Invalid kwargs provided: {invalid_kwargs}. Valid kwargs include: {TLM_VALID_LOG_OPTIONS}"
@@ -328,31 +271,21 @@ def tlm_score_process_response_and_kwargs(
                             f"Invalid type {type(val)}, perplexity should be a float when response is a str."
                         )
                     if val is not None and not 0 <= val <= 1:
-                        raise ValidationError(
-                            "Perplexity values must be between 0 and 1"
-                        )
+                        raise ValidationError("Perplexity values must be between 0 and 1")
                 elif isinstance(response, Sequence):
                     if not isinstance(val, Sequence):
                         raise ValidationError(
                             f"Invalid type {type(val)}, perplexity should be a sequence when response is a sequence"
                         )
                     if len(response) != len(val):
-                        raise ValidationError(
-                            "Length of the response and perplexity lists must match."
-                        )
+                        raise ValidationError("Length of the response and perplexity lists must match.")
                     for v in val:
                         if not (isinstance(v, (float, int))):
-                            raise ValidationError(
-                                f"Invalid type {type(v)}, perplexity values must be a float"
-                            )
+                            raise ValidationError(f"Invalid type {type(v)}, perplexity values must be a float")
                         if v is not None and not 0 <= v <= 1:
-                            raise ValidationError(
-                                "Perplexity values must be between 0 and 1"
-                            )
+                            raise ValidationError("Perplexity values must be between 0 and 1")
                 else:
-                    raise ValidationError(
-                        f"Invalid type {type(response)}, response must be either a sequence or a str"
-                    )
+                    raise ValidationError(f"Invalid type {type(response)}, response must be either a sequence or a str")
     # format responses and kwargs into the appropriate formats
     combined_response = {"response": response, **kwargs_dict}
     if isinstance(response, str):
@@ -361,10 +294,7 @@ def tlm_score_process_response_and_kwargs(
     # transpose the dict of lists -> list of dicts, same length as prompt/response sequence
     combined_response_keys = combined_response.keys()
     combined_response_values_transposed = zip(*combined_response.values())
-    return [
-        dict(zip(combined_response_keys, values))
-        for values in combined_response_values_transposed
-    ]
+    return [dict(zip(combined_response_keys, values)) for values in combined_response_values_transposed]
 
 
 def validate_tlm_lite_score_options(score_options: Any) -> None:
@@ -375,9 +305,7 @@ def validate_tlm_lite_score_options(score_options: Any) -> None:
         )
 
 
-def get_tlm_lite_response_options(
-    score_options: Any, response_model: str
-) -> dict[str, Any]:
+def get_tlm_lite_response_options(score_options: Any, response_model: str) -> dict[str, Any]:
     response_options = {"model": response_model, "log": ["perplexity"]}
     if score_options is not None:
         for option_key in VALID_RESPONSE_OPTIONS:
@@ -433,22 +361,15 @@ def validate_rag_inputs(
         inputs_to_check.append(("response", response))
 
     # Filter out None values
-    inputs_to_check = [
-        (name, value) for name, value in inputs_to_check if value is not None
-    ]
+    inputs_to_check = [(name, value) for name, value in inputs_to_check if value is not None]
 
     # Check if any input is a list (not a string)
-    is_any_list = any(
-        isinstance(value, Sequence) and not isinstance(value, str)
-        for _, value in inputs_to_check
-    )
+    is_any_list = any(isinstance(value, Sequence) and not isinstance(value, str) for _, value in inputs_to_check)
 
     # Validate format consistency and length matching for list inputs
     if is_any_list:
         # All inputs should be lists
-        string_inputs = [
-            (name, value) for name, value in inputs_to_check if isinstance(value, str)
-        ]
+        string_inputs = [(name, value) for name, value in inputs_to_check if isinstance(value, str)]
         if string_inputs:
             raise ValidationError(
                 f"Inconsistent input formats: {string_inputs[0][0]} is a string while other inputs are lists. "
@@ -462,12 +383,9 @@ def validate_rag_inputs(
             if isinstance(value, Sequence) and not isinstance(value, str)
         ]
         if len({length for _, length in list_lengths}) > 1:
-            lengths_str = ", ".join(
-                f"{name}: {length}" for name, length in list_lengths
-            )
+            lengths_str = ", ".join(f"{name}: {length}" for name, length in list_lengths)
             raise ValidationError(
-                f"Input lists have different lengths: {lengths_str}. "
-                f"All input lists must have the same length."
+                f"Input lists have different lengths: {lengths_str}. " f"All input lists must have the same length."
             )
 
     # Check for batch inputs - simplified by using a list of parameters to check
@@ -493,14 +411,10 @@ def validate_rag_inputs(
             and not isinstance(context, str)
         ):
             if len(query) != len(context):
-                raise ValidationError(
-                    "'query' and 'context' sequences must have the same length for batch processing"
-                )
+                raise ValidationError("'query' and 'context' sequences must have the same length for batch processing")
             formatted_prompts = [form_prompt(q, c) for q, c in zip(query, context)]
         else:
-            raise ValidationError(
-                "'query' and 'context' must both be either strings or sequences of strings"
-            )
+            raise ValidationError("'query' and 'context' must both be either strings or sequences of strings")
 
     # Validate parameter types - reuse the batch_params list
     for param_tuple in batch_params:
