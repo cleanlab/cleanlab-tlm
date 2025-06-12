@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `form_prompt_string` to operate on a copy of input messages
+
 ## [1.1.8] - 2025-06-11
 
 ### Added
