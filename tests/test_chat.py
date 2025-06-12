@@ -865,15 +865,12 @@ def test_form_prompt_string_with_instructions_developer_role_and_tools() -> None
     assert form_prompt_string(messages, tools=tools, instructions="This system prompt appears first.") == expected
 
 
-
-
 @pytest.mark.parametrize("use_tools", [False, True])
 @pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
 def test_form_prompt_string_does_not_change_message_length(use_tools):
-    
     messages = [
-        {"role": "system",    "content": "You are a helpful assistant."},
-        {"role": "user",      "content": "What is the capital of France?"},
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"},
         {"role": "assistant", "content": "Paris"},
     ]
     tools = [
@@ -882,12 +879,7 @@ def test_form_prompt_string_does_not_change_message_length(use_tools):
             "function": {
                 "name": "get_capital",
                 "description": "Get the capital of a country",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "country": {"type": "string"}
-                    }
-                },
+                "parameters": {"type": "object", "properties": {"country": {"type": "string"}}},
             },
         },
     ]
@@ -895,6 +887,5 @@ def test_form_prompt_string_does_not_change_message_length(use_tools):
     original_len = len(messages)
     form_prompt_string(messages=messages, tools=tools if use_tools else None)
     assert len(messages) == original_len, (
-        f"form_prompt_string mutated messages: "
-        f"expected length {original_len}, got {len(messages)}"
+        f"form_prompt_string mutated messages: " f"expected length {original_len}, got {len(messages)}"
     )
