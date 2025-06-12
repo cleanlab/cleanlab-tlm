@@ -6,7 +6,12 @@ OpenAI's chat models.
 
 import json
 import warnings
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+if TYPE_CHECKING:
+    from openai.types.chat import (
+        ChatCompletionMessageParam,
+    )
 
 # Define message prefixes
 SYSTEM_PREFIX = "System: "
@@ -262,7 +267,7 @@ def _form_prompt_responses_api(
 
 
 def _form_prompt_chat_completions_api(
-    messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None
+    messages: Union[list[dict[str, Any]] | list[ChatCompletionMessageParam]], tools: Optional[list[dict[str, Any]]] = None
 ) -> str:
     """
     Convert messages in [OpenAI Chat Completions API format](https://platform.openai.com/docs/api-reference/chat) into a single prompt string.
@@ -314,7 +319,7 @@ def _form_prompt_chat_completions_api(
                 output += f"{msg['content']}\n\n"
             # Handle tool calls if present
             if "tool_calls" in msg:
-                for tool_call in msg["tool_calls"]:
+                for tool_call in msg.get("tool_calls", []):
                     call_id = tool_call["id"]
                     function_names[call_id] = tool_call["function"]["name"]
                     # Format function call as JSON within XML tags, now including call_id
@@ -326,7 +331,7 @@ def _form_prompt_chat_completions_api(
                     output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
         elif msg["role"] == TOOL_ROLE:
             # Handle tool responses
-            call_id = msg["tool_call_id"]
+            call_id = msg.get("tool_call_id", "")
             name = function_names.get(call_id, "function")
             # Format function response as JSON within XML tags
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
