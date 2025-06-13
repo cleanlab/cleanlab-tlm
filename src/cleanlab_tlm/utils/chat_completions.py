@@ -1,3 +1,11 @@
+"""
+Real-time evaluation of OpenAI Chat Completions responses.
+
+This module provides a TLM wrapper designed for evaluating responses from OpenAI's Chat Completions API.
+You can use this module to evaluate the quality and trustworthiness of responses from any OpenAI model by passing in
+the inputs to OpenAI's Chat Completions API and the ChatCompletion response object.
+"""
+
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from cleanlab_tlm.internal.base import BaseTLM
@@ -14,6 +22,24 @@ if TYPE_CHECKING:
 
 
 class TLMChatCompletion(BaseTLM):
+    """
+    Represents a Trustworthy Language Model (TLM) instance specifically designed for evaluating OpenAI Chat Completions responses.
+
+    This class provides a TLM wrapper that can be used to evaluate the quality and trustworthiness of responses from any OpenAI model
+    by passing in the inputs to OpenAI's Chat Completions API and the ChatCompletion response object.
+
+    Args:
+        quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
+            the quality of TLM trustworthiness scores vs. latency/costs.
+
+        api_key (str, optional): Cleanlab TLM API key. If not provided, will attempt to read from CLEANLAB_API_KEY environment variable.
+
+        options ([TLMOptions](#class-tlmoptions), optional): a typed dict of configurations you can optionally specify.
+            See detailed documentation under [TLMOptions](#class-tlmoptions).
+
+        timeout (float, optional): timeout (in seconds) to apply to each TLM evaluation.
+    """
+
     def __init__(
         self,
         quality_preset: TLMQualityPreset = _DEFAULT_TLM_QUALITY_PRESET,
@@ -22,6 +48,9 @@ class TLMChatCompletion(BaseTLM):
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
     ):
+        """
+        lazydocs: ignore
+        """
         super().__init__(
             quality_preset=quality_preset,
             valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
@@ -45,6 +74,15 @@ class TLMChatCompletion(BaseTLM):
         response: "ChatCompletion",
         **openai_kwargs: Any,
     ) -> TLMScore:
+        """Score the trustworthiness of an OpenAI ChatCompletion response.
+
+        Args:
+            response (ChatCompletion): The OpenAI ChatCompletion response object to evaluate
+            **openai_kwargs (Any): The original kwargs passed to OpenAI's create() method, must include 'messages'
+
+        Returns:
+            TLMScore: A dict containing the trustworthiness score and optional logs
+        """
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
         tools = openai_kwargs.get("tools", None)
@@ -53,13 +91,6 @@ class TLMChatCompletion(BaseTLM):
         response_text = _get_string_response(response)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
-
-    def _format_tlm_options(self) -> dict[str, Any]:
-        formatted_options = {}
-        if (log := self._options.get("log")) is not None:
-            formatted_options["log"] = log
-
-        return formatted_options
 
 
 def _get_string_response(response: "ChatCompletion") -> str:
