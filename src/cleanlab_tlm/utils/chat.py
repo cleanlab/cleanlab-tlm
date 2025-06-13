@@ -6,7 +6,7 @@ OpenAI's chat models.
 
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, cast
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam
@@ -17,11 +17,11 @@ USER_PREFIX = "User: "
 ASSISTANT_PREFIX = "Assistant: "
 
 # Define role constants
-SYSTEM_ROLE = "system"
-DEVELOPER_ROLE = "developer"
-USER_ROLE = "user"
-TOOL_ROLE = "tool"
-ASSISTANT_ROLE = "assistant"
+SYSTEM_ROLE: Literal["system"]    = "system"
+DEVELOPER_ROLE: Literal["developer"] = "developer"
+USER_ROLE: Literal["user"]        = "user"
+TOOL_ROLE: Literal["tool"]        = "tool"
+ASSISTANT_ROLE: Literal["assistant"] = "assistant"
 
 # Define system roles
 SYSTEM_ROLES = [SYSTEM_ROLE, DEVELOPER_ROLE]
@@ -327,7 +327,7 @@ def _form_prompt_chat_completions_api(
     prev_msg_role = None
 
     for msg in messages:
-        if msg["role"] == "assistant":
+        if msg["role"] == ASSISTANT_ROLE:
             output += ASSISTANT_PREFIX
             # Handle content if present
             if msg.get("content"):
@@ -344,7 +344,7 @@ def _form_prompt_chat_completions_api(
                         "call_id": call_id,
                     }
                     output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
-        elif msg["role"] == "tool":
+        elif msg["role"] == TOOL_ROLE:
             # Handle tool responses
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
