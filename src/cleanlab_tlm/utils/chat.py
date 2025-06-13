@@ -17,10 +17,10 @@ USER_PREFIX = "User: "
 ASSISTANT_PREFIX = "Assistant: "
 
 # Define role constants
-SYSTEM_ROLE: Literal["system"]    = "system"
+SYSTEM_ROLE: Literal["system"] = "system"
 DEVELOPER_ROLE: Literal["developer"] = "developer"
-USER_ROLE: Literal["user"]        = "user"
-TOOL_ROLE: Literal["tool"]        = "tool"
+USER_ROLE: Literal["user"] = "user"
+TOOL_ROLE: Literal["tool"] = "tool"
 ASSISTANT_ROLE: Literal["assistant"] = "assistant"
 
 # Define system roles
