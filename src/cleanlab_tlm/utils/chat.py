@@ -6,12 +6,26 @@ OpenAI's chat models.
 
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 if TYPE_CHECKING:
-    from openai.types.chat import (
-        ChatCompletionMessageParam,
+    from openai.types.chat import (  # type: ignore[import-not-found]
+        ChatCompletionAssistantMessageParam,
+        ChatCompletionDeveloperMessageParam,
+        ChatCompletionFunctionMessageParam,
+        ChatCompletionSystemMessageParam,
+        ChatCompletionToolMessageParam,
+        ChatCompletionUserMessageParam,
     )
+
+ChatCompletionsMessageParam = Union[
+    "ChatCompletionUserMessageParam",
+    "ChatCompletionSystemMessageParam",
+    "ChatCompletionAssistantMessageParam",
+    "ChatCompletionToolMessageParam",
+    "ChatCompletionFunctionMessageParam",
+    "ChatCompletionDeveloperMessageParam",
+]
 
 # Define message prefixes
 SYSTEM_PREFIX = "System: "
@@ -267,13 +281,13 @@ def _form_prompt_responses_api(
 
 
 def _form_prompt_chat_completions_api(
-    messages: Union[list[dict[str, Any]] | list[ChatCompletionMessageParam]], tools: Optional[list[dict[str, Any]]] = None
+    messages: list[ChatCompletionsMessageParam], tools: Optional[list[dict[str, Any]]] = None
 ) -> str:
     """
     Convert messages in [OpenAI Chat Completions API format](https://platform.openai.com/docs/api-reference/chat) into a single prompt string.
 
     Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages in chat completions API format.
+        messages (List[ChatCompletionsMessageParam]): A list of dictionaries representing chat messages in chat completions API format.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
         This is the same argument as the tools argument for OpenAI's Chat Completions API.
         This list of tool definitions will be formatted into a system message.
@@ -396,8 +410,8 @@ def form_prompt_string(
     """
     is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
     messages = messages.copy()
-    return (
-        _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
-        if is_responses
-        else _form_prompt_chat_completions_api(messages, tools)
-    )
+    if is_responses:
+        return _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
+
+    messages = cast(ChatCompletionsMessageParam, messages)
+    return _form_prompt_chat_completions_api(messages, tools)
