@@ -216,7 +216,7 @@ def _form_prompt_responses_api(
         messages.insert(
             last_system_idx + 1,
             {
-                "role": SYSTEM_ROLE,
+                "role": _SYSTEM_ROLE,
                 "content": _format_tools_prompt(tools, is_responses=True),
             },
         )
@@ -256,8 +256,8 @@ def _form_prompt_responses_api(
                     "arguments": json.loads(msg["arguments"]),
                     "call_id": call_id,
                 }
-                output += f"{TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{TOOL_CALL_TAG_END}\n\n"
-            elif msg["type"] == FUNCTION_CALL_OUTPUT_TYPE:
+                output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+            elif msg["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
@@ -313,9 +313,8 @@ def _form_prompt_chat_completions_api(
         )
 
     # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == USER_ROLE and tools is None:
+    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and tools is None:
         return output + str(messages[0]["content"])
-
 
     # Warn if the last message is an assistant message with tool calls
     if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
@@ -418,5 +417,5 @@ def form_prompt_string(
     return (
         _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
         if is_responses
-        else _form_prompt_chat_completions_api(messages, tools)
+        else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
     )
