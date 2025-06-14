@@ -1,4 +1,4 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -7,6 +7,9 @@ from cleanlab_tlm.utils.chat import (
     _form_prompt_responses_api,
     form_prompt_string,
 )
+
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletionMessageParam
 
 
 def test_form_prompt_string_single_user_message() -> None:
@@ -927,7 +930,9 @@ def test_form_prompt_chat_completions_api_does_not_mutate_messages(use_tools: bo
     original_messages = [dict(msg) for msg in messages]
     original_len = len(messages)
 
-    _form_prompt_chat_completions_api(messages=messages, tools=tools if use_tools else None)
+    _form_prompt_chat_completions_api(
+        messages=cast(list["ChatCompletionMessageParam"], messages), tools=tools if use_tools else None
+    )
 
     # Verify length hasn't changed
     assert len(messages) == original_len, (

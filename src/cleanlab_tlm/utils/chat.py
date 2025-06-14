@@ -6,7 +6,10 @@ OpenAI's chat models.
 
 import json
 import warnings
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional, cast
+
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletionMessageParam
 
 # Define message prefixes
 _SYSTEM_PREFIX = "System: "
@@ -14,11 +17,12 @@ _USER_PREFIX = "User: "
 _ASSISTANT_PREFIX = "Assistant: "
 
 # Define role constants
-_SYSTEM_ROLE = "system"
-_DEVELOPER_ROLE = "developer"
-_USER_ROLE = "user"
-_TOOL_ROLE = "tool"
-_ASSISTANT_ROLE = "assistant"
+_SYSTEM_ROLE: Literal["system"] = "system"
+_DEVELOPER_ROLE: Literal["developer"] = "developer"
+_USER_ROLE: Literal["user"] = "user"
+_TOOL_ROLE: Literal["tool"] = "tool"
+_ASSISTANT_ROLE: Literal["assistant"] = "assistant"
+
 
 # Define system roles
 _SYSTEM_ROLES = [_SYSTEM_ROLE, _DEVELOPER_ROLE]
@@ -210,7 +214,11 @@ def _form_prompt_responses_api(
     # Insert tool definitions and instructions after system messages if needed
     if tools is not None:
         messages.insert(
-            last_system_idx + 1, {"role": _SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=True)}
+            last_system_idx + 1,
+            {
+                "role": _SYSTEM_ROLE,
+                "content": _format_tools_prompt(tools, is_responses=True),
+            },
         )
 
     if "instructions" in responses_api_kwargs:
@@ -243,13 +251,21 @@ def _form_prompt_responses_api(
                 call_id = msg.get("call_id", "")
                 function_names[call_id] = msg["name"]
                 # Format function call as JSON within XML tags, now including call_id
-                function_call = {"name": msg["name"], "arguments": json.loads(msg["arguments"]), "call_id": call_id}
+                function_call = {
+                    "name": msg["name"],
+                    "arguments": json.loads(msg["arguments"]),
+                    "call_id": call_id,
+                }
                 output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
             elif msg["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
-                tool_response = {"name": name, "call_id": call_id, "output": msg["output"]}
+                tool_response = {
+                    "name": name,
+                    "call_id": call_id,
+                    "output": msg["output"],
+                }
                 output += (
                     f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}\n\n"
                 )
@@ -263,13 +279,14 @@ def _form_prompt_responses_api(
 
 
 def _form_prompt_chat_completions_api(
-    messages: list[dict[str, Any]], tools: Optional[list[dict[str, Any]]] = None
+    messages: list["ChatCompletionMessageParam"],
+    tools: Optional[list[dict[str, Any]]] = None,
 ) -> str:
     """
     Convert messages in [OpenAI Chat Completions API format](https://platform.openai.com/docs/api-reference/chat) into a single prompt string.
 
     Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages in chat completions API format.
+        messages (List[ChatCompletionsMessageParam]): A list of dictionaries representing chat messages in chat completions API format.
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
         This is the same argument as the tools argument for OpenAI's Chat Completions API.
         This list of tool definitions will be formatted into a system message.
@@ -288,12 +305,16 @@ def _form_prompt_chat_completions_api(
 
     if tools is not None:
         messages.insert(
-            last_system_idx + 1, {"role": _SYSTEM_ROLE, "content": _format_tools_prompt(tools, is_responses=False)}
+            last_system_idx + 1,
+            {
+                "role": "system",
+                "content": _format_tools_prompt(tools, is_responses=False),
+            },
         )
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and tools is None:
-        return str(output + messages[0]["content"])
+        return output + str(messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls
     if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
@@ -334,7 +355,7 @@ def _form_prompt_chat_completions_api(
             tool_response = {"name": name, "call_id": call_id, "output": msg["content"]}
             output += f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}\n\n"
         else:
-            prefix = _get_prefix(msg, prev_msg_role)
+            prefix = _get_prefix(cast(dict[str, Any], msg), prev_msg_role)
             output += f"{prefix}{msg['content']}\n\n"
             prev_msg_role = msg["role"]
 
@@ -392,8 +413,9 @@ def form_prompt_string(
         ValueError: If Responses API kwargs are provided with use_responses=False.
     """
     is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
+
     return (
         _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
         if is_responses
-        else _form_prompt_chat_completions_api(messages, tools)
+        else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
     )
