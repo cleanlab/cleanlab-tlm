@@ -1,9 +1,8 @@
 """
-Real-time evaluation of OpenAI Chat Completions responses.
+Real-time evaluation of responses from OpenAI Chat Completions API.
 
-This module provides a TLM wrapper designed for evaluating responses from OpenAI's Chat Completions API.
-You can use this module to evaluate the quality and trustworthiness of responses from any OpenAI model by passing in
-the inputs to OpenAI's Chat Completions API and the ChatCompletion response object.
+If you are using OpenAI's Chat Completions API, this module allows you to incorporate TLM trust scoring without any change to your existing code.
+It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs that are also usable via Chat Completions API (Gemini, DeepSeek, Llama, etc).
 """
 
 from typing import TYPE_CHECKING, Any, Optional, cast
