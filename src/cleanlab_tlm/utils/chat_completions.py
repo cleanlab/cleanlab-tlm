@@ -2,7 +2,7 @@
 Real-time evaluation of responses from OpenAI Chat Completions API.
 
 If you are using OpenAI's Chat Completions API, this module allows you to incorporate TLM trust scoring without any change to your existing code.
-It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs that are also usable via Chat Completions API (Gemini, DeepSeek, Llama, etc).
+It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs that are also usable via Chat Completions API (Gemini, DeepSeek, Llama, etc).
 """
 
 from typing import TYPE_CHECKING, Any, Optional, cast
