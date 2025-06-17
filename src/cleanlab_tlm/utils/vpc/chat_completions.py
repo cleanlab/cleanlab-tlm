@@ -1,61 +1,53 @@
 import os
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import requests
 
+from cleanlab_tlm.internal.base import BaseTLM
+from cleanlab_tlm.internal.constants import _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS
 from cleanlab_tlm.internal.types import JSONDict
+from cleanlab_tlm.tlm import TLMOptions
 
-BASE_URL = os.environ.get("BASE_URL")
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletion
 
 
-class TLMChatCompletion:
-    try:
-        from openai.types.chat import ChatCompletion
-    except ImportError:
-        raise ImportError(
-            "OpenAI is required to use the TLMChatCompletion class. Please install it with `pip install openai`."
-        )
-
-    def __init__(self, quality_preset: str = "medium", timeout: float = 60):
-        self._tlm_options = {}
-        self._tlm_options["quality_preset"] = quality_preset
-
-        self._timeout = timeout  # arbitrary timeout for now
-
-    def create(
+class TLMChatCompletion(BaseTLM):
+    def __init__(
         self,
-        **openai_kwargs: Any,
-    ) -> ChatCompletion:
-        from openai.types.chat import ChatCompletion
-
-        if BASE_URL is None:
-            raise ValueError("BASE_URL is not set. Please set it in the environment variables.")
-
-        res = requests.post(
-            f"{BASE_URL}/completions",
-            json={
-                "tlm_options": self._tlm_options,
-                **openai_kwargs,
-            },
-            timeout=self._timeout,
+        quality_preset: str = "medium",
+        *,
+        options: Optional[TLMOptions] = None,
+        timeout: Optional[float] = None,
+    ):
+        super().__init__(
+            quality_preset=quality_preset,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+            support_custom_eval_criteria=True,
+            api_key=".",
+            options=options,
+            timeout=timeout,
+            verbose=False,
         )
 
-        res_json = res.json()
-
-        return ChatCompletion(**res_json)
+        self._options["quality_preset"] = self._quality_preset
 
     def score(
         self,
-        response: ChatCompletion,
+        *,
+        response: "ChatCompletion",
         **openai_kwargs: Any,
     ) -> JSONDict:
-        if BASE_URL is None:
+        if (base_url := os.environ.get("BASE_URL")) is None:
             raise ValueError("BASE_URL is not set. Please set it in the environment variables.")
 
+        # replace the model used for scoring with the specified model in options
+        openai_kwargs["model"] = self._options["model"]
+
         res = requests.post(
-            f"{BASE_URL}/score",
+            f"{base_url}/chat/score",
             json={
-                "tlm_options": self._tlm_options,
+                "tlm_options": self._options,
                 "completion": response.model_dump(),
                 **openai_kwargs,
             },
