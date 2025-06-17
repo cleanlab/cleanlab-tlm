@@ -4,6 +4,7 @@ from cleanlab_tlm.internal.types import Task, TLMQualityPreset
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
 _VALID_TLM_QUALITY_PRESETS_RAG: list[str] = ["medium", "low", "base"]
+_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS: list[str] = ["medium", "low", "base"]
 _DEFAULT_TLM_QUALITY_PRESET: TLMQualityPreset = "medium"
 _DEFAULT_TLM_MAX_TOKENS: int = 512
 _VALID_TLM_MODELS: list[str] = [
@@ -28,6 +29,8 @@ _VALID_TLM_MODELS: list[str] = [
     "claude-3.5-sonnet",
     "claude-3.5-sonnet-v2",
     "claude-3.7-sonnet",
+    "claude-opus-4-0",
+    "claude-sonnet-4-0",
     "nova-micro",
     "nova-lite",
     "nova-pro",

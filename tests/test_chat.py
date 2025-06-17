@@ -1,8 +1,15 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-from cleanlab_tlm.utils.chat import form_prompt_string
+from cleanlab_tlm.utils.chat import (
+    _form_prompt_chat_completions_api,
+    _form_prompt_responses_api,
+    form_prompt_string,
+)
+
+if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletionMessageParam
 
 
 def test_form_prompt_string_single_user_message() -> None:
@@ -361,7 +368,8 @@ def test_form_prompt_string_with_tools_and_system_chat_completions() -> None:
         }
     ]
     expected = (
-        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
         "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
         "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
         "into functions. After calling & executing the functions, you will be provided with function results within "
@@ -379,7 +387,6 @@ def test_form_prompt_string_with_tools_and_system_chat_completions() -> None:
         "</tool_call>\n\n"
         "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
         "However, do not generate your own call_id when making a function call.\n\n"
-        "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
         "User: What's the latest news about AI?\n\n"
         "Assistant:"
     )
@@ -409,7 +416,8 @@ def test_form_prompt_string_with_tools_and_system_responses() -> None:
         }
     ]
     expected = (
-        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
         "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
         "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
         "into functions. After calling & executing the functions, you will be provided with function results within "
@@ -428,7 +436,6 @@ def test_form_prompt_string_with_tools_and_system_responses() -> None:
         "</tool_call>\n\n"
         "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
         "However, do not generate your own call_id when making a function call.\n\n"
-        "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
         "User: What's the latest news about AI?\n\n"
         "Assistant:"
     )
@@ -506,7 +513,7 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
     ):
         assert form_prompt_string(messages) == expected
 
-    """Test that form_prompt_string correctly handles tools in the responses API format."""
+    """Test that form_prompt_string correctly handles tools in the Responses API format."""
     responses_tools = [
         {
             "type": "function",
@@ -640,3 +647,334 @@ def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> N
         "Assistant:"
     )
     assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_instructions_responses() -> None:
+    """Test formatting with developer instructions in responses format."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+    ]
+    expected = "System: Always be concise and direct in your responses.\n\n" "User: What can you do?\n\n" "Assistant:"
+    assert form_prompt_string(messages, instructions="Always be concise and direct in your responses.") == expected
+
+
+def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
+    """Test formatting with developer instructions and tools in responses format."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "name": "search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query"}},
+                "required": ["query"],
+            },
+            "strict": True,
+        }
+    ]
+    expected = (
+        "System: Always be concise and direct in your responses.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},"strict":true}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant:"
+    )
+    assert (
+        form_prompt_string(messages, tools=tools, instructions="Always be concise and direct in your responses.")
+        == expected
+    )
+
+
+def test_form_prompt_string_with_instructions_and_tool_calls_responses() -> None:
+    """Test formatting with developer instructions and tool calls in responses format."""
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "type": "function_call",
+            "name": "get_weather",
+            "arguments": '{"location": "Paris"}',
+            "call_id": "call_123",
+        },
+        {
+            "type": "function_call_output",
+            "call_id": "call_123",
+            "output": "22.1",
+        },
+    ]
+    expected = (
+        "System: Always be concise and direct in your responses.\n\n"
+        "User: What's the weather in Paris?\n\n"
+        "Assistant: <tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  },\n"
+        '  "call_id": "call_123"\n'
+        "}\n"
+        "</tool_call>\n\n"
+        "<tool_response>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "call_id": "call_123",\n'
+        '  "output": "22.1"\n'
+        "}\n"
+        "</tool_response>\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, instructions="Always be concise and direct in your responses.") == expected
+
+
+def test_form_prompt_string_with_instructions_chat_completions_throws_error() -> None:
+    """Test that Responses API parameters cannot be used with use_responses=False."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+    ]
+    with pytest.raises(
+        ValueError,
+        match="Responses API kwargs are only supported in Responses API format. Cannot use with use_responses=False.",
+    ):
+        form_prompt_string(
+            messages, instructions="Always be concise and direct in your responses.", use_responses=False
+        )
+
+
+def test_form_prompt_string_with_developer_role_begin() -> None:
+    """Test formatting with developer role in the beginning of the messages list."""
+    messages = [
+        {"role": "developer", "content": "Always be concise and direct in your responses."},
+        {"role": "user", "content": "What can you do?"},
+    ]
+    expected = "System: Always be concise and direct in your responses.\n\n" "User: What can you do?\n\n" "Assistant:"
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_developer_role_middle() -> None:
+    """Test formatting with developer role in the middle of the messages list."""
+    messages = [
+        {"role": "user", "content": "What can you do?"},
+        {"role": "developer", "content": "Always be concise and direct in your responses."},
+    ]
+    expected = "User: What can you do?\n\n" "System: Always be concise and direct in your responses.\n\n" "Assistant:"
+    assert form_prompt_string(messages) == expected
+
+
+def test_form_prompt_string_with_developer_role_and_tools() -> None:
+    """Test formatting with developer role and tool list."""
+    messages = [
+        {"role": "developer", "content": "Always be concise and direct in your responses."},
+        {"role": "user", "content": "What can you do?"},
+    ]
+    tools: list[dict[str, Any]] = [
+        {
+            "type": "function",
+            "name": "search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query"}},
+                "required": ["query"],
+            },
+            "strict": True,
+        }
+    ]
+    expected = (
+        "System: Always be concise and direct in your responses.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},'
+        '"strict":true}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, tools=tools) == expected
+
+
+def test_form_prompt_string_with_instructions_developer_role_and_tools() -> None:
+    """Test formatting with instructions, developer role and tool list."""
+    messages = [
+        {"role": "developer", "content": "Always be concise and direct in your responses."},
+        {"role": "user", "content": "What can you do?"},
+    ]
+    tools: list[dict[str, Any]] = [
+        {
+            "type": "function",
+            "name": "search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query"}},
+                "required": ["query"],
+            },
+            "strict": True,
+        }
+    ]
+    expected = (
+        "System: This system prompt appears first.\n\n"
+        "Always be concise and direct in your responses.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},'
+        '"strict":true}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant:"
+    )
+    assert form_prompt_string(messages, tools=tools, instructions="This system prompt appears first.") == expected
+
+
+@pytest.mark.parametrize("use_tools", [False, True])
+@pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
+def test_form_prompt_string_does_not_mutate_messages(use_tools: bool) -> None:
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "Paris"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_capital",
+                "description": "Get the capital of a country",
+                "parameters": {"type": "object", "properties": {"country": {"type": "string"}}},
+            },
+        },
+    ]
+
+    original_messages = [dict(msg) for msg in messages]
+    original_len = len(messages)
+
+    form_prompt_string(messages=messages, tools=tools if use_tools else None)
+
+    # Verify length hasn't changed
+    assert len(messages) == original_len, (
+        f"form_prompt_string mutated messages: " f"expected length {original_len}, got {len(messages)}"
+    )
+
+    # Verify message contents haven't changed
+    for original, current in zip(original_messages, messages):
+        assert current == original, (
+            f"form_prompt_string mutated message content: " f"expected {original}, got {current}"
+        )
+
+
+@pytest.mark.parametrize("use_tools", [False, True])
+@pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
+def test_form_prompt_chat_completions_api_does_not_mutate_messages(use_tools: bool) -> None:
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "Paris"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_capital",
+                "description": "Get the capital of a country",
+                "parameters": {"type": "object", "properties": {"country": {"type": "string"}}},
+            },
+        },
+    ]
+
+    original_messages = [dict(msg) for msg in messages]
+    original_len = len(messages)
+
+    _form_prompt_chat_completions_api(
+        messages=cast(list["ChatCompletionMessageParam"], messages), tools=tools if use_tools else None
+    )
+
+    # Verify length hasn't changed
+    assert len(messages) == original_len, (
+        f"_form_prompt_chat_completions_api mutated messages: " f"expected length {original_len}, got {len(messages)}"
+    )
+
+    # Verify message contents haven't changed
+    for original, current in zip(original_messages, messages):
+        assert current == original, (
+            f"_form_prompt_chat_completions_api mutated message content: " f"expected {original}, got {current}"
+        )
+
+
+@pytest.mark.parametrize("use_tools", [False, True])
+@pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
+def test_form_prompt_responses_api_does_not_mutate_messages(use_tools: bool) -> None:
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"},
+        {"role": "assistant", "content": "Paris"},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "name": "get_capital",
+            "description": "Get the capital of a country",
+            "parameters": {"type": "object", "properties": {"country": {"type": "string"}}},
+        },
+    ]
+
+    original_messages = [dict(msg) for msg in messages]
+    original_len = len(messages)
+
+    _form_prompt_responses_api(messages=messages, tools=tools if use_tools else None)
+
+    # Verify length hasn't changed
+    assert len(messages) == original_len, (
+        f"_form_prompt_responses_api mutated messages: " f"expected length {original_len}, got {len(messages)}"
+    )
+
+    # Verify message contents haven't changed
+    for original, current in zip(original_messages, messages):
+        assert current == original, (
+            f"_form_prompt_responses_api mutated message content: " f"expected {original}, got {current}"
+        )
