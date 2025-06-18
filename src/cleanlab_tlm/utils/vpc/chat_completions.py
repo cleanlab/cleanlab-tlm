@@ -30,8 +30,6 @@ class TLMChatCompletion(BaseTLM):
             verbose=False,
         )
 
-        self._options["quality_preset"] = self._quality_preset
-
     def score(
         self,
         *,
@@ -47,7 +45,8 @@ class TLMChatCompletion(BaseTLM):
         res = requests.post(
             f"{base_url}/chat/score",
             json={
-                "tlm_options": self._options,
+                "quality_preset": self._quality_preset,
+                "options": self._options,
                 "completion": response.model_dump(),
                 **openai_kwargs,
             },
