@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.10] - 2025-06-20
+
+### Added
+
+- Added `TLMChatCompletion` module, providing support for trust scoring with OpenAI ChatCompletion objects
+- Added a VPC compatible version of `TLMChatCompletion`
+
+### Fixed
+
+- Bug fix for formatting system prompt after user messages
+
 ## [1.1.9] - 2025-06-17
 
 ### Changed
@@ -188,7 +199,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.9...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.10...HEAD
+[1.1.10]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.9...v1.1.10
 [1.1.9]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.8...v1.1.9
 [1.1.8]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.7...v1.1.8
 [1.1.7]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.6...v1.1.7
