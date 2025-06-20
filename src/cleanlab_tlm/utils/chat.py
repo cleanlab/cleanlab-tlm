@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 _SYSTEM_PREFIX = "System: "
 _USER_PREFIX = "User: "
 _ASSISTANT_PREFIX = "Assistant: "
+_TOOL_PREFIX = "Tool: "
 
 # Define role constants
 _SYSTEM_ROLE: Literal["system"] = "system"
@@ -258,6 +259,7 @@ def _form_prompt_responses_api(
                 }
                 output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
             elif msg["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
+                output += _TOOL_PREFIX
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
@@ -349,6 +351,7 @@ def _form_prompt_chat_completions_api(
                     output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
         elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
+            output += _TOOL_PREFIX
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
             # Format function response as JSON within XML tags
