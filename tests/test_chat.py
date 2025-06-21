@@ -198,6 +198,7 @@ def test_form_prompt_string_with_tool_calls_chat_completions() -> None:
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "get_weather",\n'
@@ -237,6 +238,7 @@ def test_form_prompt_string_with_tool_calls_responses() -> None:
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "get_weather",\n'
@@ -287,6 +289,7 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_chat_completions()
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "get_weather",\n'
@@ -330,6 +333,7 @@ def test_form_prompt_string_with_tool_calls_two_user_messages_responses() -> Non
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "get_weather",\n'
@@ -596,6 +600,7 @@ def test_form_prompt_string_assistant_content_before_tool_calls_chat_completions
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "search_knowledge_base",\n'
@@ -637,6 +642,7 @@ def test_form_prompt_string_assistant_content_before_tool_calls_responses() -> N
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "search_knowledge_base",\n'
@@ -733,6 +739,7 @@ def test_form_prompt_string_with_instructions_and_tool_calls_responses() -> None
         '  "call_id": "call_123"\n'
         "}\n"
         "</tool_call>\n\n"
+        "Tool: "
         "<tool_response>\n"
         "{\n"
         '  "name": "get_weather",\n'
