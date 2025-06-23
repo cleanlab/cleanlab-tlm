@@ -79,10 +79,12 @@ def test_form_prompt_string_with_tools_chat_completions() -> None:
         }
     ]
     expected = (
-        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "System: You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","function":{"name":"search","description":"Search the web for information","parameters":'
@@ -131,10 +133,12 @@ def test_form_prompt_string_with_tools_responses() -> None:
         }
     ]
     expected = (
-        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "System: You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"fetch_user_flight_information","description":"Fetch all tickets for the user along with corresponding flight information and seat assignments.\\n\\n'
@@ -373,10 +377,12 @@ def test_form_prompt_string_with_tools_and_system_chat_completions() -> None:
     ]
     expected = (
         "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","function":{"name":"search","description":"Search the web for information","parameters":'
@@ -421,10 +427,12 @@ def test_form_prompt_string_with_tools_and_system_responses() -> None:
     ]
     expected = (
         "System: You are ACME Support, the official AI assistant for ACME Corporation. Your role is to provide exceptional customer service and technical support. You are knowledgeable about all ACME products and services, and you maintain a warm, professional, and solution-oriented approach. You can search our knowledge base to provide accurate and up-to-date information about our products, policies, and support procedures.\n\n"
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"search","description":"Search the web for information","parameters":'
@@ -535,10 +543,12 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         }
     ]
     responses_tools_expected = (
-        "System: You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "System: You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"fetch_user_flight_information","description":"Fetch flight information","parameters":'
@@ -684,10 +694,12 @@ def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
     ]
     expected = (
         "System: Always be concise and direct in your responses.\n\n"
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"search","description":"Search the web for information","parameters":'
@@ -807,10 +819,12 @@ def test_form_prompt_string_with_developer_role_and_tools() -> None:
     ]
     expected = (
         "System: Always be concise and direct in your responses.\n\n"
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"search","description":"Search the web for information","parameters":'
@@ -854,10 +868,12 @@ def test_form_prompt_string_with_instructions_developer_role_and_tools() -> None
     expected = (
         "System: This system prompt appears first.\n\n"
         "Always be concise and direct in your responses.\n\n"
-        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
-        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+        "The set of available tools is provided to you as function signatures within "
+        "<tools> </tools> XML tags. "
+        "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+        "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After you choose to call a function, you will be provided with the function's results within "
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"search","description":"Search the web for information","parameters":'

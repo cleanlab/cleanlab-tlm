@@ -42,11 +42,12 @@ _TOOL_RESPONSE_TAG_END = "</tool_response>"
 
 # Define tool-related message prefixes
 _TOOL_DEFINITIONS_PREFIX = (
-    "You are a function calling AI model. You are provided with function signatures within "
+    "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+    "The set of available tools is provided to you as function signatures within "
     f"{_TOOLS_TAG_START} {_TOOLS_TAG_END} XML tags. "
-    "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-    "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-    "into functions. After calling & executing the functions, you will be provided with function results within "
+    "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+    "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+    "into functions. After you choose to call a function, you will be provided with the function's results within "
     f"{_TOOL_RESPONSE_TAG_START} {_TOOL_RESPONSE_TAG_END} XML tags.\n\n"
     f"{_TOOLS_TAG_START}\n"
 )
