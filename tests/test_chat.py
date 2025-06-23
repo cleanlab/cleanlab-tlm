@@ -1127,13 +1127,13 @@ def test_form_prompt_string_with_tools_after_first_system_block_responses() -> N
 def test_form_prompt_string_with_empty_tools_chat_completions() -> None:
     """Test that empty tools list is treated the same as None in chat completions format."""
     messages = [{"role": "user", "content": "Just one message."}]
-    
+
     # Test with None
     result_none = form_prompt_string(messages, tools=None)
-    
+
     # Test with empty list
     result_empty = form_prompt_string(messages, tools=[])
-    
+
     # They should be identical
     assert result_none == result_empty == "Just one message."
 
@@ -1141,13 +1141,13 @@ def test_form_prompt_string_with_empty_tools_chat_completions() -> None:
 def test_form_prompt_string_with_empty_tools_responses() -> None:
     """Test that empty tools list is treated the same as None in responses format."""
     messages = [{"role": "user", "content": "Just one message."}]
-    
+
     # Test with None
     result_none = form_prompt_string(messages, tools=None, use_responses=True)
-    
+
     # Test with empty list
     result_empty = form_prompt_string(messages, tools=[], use_responses=True)
-    
+
     # They should be identical
     assert result_none == result_empty == "Just one message."
 
@@ -1159,13 +1159,13 @@ def test_form_prompt_string_with_empty_tools_multiple_messages_chat_completions(
         {"role": "assistant", "content": "Hi there!"},
         {"role": "user", "content": "How are you?"},
     ]
-    
+
     # Test with None
     result_none = form_prompt_string(messages, tools=None)
-    
+
     # Test with empty list
     result_empty = form_prompt_string(messages, tools=[])
-    
+
     # They should be identical
     expected = "User: Hello!\n\n" "Assistant: Hi there!\n\n" "User: How are you?\n\n" "Assistant:"
     assert result_none == result_empty == expected
@@ -1178,13 +1178,13 @@ def test_form_prompt_string_with_empty_tools_multiple_messages_responses() -> No
         {"role": "assistant", "content": "Hi there!"},
         {"role": "user", "content": "How are you?"},
     ]
-    
+
     # Test with None
     result_none = form_prompt_string(messages, tools=None, use_responses=True)
-    
+
     # Test with empty list
     result_empty = form_prompt_string(messages, tools=[], use_responses=True)
-    
+
     # They should be identical
     expected = "User: Hello!\n\n" "Assistant: Hi there!\n\n" "User: How are you?\n\n" "Assistant:"
     assert result_none == result_empty == expected
