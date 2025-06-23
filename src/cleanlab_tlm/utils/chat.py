@@ -185,6 +185,28 @@ def _get_prefix(msg: dict[str, Any], prev_msg_role: Optional[str] = None) -> str
     return role.capitalize() + ": "
 
 
+def _find_index_after_first_system_block(messages: list[dict[str, Any]]) -> int:
+    """
+    Find the index after the first consecutive block of system messages.
+
+    Args:
+        messages (List[Dict]): A list of message dictionaries.
+
+    Returns:
+        int: The index after the first consecutive block of system messages.
+             Returns -1 if no system messages are found.
+    """
+    last_system_idx = -1
+    for i, msg in enumerate(messages):
+        if msg.get("role") in _SYSTEM_ROLES:
+            last_system_idx = i
+        else:
+            # Found a non-system message, so we've reached the end of the first system block
+            break
+
+    return last_system_idx
+
+
 def _form_prompt_responses_api(
     messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
@@ -207,11 +229,8 @@ def _form_prompt_responses_api(
     messages = messages.copy()
     output = ""
 
-    # Find the index after the last system message
-    last_system_idx = -1
-    for i, msg in enumerate(messages):
-        if msg.get("role") in _SYSTEM_ROLES:
-            last_system_idx = i
+    # Find the index after the first consecutive block of system messages
+    last_system_idx = _find_index_after_first_system_block(messages)
 
     # Insert tool definitions and instructions after system messages if needed
     if tools is not None:
@@ -300,11 +319,8 @@ def _form_prompt_chat_completions_api(
     messages = messages.copy()
     output = ""
 
-    # Find the index after the last system message
-    last_system_idx = -1
-    for i, msg in enumerate(messages):
-        if msg.get("role") in _SYSTEM_ROLES:
-            last_system_idx = i
+    # Find the index after the first consecutive block of system messages
+    last_system_idx = _find_index_after_first_system_block(cast(list[dict[str, Any]], messages))
 
     if tools is not None:
         messages.insert(

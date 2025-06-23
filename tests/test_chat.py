@@ -1001,3 +1001,119 @@ def test_form_prompt_responses_api_does_not_mutate_messages(use_tools: bool) -> 
         assert current == original, (
             f"_form_prompt_responses_api mutated message content: " f"expected {original}, got {current}"
         )
+
+
+def test_form_prompt_string_with_tools_after_first_system_block_chat_completions() -> None:
+    """Test that tools are inserted after the first consecutive block of system messages."""
+    messages = [
+        {"role": "system", "content": "First system message."},
+        {"role": "system", "content": "Second system message."},
+        {"role": "user", "content": "What can you do?"},
+        {"role": "assistant", "content": "I can help you."},
+        {"role": "system", "content": "Third system message later."},
+        {"role": "user", "content": "Tell me more."},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "search",
+                "description": "Search the web for information",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string", "description": "The search query"}},
+                    "required": ["query"],
+                },
+            },
+        }
+    ]
+
+    result = form_prompt_string(messages, tools)
+
+    expected = (
+        "System: First system message.\n\n"
+        "Second system message.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","function":{"name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]}}}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant: I can help you.\n\n"
+        "System: Third system message later.\n\n"
+        "User: Tell me more.\n\n"
+        "Assistant:"
+    )
+
+    assert result == expected
+
+
+def test_form_prompt_string_with_tools_after_first_system_block_responses() -> None:
+    """Test that tools are inserted after the first consecutive block of system messages in responses format."""
+    messages = [
+        {"role": "system", "content": "First system message."},
+        {"role": "system", "content": "Second system message."},
+        {"role": "user", "content": "What can you do?"},
+        {"role": "assistant", "content": "I can help you."},
+        {"role": "system", "content": "Third system message later."},
+        {"role": "user", "content": "Tell me more."},
+    ]
+    tools = [
+        {
+            "type": "function",
+            "name": "search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "The search query"}},
+                "required": ["query"],
+            },
+            "strict": True,
+        }
+    ]
+
+    result = form_prompt_string(messages, tools)
+
+    expected = (
+        "System: First system message.\n\n"
+        "Second system message.\n\n"
+        "You are a function calling AI model. You are provided with function signatures within <tools> </tools> XML tags. "
+        "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
+        "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
+        "into functions. After calling & executing the functions, you will be provided with function results within "
+        "<tool_response> </tool_response> XML tags.\n\n"
+        "<tools>\n"
+        '{"type":"function","name":"search","description":"Search the web for information","parameters":'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},'
+        '"strict":true}\n'
+        "</tools>\n\n"
+        "For each function call return a JSON object, with the following pydantic model json schema:\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n"
+        "Example:\n"
+        "<tool_call>\n"
+        "{'name': <function-name>, 'arguments': <args-dict>}\n"
+        "</tool_call>\n\n"
+        "Note: Your past messages will include a call_id in the <tool_call> XML tags. "
+        "However, do not generate your own call_id when making a function call.\n\n"
+        "User: What can you do?\n\n"
+        "Assistant: I can help you.\n\n"
+        "System: Third system message later.\n\n"
+        "User: Tell me more.\n\n"
+        "Assistant:"
+    )
+
+    assert result == expected
