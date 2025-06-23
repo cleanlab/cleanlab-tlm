@@ -233,7 +233,7 @@ def _form_prompt_responses_api(
     last_system_idx = _find_index_after_first_system_block(messages)
 
     # Insert tool definitions and instructions after system messages if needed
-    if tools is not None:
+    if tools is not None and len(tools) > 0:
         messages.insert(
             last_system_idx + 1,
             {
@@ -322,7 +322,7 @@ def _form_prompt_chat_completions_api(
     # Find the index after the first consecutive block of system messages
     last_system_idx = _find_index_after_first_system_block(cast(list[dict[str, Any]], messages))
 
-    if tools is not None:
+    if tools is not None and len(tools) > 0:
         messages.insert(
             last_system_idx + 1,
             {
@@ -332,7 +332,7 @@ def _form_prompt_chat_completions_api(
         )
 
     # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and tools is None:
+    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and (tools is None or len(tools) == 0):
         return output + str(messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls

@@ -703,7 +703,8 @@ def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
         "<tool_response> </tool_response> XML tags.\n\n"
         "<tools>\n"
         '{"type":"function","name":"search","description":"Search the web for information","parameters":'
-        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},"strict":true}\n'
+        '{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]},'
+        '"strict":true}\n'
         "</tools>\n\n"
         "For each function call return a JSON object, with the following pydantic model json schema:\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
@@ -1121,3 +1122,69 @@ def test_form_prompt_string_with_tools_after_first_system_block_responses() -> N
     )
 
     assert result == expected
+
+
+def test_form_prompt_string_with_empty_tools_chat_completions() -> None:
+    """Test that empty tools list is treated the same as None in chat completions format."""
+    messages = [{"role": "user", "content": "Just one message."}]
+    
+    # Test with None
+    result_none = form_prompt_string(messages, tools=None)
+    
+    # Test with empty list
+    result_empty = form_prompt_string(messages, tools=[])
+    
+    # They should be identical
+    assert result_none == result_empty == "Just one message."
+
+
+def test_form_prompt_string_with_empty_tools_responses() -> None:
+    """Test that empty tools list is treated the same as None in responses format."""
+    messages = [{"role": "user", "content": "Just one message."}]
+    
+    # Test with None
+    result_none = form_prompt_string(messages, tools=None, use_responses=True)
+    
+    # Test with empty list
+    result_empty = form_prompt_string(messages, tools=[], use_responses=True)
+    
+    # They should be identical
+    assert result_none == result_empty == "Just one message."
+
+
+def test_form_prompt_string_with_empty_tools_multiple_messages_chat_completions() -> None:
+    """Test empty tools list with multiple messages in chat completions format."""
+    messages = [
+        {"role": "user", "content": "Hello!"},
+        {"role": "assistant", "content": "Hi there!"},
+        {"role": "user", "content": "How are you?"},
+    ]
+    
+    # Test with None
+    result_none = form_prompt_string(messages, tools=None)
+    
+    # Test with empty list
+    result_empty = form_prompt_string(messages, tools=[])
+    
+    # They should be identical
+    expected = "User: Hello!\n\n" "Assistant: Hi there!\n\n" "User: How are you?\n\n" "Assistant:"
+    assert result_none == result_empty == expected
+
+
+def test_form_prompt_string_with_empty_tools_multiple_messages_responses() -> None:
+    """Test empty tools list with multiple messages in responses format."""
+    messages = [
+        {"role": "user", "content": "Hello!"},
+        {"role": "assistant", "content": "Hi there!"},
+        {"role": "user", "content": "How are you?"},
+    ]
+    
+    # Test with None
+    result_none = form_prompt_string(messages, tools=None, use_responses=True)
+    
+    # Test with empty list
+    result_empty = form_prompt_string(messages, tools=[], use_responses=True)
+    
+    # They should be identical
+    expected = "User: Hello!\n\n" "Assistant: Hi there!\n\n" "User: How are you?\n\n" "Assistant:"
+    assert result_none == result_empty == expected
