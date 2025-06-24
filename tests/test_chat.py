@@ -6,6 +6,7 @@ from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
     _form_prompt_responses_api,
     form_prompt_string,
+    form_prompt_string_chat_completions_api,
 )
 
 if TYPE_CHECKING:
@@ -1211,3 +1212,194 @@ def test_form_prompt_string_with_empty_arguments(use_responses: bool) -> None:
         "Assistant:"
     )
     assert form_prompt_string(messages, use_responses=use_responses) == expected
+
+
+def test_form_prompt_string_chat_completions_api_just_content() -> None:
+    """Test form_prompt_string_chat_completions_api with just content."""
+    response = {"content": "Hello, how can I help you today?"}
+    expected = "Hello, how can I help you today?"
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_just_tool_calls() -> None:
+    """Test form_prompt_string_chat_completions_api with just tool calls."""
+    response = {
+        "content": "",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "get_weather",
+                    "arguments": '{"location": "Paris"}',
+                }
+            }
+        ],
+    }
+    expected = (
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": "{\\"location\\": \\"Paris\\"}"\n'
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_content_and_tool_calls() -> None:
+    """Test form_prompt_string_chat_completions_api with both content and tool calls."""
+    response = {
+        "content": "I'll check the weather for you.",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "get_weather",
+                    "arguments": '{"location": "Paris"}',
+                }
+            }
+        ],
+    }
+    expected = (
+        "I'll check the weather for you.\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": "{\\"location\\": \\"Paris\\"}"\n'
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_multiple_tool_calls() -> None:
+    """Test form_prompt_string_chat_completions_api with multiple tool calls."""
+    response = {
+        "content": "Let me check multiple things for you.",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "get_weather",
+                    "arguments": '{"location": "Paris"}',
+                }
+            },
+            {
+                "function": {
+                    "name": "get_time",
+                    "arguments": '{"timezone": "UTC"}',
+                }
+            },
+        ],
+    }
+    expected = (
+        "Let me check multiple things for you.\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": "{\\"location\\": \\"Paris\\"}"\n'
+        "}\n"
+        "</tool_call>\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_time",\n'
+        '  "arguments": "{\\"timezone\\": \\"UTC\\"}"\n'
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_empty_content() -> None:
+    """Test form_prompt_string_chat_completions_api with empty content."""
+    response = {"content": ""}
+    expected = ""
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_missing_content() -> None:
+    """Test form_prompt_string_chat_completions_api with missing content key."""
+    response: dict[str, Any] = {}
+    expected = ""
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_empty_arguments() -> None:
+    """Test form_prompt_string_chat_completions_api with empty arguments."""
+    response = {
+        "content": "Running action",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "execute_action",
+                    "arguments": "",
+                }
+            }
+        ],
+    }
+    expected = (
+        "Running action\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "execute_action",\n'
+        '  "arguments": ""\n'
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_prompt_string_chat_completions_api(response)
+    assert result == expected
+
+
+def test_form_prompt_string_chat_completions_api_invalid_input() -> None:
+    """Test form_prompt_string_chat_completions_api raises TypeError for invalid input."""
+    with pytest.raises(TypeError, match="Expected response to be a dict, got str"):
+        form_prompt_string_chat_completions_api("not a dict")  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="Expected response to be a dict, got list"):
+        form_prompt_string_chat_completions_api([])  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="Expected response to be a dict, got NoneType"):
+        form_prompt_string_chat_completions_api(None)  # type: ignore[arg-type]
+
+
+def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
+    """Test form_prompt_string_chat_completions_api handles malformed tool calls gracefully."""
+    # Test with missing function key - this should trigger a warning
+    response = {
+        "content": "I'll help you.",
+        "tool_calls": [{"invalid": "structure"}],
+    }
+
+    with pytest.warns(UserWarning, match="Error formatting tool_calls in response: 'function'"):
+        result = form_prompt_string_chat_completions_api(response)
+        assert result == "I'll help you."
+
+    # Test with invalid JSON in arguments - this doesn't trigger a warning since
+    # the function just passes the arguments string as-is
+    response = {
+        "content": "Let me check that.",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "get_weather",
+                    "arguments": "invalid json{",
+                }
+            }
+        ],
+    }
+
+    # No warning expected here, function just passes the string through
+    result = form_prompt_string_chat_completions_api(response)
+    expected = (
+        "Let me check that.\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": "invalid json{"\n'
+        "}\n"
+        "</tool_call>"
+    )
+    assert result == expected

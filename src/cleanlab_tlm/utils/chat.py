@@ -441,3 +441,51 @@ def form_prompt_string(
         if is_responses
         else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
     )
+
+
+def form_prompt_string_chat_completions_api(response: dict[str, Any]) -> str:
+    """
+    Format an assistant response message dictionary from the Chat Completions API into a single string.
+
+    This function takes a response.choices[0].message.to_dict() from a chat.completions.create()
+    and formats it into a string that includes both content and tool calls (if present).
+    Tool calls are formatted using XML tags with JSON content, consistent with the format
+    used in `form_prompt_string`.
+
+    Args:
+        response (dict[str, Any]): A chat completion response message dictionary, containing:
+            - 'content' (str): The main response content from the LLM
+            - 'tool_calls' (List[Dict], optional): List of tool calls made by the LLM,
+              where each tool call contains function name and arguments
+
+    Returns:
+        str: A formatted string containing the response content and any tool calls.
+             Tool calls are formatted as XML tags containing JSON with function
+             name and arguments.
+
+    Raises:
+        TypeError: If response is not a dictionary.
+    """
+    if not isinstance(response, dict):
+        raise TypeError(f"Expected response to be a dict, got {type(response).__name__}")
+
+    content = response.get("content", "")
+    if content is None:
+        content = ""
+
+    if "tool_calls" in response:
+        try:
+            tool_calls = "\n".join(
+                f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': call['function']['arguments']}, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                for call in response["tool_calls"]
+            )
+            return f"{content}\n{tool_calls}".strip() if content else tool_calls
+        except (KeyError, TypeError, json.JSONDecodeError) as e:
+            # Log the error but continue with just the content
+            warnings.warn(
+                f"Error formatting tool_calls in response: {e}. Returning content only.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    return str(content)
