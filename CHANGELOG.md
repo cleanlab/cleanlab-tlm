@@ -14,9 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `TLMChatCompletion` module, providing support for trust scoring with OpenAI ChatCompletion objects
 - Added a VPC compatible version of `TLMChatCompletion`
 
+### Changed
+
+- Revised tools prompt in `chat.py`
+
 ### Fixed
 
-- Bug fix for formatting system prompt after user messages
+- Bug fix in `chat.py` for formatting system prompt after user messages
+- Bug fix in `chat.py` for empty tool list still using tools prompt
+- Bug fix in `chat.py` for handling empty strings args
 
 ## [1.1.9] - 2025-06-17
 
