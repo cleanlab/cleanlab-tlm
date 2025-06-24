@@ -33,8 +33,8 @@ class TLMChatCompletion(BaseTLM):
 
         api_key (str, optional): Cleanlab TLM API key. If not provided, will attempt to read from CLEANLAB_API_KEY environment variable.
 
-        options ([TLMOptions](#class-tlmoptions), optional): a typed dict of configurations you can optionally specify.
-            See detailed documentation under [TLMOptions](#class-tlmoptions).
+        options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of configurations you can optionally specify.
+            See detailed documentation under [TLMOptions](../tlm/#class-tlmoptions).
 
         timeout (float, optional): timeout (in seconds) to apply to each TLM evaluation.
     """
