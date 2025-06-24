@@ -1252,6 +1252,7 @@ def test_form_prompt_string_chat_completions_api_just_tool_calls() -> None:
 def test_form_prompt_string_chat_completions_api_content_and_tool_calls() -> None:
     """Test form_prompt_string_chat_completions_api with both content and tool calls."""
     response = {
+        "role": "assistant",
         "content": "I'll check the weather for you.",
         "tool_calls": [
             {
@@ -1280,6 +1281,7 @@ def test_form_prompt_string_chat_completions_api_content_and_tool_calls() -> Non
 def test_form_prompt_string_chat_completions_api_multiple_tool_calls() -> None:
     """Test form_prompt_string_chat_completions_api with multiple tool calls."""
     response = {
+        "role": "assistant",
         "content": "Let me check multiple things for you.",
         "tool_calls": [
             {
@@ -1338,6 +1340,7 @@ def test_form_prompt_string_chat_completions_api_missing_content() -> None:
 def test_form_prompt_string_chat_completions_api_empty_arguments() -> None:
     """Test form_prompt_string_chat_completions_api with empty arguments."""
     response = {
+        "role": "assistant",
         "content": "Running action",
         "tool_calls": [
             {
@@ -1377,6 +1380,7 @@ def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
     """Test form_prompt_string_chat_completions_api handles malformed tool calls gracefully."""
     # Test with missing function key - this should trigger a warning
     response = {
+        "role": "assistant",
         "content": "I'll help you.",
         "tool_calls": [{"invalid": "structure"}],
     }
