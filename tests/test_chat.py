@@ -1015,7 +1015,7 @@ def test_form_prompt_string_with_tools_after_first_system_block(use_responses: b
         {"role": "system", "content": "Third system message later."},
         {"role": "user", "content": "Tell me more."},
     ]
-    
+
     if use_responses:
         # Responses format includes strict field
         tools = [

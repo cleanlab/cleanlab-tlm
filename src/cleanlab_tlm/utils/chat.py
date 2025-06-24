@@ -362,7 +362,9 @@ def _form_prompt_chat_completions_api(
                     # Format function call as JSON within XML tags, now including call_id
                     function_call = {
                         "name": tool_call["function"]["name"],
-                        "arguments": json.loads(tool_call["function"]["arguments"]) if tool_call["function"]["arguments"] else {},
+                        "arguments": json.loads(tool_call["function"]["arguments"])
+                        if tool_call["function"]["arguments"]
+                        else {},
                         "call_id": call_id,
                     }
                     output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
