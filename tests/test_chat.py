@@ -1239,7 +1239,9 @@ def test_form_prompt_string_chat_completions_api_just_tool_calls() -> None:
         "<tool_call>\n"
         "{\n"
         '  "name": "get_weather",\n'
-        '  "arguments": "{\\"location\\": \\"Paris\\"}"\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
         "}\n"
         "</tool_call>"
     )
@@ -1265,7 +1267,9 @@ def test_form_prompt_string_chat_completions_api_content_and_tool_calls() -> Non
         "<tool_call>\n"
         "{\n"
         '  "name": "get_weather",\n'
-        '  "arguments": "{\\"location\\": \\"Paris\\"}"\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
         "}\n"
         "</tool_call>"
     )
@@ -1297,13 +1301,17 @@ def test_form_prompt_string_chat_completions_api_multiple_tool_calls() -> None:
         "<tool_call>\n"
         "{\n"
         '  "name": "get_weather",\n'
-        '  "arguments": "{\\"location\\": \\"Paris\\"}"\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
         "}\n"
         "</tool_call>\n"
         "<tool_call>\n"
         "{\n"
         '  "name": "get_time",\n'
-        '  "arguments": "{\\"timezone\\": \\"UTC\\"}"\n'
+        '  "arguments": {\n'
+        '    "timezone": "UTC"\n'
+        "  }\n"
         "}\n"
         "</tool_call>"
     )
@@ -1345,7 +1353,7 @@ def test_form_prompt_string_chat_completions_api_empty_arguments() -> None:
         "<tool_call>\n"
         "{\n"
         '  "name": "execute_action",\n'
-        '  "arguments": ""\n'
+        '  "arguments": {}\n'
         "}\n"
         "</tool_call>"
     )
@@ -1377,8 +1385,7 @@ def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
         result = form_prompt_string_chat_completions_api(response)
         assert result == "I'll help you."
 
-    # Test with invalid JSON in arguments - this doesn't trigger a warning since
-    # the function just passes the arguments string as-is
+    # Test with invalid JSON in arguments - this should now trigger a warning
     response = {
         "content": "Let me check that.",
         "tool_calls": [
@@ -1391,15 +1398,7 @@ def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
         ],
     }
 
-    # No warning expected here, function just passes the string through
-    result = form_prompt_string_chat_completions_api(response)
-    expected = (
-        "Let me check that.\n"
-        "<tool_call>\n"
-        "{\n"
-        '  "name": "get_weather",\n'
-        '  "arguments": "invalid json{"\n'
-        "}\n"
-        "</tool_call>"
-    )
-    assert result == expected
+    # Warning expected since JSON parsing will fail
+    with pytest.warns(UserWarning, match="Error formatting tool_calls in response.*Returning content only"):
+        result = form_prompt_string_chat_completions_api(response)
+        assert result == "Let me check that."

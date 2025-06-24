@@ -476,7 +476,7 @@ def form_prompt_string_chat_completions_api(response: dict[str, Any]) -> str:
     if "tool_calls" in response:
         try:
             tool_calls = "\n".join(
-                f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': call['function']['arguments']}, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': json.loads(call['function']['arguments']) if call['function']['arguments'] else {}}, indent=2)}\n{_TOOL_CALL_TAG_END}"
                 for call in response["tool_calls"]
             )
             return f"{content}\n{tool_calls}".strip() if content else tool_calls
