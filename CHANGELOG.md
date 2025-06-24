@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.11] - 2025-06-23
 
+### Changed
+
+- Revised tools prompt in `chat.py`
+
 ### Fixed
 
 - Bug fix in `chat.py` for empty tool list still using tools prompt
