@@ -469,9 +469,7 @@ def form_prompt_string_chat_completions_api(response: dict[str, Any]) -> str:
     if not isinstance(response, dict):
         raise TypeError(f"Expected response to be a dict, got {type(response).__name__}")
 
-    content = response.get("content", "")
-    if content is None:
-        content = ""
+    content = response.get("content") or ""
 
     if "tool_calls" in response:
         try:
