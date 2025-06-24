@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 _SYSTEM_PREFIX = "System: "
 _USER_PREFIX = "User: "
 _ASSISTANT_PREFIX = "Assistant: "
+_TOOL_PREFIX = "Tool: "
 
 # Define role constants
 _SYSTEM_ROLE: Literal["system"] = "system"
@@ -41,11 +42,12 @@ _TOOL_RESPONSE_TAG_END = "</tool_response>"
 
 # Define tool-related message prefixes
 _TOOL_DEFINITIONS_PREFIX = (
-    "You are a function calling AI model. You are provided with function signatures within "
+    "You are an AI Assistant that can call provided tools (a.k.a. functions). "
+    "The set of available tools is provided to you as function signatures within "
     f"{_TOOLS_TAG_START} {_TOOLS_TAG_END} XML tags. "
-    "You may call one or more functions to assist with the user query. If available tools are not relevant in assisting "
-    "with user query, just respond in natural conversational language. Don't make assumptions about what values to plug "
-    "into functions. After calling & executing the functions, you will be provided with function results within "
+    "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
+    "then just respond in natural conversational language. Don't make assumptions about what values to plug "
+    "into functions. After you choose to call a function, you will be provided with the function's results within "
     f"{_TOOL_RESPONSE_TAG_START} {_TOOL_RESPONSE_TAG_END} XML tags.\n\n"
     f"{_TOOLS_TAG_START}\n"
 )
@@ -231,7 +233,7 @@ def _form_prompt_responses_api(
     last_system_idx = _find_index_after_first_system_block(messages)
 
     # Insert tool definitions and instructions after system messages if needed
-    if tools is not None:
+    if tools is not None and len(tools) > 0:
         messages.insert(
             last_system_idx + 1,
             {
@@ -272,11 +274,12 @@ def _form_prompt_responses_api(
                 # Format function call as JSON within XML tags, now including call_id
                 function_call = {
                     "name": msg["name"],
-                    "arguments": json.loads(msg["arguments"]),
+                    "arguments": json.loads(msg["arguments"]) if msg["arguments"] else {},
                     "call_id": call_id,
                 }
                 output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
             elif msg["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
+                output += _TOOL_PREFIX
                 call_id = msg.get("call_id", "")
                 name = function_names.get(call_id, "function")
                 # Format function response as JSON within XML tags
@@ -319,7 +322,7 @@ def _form_prompt_chat_completions_api(
     # Find the index after the first consecutive block of system messages
     last_system_idx = _find_index_after_first_system_block(cast(list[dict[str, Any]], messages))
 
-    if tools is not None:
+    if tools is not None and len(tools) > 0:
         messages.insert(
             last_system_idx + 1,
             {
@@ -329,7 +332,7 @@ def _form_prompt_chat_completions_api(
         )
 
     # Only return content directly if there's a single user message AND no tools
-    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and tools is None:
+    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and (tools is None or len(tools) == 0):
         return output + str(messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls
@@ -359,12 +362,15 @@ def _form_prompt_chat_completions_api(
                     # Format function call as JSON within XML tags, now including call_id
                     function_call = {
                         "name": tool_call["function"]["name"],
-                        "arguments": json.loads(tool_call["function"]["arguments"]),
+                        "arguments": json.loads(tool_call["function"]["arguments"])
+                        if tool_call["function"]["arguments"]
+                        else {},
                         "call_id": call_id,
                     }
                     output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
         elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
+            output += _TOOL_PREFIX
             call_id = msg["tool_call_id"]
             name = function_names.get(call_id, "function")
             # Format function response as JSON within XML tags
