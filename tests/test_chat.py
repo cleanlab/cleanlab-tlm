@@ -1385,7 +1385,7 @@ def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
         result = form_prompt_string_chat_completions_api(response)
         assert result == "I'll help you."
 
-    # Test with invalid JSON in arguments - this should now trigger a warning
+    # Test with invalid JSON in arguments - this should trigger a warning
     response = {
         "content": "Let me check that.",
         "tool_calls": [
