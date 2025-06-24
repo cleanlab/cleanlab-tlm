@@ -443,7 +443,7 @@ def form_prompt_string(
     )
 
 
-def form_prompt_string_chat_completions_api(response: dict[str, Any]) -> str:
+def form_response_string_chat_completions_api(response: dict[str, Any]) -> str:
     """
     Format an assistant response message dictionary from the Chat Completions API into a single string.
 

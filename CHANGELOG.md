@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `form_response_string_chat_completions_api` in `chat.py`
+
 
 ## [1.1.12] - 2025-06-23
 

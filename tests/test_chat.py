@@ -6,7 +6,7 @@ from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
     _form_prompt_responses_api,
     form_prompt_string,
-    form_prompt_string_chat_completions_api,
+    form_response_string_chat_completions_api,
 )
 
 if TYPE_CHECKING:
@@ -1214,16 +1214,16 @@ def test_form_prompt_string_with_empty_arguments(use_responses: bool) -> None:
     assert form_prompt_string(messages, use_responses=use_responses) == expected
 
 
-def test_form_prompt_string_chat_completions_api_just_content() -> None:
-    """Test form_prompt_string_chat_completions_api with just content."""
+def test_form_response_string_chat_completions_api_just_content() -> None:
+    """Test form_response_string_chat_completions_api with just content."""
     response = {"content": "Hello, how can I help you today?"}
     expected = "Hello, how can I help you today?"
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_just_tool_calls() -> None:
-    """Test form_prompt_string_chat_completions_api with just tool calls."""
+def test_form_response_string_chat_completions_api_just_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api with just tool calls."""
     response = {
         "content": "",
         "tool_calls": [
@@ -1245,12 +1245,12 @@ def test_form_prompt_string_chat_completions_api_just_tool_calls() -> None:
         "}\n"
         "</tool_call>"
     )
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_content_and_tool_calls() -> None:
-    """Test form_prompt_string_chat_completions_api with both content and tool calls."""
+def test_form_response_string_chat_completions_api_content_and_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api with both content and tool calls."""
     response = {
         "role": "assistant",
         "content": "I'll check the weather for you.",
@@ -1274,12 +1274,12 @@ def test_form_prompt_string_chat_completions_api_content_and_tool_calls() -> Non
         "}\n"
         "</tool_call>"
     )
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_multiple_tool_calls() -> None:
-    """Test form_prompt_string_chat_completions_api with multiple tool calls."""
+def test_form_response_string_chat_completions_api_multiple_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api with multiple tool calls."""
     response = {
         "role": "assistant",
         "content": "Let me check multiple things for you.",
@@ -1317,28 +1317,28 @@ def test_form_prompt_string_chat_completions_api_multiple_tool_calls() -> None:
         "}\n"
         "</tool_call>"
     )
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_empty_content() -> None:
-    """Test form_prompt_string_chat_completions_api with empty content."""
+def test_form_response_string_chat_completions_api_empty_content() -> None:
+    """Test form_response_string_chat_completions_api with empty content."""
     response = {"content": ""}
     expected = ""
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_missing_content() -> None:
-    """Test form_prompt_string_chat_completions_api with missing content key."""
+def test_form_response_string_chat_completions_api_missing_content() -> None:
+    """Test form_response_string_chat_completions_api with missing content key."""
     response: dict[str, Any] = {}
     expected = ""
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_empty_arguments() -> None:
-    """Test form_prompt_string_chat_completions_api with empty arguments."""
+def test_form_response_string_chat_completions_api_empty_arguments() -> None:
+    """Test form_response_string_chat_completions_api with empty arguments."""
     response = {
         "role": "assistant",
         "content": "Running action",
@@ -1360,24 +1360,24 @@ def test_form_prompt_string_chat_completions_api_empty_arguments() -> None:
         "}\n"
         "</tool_call>"
     )
-    result = form_prompt_string_chat_completions_api(response)
+    result = form_response_string_chat_completions_api(response)
     assert result == expected
 
 
-def test_form_prompt_string_chat_completions_api_invalid_input() -> None:
-    """Test form_prompt_string_chat_completions_api raises TypeError for invalid input."""
+def test_form_response_string_chat_completions_api_invalid_input() -> None:
+    """Test form_response_string_chat_completions_api raises TypeError for invalid input."""
     with pytest.raises(TypeError, match="Expected response to be a dict, got str"):
-        form_prompt_string_chat_completions_api("not a dict")  # type: ignore[arg-type]
+        form_response_string_chat_completions_api("not a dict")  # type: ignore[arg-type]
 
     with pytest.raises(TypeError, match="Expected response to be a dict, got list"):
-        form_prompt_string_chat_completions_api([])  # type: ignore[arg-type]
+        form_response_string_chat_completions_api([])  # type: ignore[arg-type]
 
     with pytest.raises(TypeError, match="Expected response to be a dict, got NoneType"):
-        form_prompt_string_chat_completions_api(None)  # type: ignore[arg-type]
+        form_response_string_chat_completions_api(None)  # type: ignore[arg-type]
 
 
-def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
-    """Test form_prompt_string_chat_completions_api handles malformed tool calls gracefully."""
+def test_form_response_string_chat_completions_api_malformed_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api handles malformed tool calls gracefully."""
     # Test with missing function key - this should trigger a warning
     response = {
         "role": "assistant",
@@ -1386,7 +1386,7 @@ def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
     }
 
     with pytest.warns(UserWarning, match="Error formatting tool_calls in response: 'function'"):
-        result = form_prompt_string_chat_completions_api(response)
+        result = form_response_string_chat_completions_api(response)
         assert result == "I'll help you."
 
     # Test with invalid JSON in arguments - this should trigger a warning
@@ -1404,5 +1404,5 @@ def test_form_prompt_string_chat_completions_api_malformed_tool_calls() -> None:
 
     # Warning expected since JSON parsing will fail
     with pytest.warns(UserWarning, match="Error formatting tool_calls in response.*Returning content only"):
-        result = form_prompt_string_chat_completions_api(response)
+        result = form_response_string_chat_completions_api(response)
         assert result == "Let me check that."
