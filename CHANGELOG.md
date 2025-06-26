@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `form_response_string_chat_completions_api` in `chat.py`
+
+
 ## [1.1.12] - 2025-06-23
 
 ### Fixed
@@ -23,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bug fix in `chat.py` for empty tool list still using tools prompt
 - Bug fix in `chat.py` for handling empty strings args
+
 
 ## [1.1.10] - 2025-06-20
 
@@ -215,6 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Release of the Cleanlab TLM Python client.
+
 
 [Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.12...HEAD
 [1.1.12]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.11...v1.1.12
