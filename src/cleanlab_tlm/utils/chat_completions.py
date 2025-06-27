@@ -7,6 +7,8 @@ It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs tha
 
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+import numpy as np
+
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
     _DEFAULT_TLM_QUALITY_PRESET,
@@ -89,7 +91,16 @@ class TLMChatCompletion(BaseTLM):
         prompt_text = form_prompt_string(messages, tools)
         response_text = _get_string_response(response)
 
-        return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+        scoring_kwargs = {}
+        # add perplexity to tlm.get_trustworthiness_score kwargs if it exists
+        perplexity = _extract_perplexity(response)
+        if perplexity is not None:
+            scoring_kwargs["perplexity"] = perplexity
+
+        return cast(
+            TLMScore,
+            self._tlm.get_trustworthiness_score(prompt_text, response_text, **scoring_kwargs),
+        )
 
 
 def _get_string_response(response: "ChatCompletion") -> str:
@@ -105,3 +116,13 @@ def _get_string_response(response: "ChatCompletion") -> str:
     if response.choices[0].message.content is None:
         raise ValueError("The OpenAI ChatCompletion object does not contain a message content.")
     return str(response.choices[0].message.content)
+
+
+def _extract_perplexity(response: "ChatCompletion") -> Optional[float]:
+    response_logprobs = response.choices[0].logprobs
+    if response_logprobs is None or response_logprobs.content is None:
+        return None
+
+    logprobs_list = [completion.logprob for completion in response_logprobs.content]
+    perplexity = np.mean(np.exp(logprobs_list))
+    return float(perplexity)
