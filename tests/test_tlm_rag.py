@@ -179,7 +179,7 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
     options: TLMOptions = {
         "model": "gpt-4",
         "max_tokens": max_tokens,
-        "use_self_reflection": True,
+        "num_self_reflections": 3,
     }
 
     rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
@@ -188,7 +188,7 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
     assert rag._options is not None
     assert rag._options["model"] == "gpt-4"
     assert rag._options["max_tokens"] == max_tokens
-    assert rag._options["use_self_reflection"] is True
+    assert rag._options["num_self_reflections"] == 3  # noqa: PLR2004
 
 
 def test_init_with_quality_preset(trustworthy_rag_api_key: str) -> None:

@@ -58,8 +58,8 @@ def _is_valid_prompt_response(
 ) -> bool:
     """Returns true if prompt response is valid based on properties for prompt() functionality."""
     _test_log(response, options)
-    if {"use_self_reflection", "num_consistency_samples"}.issubset(options) and (
-        options["num_consistency_samples"] == 0 and not options["use_self_reflection"]
+    if {"num_self_reflections", "num_consistency_samples"}.issubset(options) and (
+        options["num_consistency_samples"] == 0 and options["num_self_reflections"] == 0
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
         return is_tlm_response(
@@ -83,14 +83,14 @@ def _is_valid_get_trustworthiness_score_response(
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
     assert isinstance(response, dict)
 
-    quality_preset_keys = {"use_self_reflection"}
-    consistency_sample_keys = {"num_consistency_samples", "use_self_reflection"}
+    quality_preset_keys = {"num_self_reflections"}
+    consistency_sample_keys = {"num_consistency_samples", "num_self_reflections"}
 
     if (
-        (quality_preset_keys.issubset(options)) and not options["use_self_reflection"] and quality_preset == "base"
+        (quality_preset_keys.issubset(options)) and options["num_self_reflections"] == 0 and quality_preset == "base"
     ) or (
         (consistency_sample_keys.issubset(options))
-        and not options["use_self_reflection"]
+        and options["num_self_reflections"] == 0
         and options["num_consistency_samples"] == 0
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
