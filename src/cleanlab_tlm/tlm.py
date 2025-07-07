@@ -588,8 +588,8 @@ class TLMOptions(TypedDict):
     The default values corresponding to each quality preset are:
     - **best:** `num_consistency_samples` = 8, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
     - **high:** `num_consistency_samples` = 4, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
-    - **medium:** `num_consistency_samples` = 1, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
-    - **low:** `num_consistency_samples` = 1, `num_self_reflections` = 3, `reasoning_effort` = `"none"`.
+    - **medium:** `num_consistency_samples` = 0, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **low:** `num_consistency_samples` = 0, `num_self_reflections` = 3, `reasoning_effort` = `"none"`.
     - **base:** `num_consistency_samples` = 0, `num_self_reflections` = 1, `reasoning_effort` = `"none"`.
 
     By default, TLM uses the: "medium" `quality_preset`, "gpt-4.1-mini" base `model`, and `max_tokens` is set to 512.
