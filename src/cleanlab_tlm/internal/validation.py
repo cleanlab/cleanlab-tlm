@@ -10,10 +10,10 @@ from cleanlab_tlm.internal.constants import (
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
     INVALID_SCORE_OPTIONS,
-    TLM_MIN_NUM_SELF_REFLECTIONS,
     TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
+    TLM_NUM_SELF_REFLECTIONS_RANGE,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
     TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
@@ -123,9 +123,9 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
             if not isinstance(val, int):
                 raise ValidationError(f"Invalid type {type(val)}, num_self_reflections must be an integer")
 
-            if val < TLM_MIN_NUM_SELF_REFLECTIONS:
+            if val < TLM_NUM_SELF_REFLECTIONS_RANGE[0] or val > TLM_NUM_SELF_REFLECTIONS_RANGE[1]:
                 raise ValidationError(
-                    f"Invalid value {val}, num_self_reflections must be at least {TLM_MIN_NUM_SELF_REFLECTIONS}"
+                    f"Invalid value {val}, num_self_reflections must be in the range {TLM_NUM_SELF_REFLECTIONS_RANGE}"
                 )
 
         elif option == "use_self_reflection":

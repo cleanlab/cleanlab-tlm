@@ -54,7 +54,7 @@ _TLM_MAX_TOKEN_RANGE: dict[str, tuple[int, int]] = {  # model: (min, max)
 _TLM_CONSTRAIN_OUTPUTS_KEY: str = "constrain_outputs"
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: tuple[int, int] = (0, 20)  # (min, max)
-TLM_MIN_NUM_SELF_REFLECTIONS: int = 0  # not setting a max here as it is validated in the backend (dynamic)
+TLM_NUM_SELF_REFLECTIONS_RANGE: tuple[int, int] = (0, 3)
 TLM_SIMILARITY_MEASURES: set[str] = {
     "semantic",
     "string",

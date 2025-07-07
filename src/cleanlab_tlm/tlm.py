@@ -623,7 +623,7 @@ class TLMOptions(TypedDict):
         TLM measures consistency via the degree of contradiction between sampled responses that the model considers plausible.
 
         num_self_reflections(int, default = 3): the number of self-reflections to perform where the LLM is asked to reflect on the given response and directly evaluate correctness/confidence.
-        Must be 0 or greater. Lower values will reduce runtimes/costs, but potentially also the reliability of trustworthiness scores.
+        The maximum number of self-reflections currently supported is 3. Lower values will reduce runtimes/costs, but potentially also the reliability of trustworthiness scores.
         Reflection helps quantify aleatoric uncertainty associated with challenging prompts and catches responses that are noticeably incorrect/bad upon further analysis.
 
         similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "discrepancy"): how the
