@@ -38,7 +38,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
     _TLM_MAX_RETRIES,
-    _VALID_TLM_QUALITY_PRESETS_RAG,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.validation import (
@@ -103,7 +103,7 @@ class TrustworthyRAG(BaseTLM):
         # Initialize base class
         super().__init__(
             quality_preset=quality_preset,
-            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_RAG,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
             support_custom_eval_criteria=False,
             api_key=api_key,
             options=options,
