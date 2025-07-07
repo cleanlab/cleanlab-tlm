@@ -14,7 +14,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
-from cleanlab_tlm.utils.chat import form_prompt_string
+from cleanlab_tlm.utils.chat import form_prompt_string, form_response_string_chat_completions_api
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
@@ -87,21 +87,6 @@ class TLMChatCompletion(BaseTLM):
         tools = openai_kwargs.get("tools", None)
 
         prompt_text = form_prompt_string(messages, tools)
-        response_text = _get_string_response(response)
+        response_text = form_response_string_chat_completions_api(response=response.choices[0].message.to_dict())
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
-
-
-def _get_string_response(response: "ChatCompletion") -> str:
-    try:
-        from openai.types.chat import ChatCompletion
-    except ImportError:
-        raise ImportError(
-            "OpenAI is required to use the TLMChatCompletion class. Please install it with `pip install openai`."
-        )
-
-    if not isinstance(response, ChatCompletion):
-        raise TypeError("The response is not an OpenAI ChatCompletion object.")
-    if response.choices[0].message.content is None:
-        raise ValueError("The OpenAI ChatCompletion object does not contain a message content.")
-    return str(response.choices[0].message.content)
