@@ -87,6 +87,6 @@ class TLMChatCompletion(BaseTLM):
         tools = openai_kwargs.get("tools", None)
 
         prompt_text = form_prompt_string(messages, tools)
-        response_text = form_response_string_chat_completions_api(response=response.choices[0].message.to_dict())
+        response_text = form_response_string_chat_completions_api(response=response.choices[0].message)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))

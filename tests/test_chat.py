@@ -1366,13 +1366,13 @@ def test_form_response_string_chat_completions_api_empty_arguments() -> None:
 
 def test_form_response_string_chat_completions_api_invalid_input() -> None:
     """Test form_response_string_chat_completions_api raises TypeError for invalid input."""
-    with pytest.raises(TypeError, match="Expected response to be a dict, got str"):
+    with pytest.raises(TypeError, match="Expected response to be a dict or ChatCompletionMessage object, got str"):
         form_response_string_chat_completions_api("not a dict")  # type: ignore[arg-type]
 
-    with pytest.raises(TypeError, match="Expected response to be a dict, got list"):
+    with pytest.raises(TypeError, match="Expected response to be a dict or ChatCompletionMessage object, got list"):
         form_response_string_chat_completions_api([])  # type: ignore[arg-type]
 
-    with pytest.raises(TypeError, match="Expected response to be a dict, got NoneType"):
+    with pytest.raises(TypeError, match="Expected response to be a dict or ChatCompletionMessage object, got NoneType"):
         form_response_string_chat_completions_api(None)  # type: ignore[arg-type]
 
 
