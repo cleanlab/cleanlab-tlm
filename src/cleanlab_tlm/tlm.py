@@ -586,12 +586,11 @@ class TLMOptions(TypedDict):
     to be able to run longer prompts/responses, or contact Cleanlab to increase your limits.
 
     The default values corresponding to each quality preset are:
-    - **best:** `num_candidate_responses` = 6, `num_consistency_samples` = 8, `num_self_reflections` = 3. This preset improves LLM responses.
-    - **high:** `num_candidate_responses` = 4, `num_consistency_samples` = 8, `num_self_reflections` = 3. This preset improves LLM responses.
-    - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `num_self_reflections` = 3.
-    - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `num_self_reflections` = 3.
-    - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `num_self_reflections` = 1.
-        When using `get_trustworthiness_score()` on "base" preset, a faster self-reflection is employed.
+    - **best:** `num_consistency_samples` = 8, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **high:** `num_consistency_samples` = 4, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **medium:** `num_consistency_samples` = 1, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **low:** `num_consistency_samples` = 1, `num_self_reflections` = 3, `reasoning_effort` = `"none"`.
+    - **base:** `num_consistency_samples` = 0, `num_self_reflections` = 1, `reasoning_effort` = `"none"`.
 
     By default, TLM uses the: "medium" `quality_preset`, "gpt-4.1-mini" base `model`, and `max_tokens` is set to 512.
     You can set custom values for these arguments regardless of the quality preset specified.
@@ -627,7 +626,7 @@ class TLMOptions(TypedDict):
         Must be 0 or greater. Lower values will reduce runtimes/costs, but potentially also the reliability of trustworthiness scores.
         Reflection helps quantify aleatoric uncertainty associated with challenging prompts and catches responses that are noticeably incorrect/bad upon further analysis.
 
-        similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "semantic"): how the
+        similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "discrepancy"): how the
         trustworthiness scoring's consistency algorithm measures similarity between alternative responses considered plausible by the model.
         Supported similarity measures include - "semantic" (based on natural language inference),
         "embedding" (based on vector embedding similarity), "embedding_large" (based on a larger embedding model),
