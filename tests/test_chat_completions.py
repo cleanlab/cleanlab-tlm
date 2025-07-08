@@ -211,5 +211,7 @@ def test_tlm_chat_completion_score_tool_calls() -> None:
 
     assert score is not None
     low_trustworthiness_threshold = 0.5
-    assert score["trustworthiness_score"] < low_trustworthiness_threshold
+    score_value = score.get("trustworthiness_score", 1.0)
+    assert score_value is not None
+    assert score_value < low_trustworthiness_threshold
     assert is_trustworthiness_score_json_format(score)
