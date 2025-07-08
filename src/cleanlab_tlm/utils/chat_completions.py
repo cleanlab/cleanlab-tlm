@@ -14,7 +14,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
-from cleanlab_tlm.utils.chat import form_prompt_string, form_response_string_chat_completions_api
+from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions_api
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
@@ -87,7 +87,7 @@ class TLMChatCompletion(BaseTLM):
             raise ValueError("messages is a required OpenAI input argument.")
         tools = openai_kwargs.get("tools", None)
 
-        prompt_text = form_prompt_string(messages, tools)
+        prompt_text = _form_prompt_chat_completions_api(messages, tools)
         response_text = form_response_string_chat_completions_api(response=response.choices[0].message)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
