@@ -1,4 +1,5 @@
 import os
+import warnings
 from collections.abc import Sequence
 from typing import Any, Callable, Optional, Union
 
@@ -12,6 +13,7 @@ from cleanlab_tlm.internal.constants import (
     TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
+    TLM_NUM_SELF_REFLECTIONS_RANGE,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
     TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
@@ -117,9 +119,24 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
                     f"Invalid value {val}, num_consistency_samples must be in the range {TLM_NUM_CONSISTENCY_SAMPLES_RANGE}"
                 )
 
+        elif option == "num_self_reflections":
+            if not isinstance(val, int):
+                raise ValidationError(f"Invalid type {type(val)}, num_self_reflections must be an integer")
+
+            if val < TLM_NUM_SELF_REFLECTIONS_RANGE[0] or val > TLM_NUM_SELF_REFLECTIONS_RANGE[1]:
+                raise ValidationError(
+                    f"Invalid value {val}, num_self_reflections must be in the range {TLM_NUM_SELF_REFLECTIONS_RANGE}"
+                )
+
         elif option == "use_self_reflection":
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, use_self_reflection must be a boolean")
+
+            warnings.warn(
+                "Deprecated method. Use `num_self_reflections` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         elif option == "similarity_measure":
             if val not in TLM_SIMILARITY_MEASURES:

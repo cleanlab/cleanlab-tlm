@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.14] - 2025-07-08
+
+### Added
+
+- New TLMOption `num_self_reflections`
+- Support for `best` and `high` preset in `TrustworthyRAG`
+
+### Changed 
+- Deprecate `use_self_reflection`
+- Documentation updates for new default configurations
+
+
 ## [1.1.13] - 2025-06-26
 
 ### Added
@@ -225,7 +237,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.13...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.14...HEAD
+[1.1.14]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.13...v1.1.14
 [1.1.13]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.12...v1.1.13
 [1.1.12]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.11...v1.1.12
 [1.1.11]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.10...v1.1.11

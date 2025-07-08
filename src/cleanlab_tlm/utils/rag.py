@@ -38,7 +38,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
     _TLM_MAX_RETRIES,
-    _VALID_TLM_QUALITY_PRESETS_RAG,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.validation import (
@@ -67,7 +67,7 @@ class TrustworthyRAG(BaseTLM):
     differences are described below. For details about each argument, refer to the [TLM](../tlm/#class-tlm) documentation.
 
     Args:
-        quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
+        quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
             the quality of generated LLM responses and trustworthiness scores vs. latency/costs.
 
         api_key (str, optional): API key for accessing TLM. If not provided, this client will
@@ -103,7 +103,7 @@ class TrustworthyRAG(BaseTLM):
         # Initialize base class
         super().__init__(
             quality_preset=quality_preset,
-            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_RAG,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
             support_custom_eval_criteria=False,
             api_key=api_key,
             options=options,

@@ -61,18 +61,13 @@ class TLM(BaseTLM):
 
     Args:
         quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
-            the quality of TLM responses and trustworthiness scores vs. latency/costs.
+            the quality of TLM trustworthiness scores vs. latency/costs.
 
-            The "best" and "high" presets auto-improve LLM responses,
-            with "best" also returning more reliable trustworthiness scores than "high".
-            The "medium", "low", and "base" presets return standard LLM responses along with associated trustworthiness scores,
-            with "medium" producing more reliable trustworthiness scores than "low".
+            Higher presets (e.g. "best" and "high") return more reliable trustworthiness scores.
             The "base" preset provides the lowest possible latency/cost.
 
             Higher presets have increased runtime and cost. Reduce your preset if you see token-limit errors.
             Details about each present are documented in [TLMOptions](#class-tlmoptions).
-            Ignore "best" or "high" presets if you just want trustworthiness scores (i.e. are using `TLM.get_trustworthiness_score()` rather than `TLM.prompt()`).
-            These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
         task ({"default", "classification", "code_generation"}, default = "default"): determines configurations used for scoring LLM response trustworthiness (similar to `quality_preset`).
             - "default": for general tasks such as question-answering, summarization, extraction, etc.
@@ -586,12 +581,11 @@ class TLMOptions(TypedDict):
     to be able to run longer prompts/responses, or contact Cleanlab to increase your limits.
 
     The default values corresponding to each quality preset are:
-    - **best:** `num_candidate_responses` = 6, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset improves LLM responses.
-    - **high:** `num_candidate_responses` = 4, `num_consistency_samples` = 8, `use_self_reflection` = True. This preset improves LLM responses.
-    - **medium:** `num_candidate_responses` = 1, `num_consistency_samples` = 8, `use_self_reflection` = True.
-    - **low:** `num_candidate_responses` = 1, `num_consistency_samples` = 4, `use_self_reflection` = True.
-    - **base:** `num_candidate_responses` = 1, `num_consistency_samples` = 0, `use_self_reflection` = False.
-        When using `get_trustworthiness_score()` on "base" preset, a faster self-reflection is employed.
+    - **best:** `num_consistency_samples` = 8, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **high:** `num_consistency_samples` = 4, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **medium:** `num_consistency_samples` = 0, `num_self_reflections` = 3, `reasoning_effort` = `"high"`.
+    - **low:** `num_consistency_samples` = 0, `num_self_reflections` = 3, `reasoning_effort` = `"none"`.
+    - **base:** `num_consistency_samples` = 0, `num_self_reflections` = 1, `reasoning_effort` = `"none"`.
 
     By default, TLM uses the: "medium" `quality_preset`, "gpt-4.1-mini" base `model`, and `max_tokens` is set to 512.
     You can set custom values for these arguments regardless of the quality preset specified.
@@ -623,12 +617,11 @@ class TLMOptions(TypedDict):
         strange prompts or prompts that are too vague/open-ended to receive a clearly defined 'good' response.
         TLM measures consistency via the degree of contradiction between sampled responses that the model considers plausible.
 
-        use_self_reflection (bool, default = `True`): whether the LLM is asked to reflect on the given response and directly evaluate correctness/confidence.
-        Setting this False disables reflection and will reduce runtimes/costs, but potentially also the reliability of trustworthiness scores.
-        Reflection helps quantify aleatoric uncertainty associated with challenging prompts
-        and catches responses that are noticeably incorrect/bad upon further analysis.
+        num_self_reflections(int, default = 3): the number of self-reflections to perform where the LLM is asked to reflect on the given response and directly evaluate correctness/confidence.
+        The maximum number of self-reflections currently supported is 3. Lower values will reduce runtimes/costs, but potentially also the reliability of trustworthiness scores.
+        Reflection helps quantify aleatoric uncertainty associated with challenging prompts and catches responses that are noticeably incorrect/bad upon further analysis.
 
-        similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "semantic"): how the
+        similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "discrepancy"): how the
         trustworthiness scoring's consistency algorithm measures similarity between alternative responses considered plausible by the model.
         Supported similarity measures include - "semantic" (based on natural language inference),
         "embedding" (based on vector embedding similarity), "embedding_large" (based on a larger embedding model),
@@ -646,12 +639,15 @@ class TLMOptions(TypedDict):
         The expected input format is a list of dictionaries, where each dictionary has the following keys:
         - name: Name of the evaluation criteria.
         - criteria: Instructions specifying the evaluation criteria.
+
+        use_self_reflection (bool, default = `True`): deprecated. Use `num_self_reflections` instead.
     """
 
     model: NotRequired[str]
     max_tokens: NotRequired[int]
     num_candidate_responses: NotRequired[int]
     num_consistency_samples: NotRequired[int]
+    num_self_reflections: NotRequired[int]
     use_self_reflection: NotRequired[bool]
     similarity_measure: NotRequired[str]
     reasoning_effort: NotRequired[str]
