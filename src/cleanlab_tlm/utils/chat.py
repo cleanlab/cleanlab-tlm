@@ -491,6 +491,7 @@ def form_response_string_chat_completions_api(response: Union[dict[str, Any], "C
 
     return str(content)
 
+
 def _response_to_dict(response: Any) -> dict[str, Any]:
     # `response` should be a Union[dict[str, Any], ChatCompletionMessage], but last isinstance check wouldn't be reachable
     if isinstance(response, dict):
@@ -505,6 +506,8 @@ def _response_to_dict(response: Any) -> dict[str, Any]:
         ) from e
 
     if not isinstance(response, ChatCompletionMessage):
-        raise TypeError(f"Expected response to be a dict or ChatCompletionMessage object, got {type(response).__name__}")
+        raise TypeError(
+            f"Expected response to be a dict or ChatCompletionMessage object, got {type(response).__name__}"
+        )
 
     return response.model_dump()

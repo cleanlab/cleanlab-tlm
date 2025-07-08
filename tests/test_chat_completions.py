@@ -1,11 +1,9 @@
 import json
+
 import pytest
-from openai.types.chat import (
-    ChatCompletion,
-    ChatCompletionMessage
-)
+from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.chat.chat_completion_message_tool_call import Function, ChatCompletionMessageToolCall
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
 
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
@@ -156,9 +154,10 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
     ):
         tlm_chat.score(response=response, **openai_kwargs)
 
+
 def test_tlm_chat_completion_score_tool_calls() -> None:
     tlm_chat = TLMChatCompletion()
-    
+
     openai_kwargs = {
         "model": "gpt-4.1-mini",
         "messages": [{"role": "user", "content": "What is the capital of France?"}],
@@ -182,20 +181,24 @@ def test_tlm_chat_completion_score_tool_calls() -> None:
             }
         ],
     }
-    
+
     _bad_arguments = json.dumps({"query": "Capital of Germany"})
     response = ChatCompletion(
         id="test",
         choices=[
             Choice(
                 index=0,
-                message=ChatCompletionMessage(role="assistant", content=None, tool_calls=[
-                    ChatCompletionMessageToolCall(
-                        id="test",
-                        function=Function(name="search", arguments=_bad_arguments),
-                        type="function",
-                    )
-                ]),
+                message=ChatCompletionMessage(
+                    role="assistant",
+                    content=None,
+                    tool_calls=[
+                        ChatCompletionMessageToolCall(
+                            id="test",
+                            function=Function(name="search", arguments=_bad_arguments),
+                            type="function",
+                        )
+                    ],
+                ),
                 finish_reason="tool_calls",
             )
         ],
@@ -207,5 +210,6 @@ def test_tlm_chat_completion_score_tool_calls() -> None:
     score = tlm_chat.score(response=response, **openai_kwargs)
 
     assert score is not None
-    assert score["trustworthiness_score"] < 0.5
+    low_trustworthiness_threshold = 0.5
+    assert score["trustworthiness_score"] < low_trustworthiness_threshold
     assert is_trustworthiness_score_json_format(score)

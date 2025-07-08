@@ -102,8 +102,7 @@ class TLMChatCompletion(BaseTLM):
             ) from e
         if not isinstance(response, ChatCompletion):
             raise TypeError("The response is not an OpenAI ChatCompletion object.")
-        
+
         message = response.choices[0].message
         if message.content is None and message.tool_calls is None:
             raise ValueError("The OpenAI ChatCompletion object does not contain a message content or tool calls.")
-        
