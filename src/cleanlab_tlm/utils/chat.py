@@ -6,10 +6,10 @@ OpenAI's chat models.
 
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletionMessageParam
+    from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
 
 # Define message prefixes
 _SYSTEM_PREFIX = "System: "
@@ -443,20 +443,25 @@ def form_prompt_string(
     )
 
 
-def form_response_string_chat_completions_api(response: dict[str, Any]) -> str:
+def form_response_string_chat_completions_api(response: Union[dict[str, Any], "ChatCompletionMessage"]) -> str:
     """
     Format an assistant response message dictionary from the Chat Completions API into a single string.
 
-    This function takes a response.choices[0].message.to_dict() from a chat.completions.create()
-    and formats it into a string that includes both content and tool calls (if present).
+    Given a ChatCompletion object `response` from `chat.completions.create()`,
+    this function can take either a ChatCompletionMessage object from `response.choices[0].message`
+    or a dictionary from `response.choices[0].message.to_dict()`.
+
+    All inputs are formatted into a string that includes both content and tool calls (if present).
     Tool calls are formatted using XML tags with JSON content, consistent with the format
     used in `form_prompt_string`.
 
     Args:
-        response (dict[str, Any]): A chat completion response message dictionary, containing:
-            - 'content' (str): The main response content from the LLM
-            - 'tool_calls' (List[Dict], optional): List of tool calls made by the LLM,
-              where each tool call contains function name and arguments
+        response (Union[dict[str, Any], ChatCompletionMessage]): Either:
+            - A ChatCompletionMessage object from the OpenAI response
+            - A chat completion response message dictionary, containing:
+              - 'content' (str): The main response content from the LLM
+              - 'tool_calls' (List[Dict], optional): List of tool calls made by the LLM,
+                where each tool call contains function name and arguments
 
     Returns:
         str: A formatted string containing the response content and any tool calls.
@@ -464,20 +469,18 @@ def form_response_string_chat_completions_api(response: dict[str, Any]) -> str:
              name and arguments.
 
     Raises:
-        TypeError: If response is not a dictionary.
+        TypeError: If response is not a dictionary or ChatCompletionMessage object.
     """
-    if not isinstance(response, dict):
-        raise TypeError(f"Expected response to be a dict, got {type(response).__name__}")
-
-    content = response.get("content") or ""
-
-    if "tool_calls" in response:
+    response_dict = _response_to_dict(response)
+    content = response_dict.get("content") or ""
+    tool_calls = response_dict.get("tool_calls")
+    if tool_calls is not None:
         try:
-            tool_calls = "\n".join(
+            tool_calls_str = "\n".join(
                 f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': json.loads(call['function']['arguments']) if call['function']['arguments'] else {}}, indent=2)}\n{_TOOL_CALL_TAG_END}"
-                for call in response["tool_calls"]
+                for call in tool_calls
             )
-            return f"{content}\n{tool_calls}".strip() if content else tool_calls
+            return f"{content}\n{tool_calls_str}".strip() if content else tool_calls_str
         except (KeyError, TypeError, json.JSONDecodeError) as e:
             # Log the error but continue with just the content
             warnings.warn(
@@ -487,3 +490,21 @@ def form_response_string_chat_completions_api(response: dict[str, Any]) -> str:
             )
 
     return str(content)
+
+def _response_to_dict(response: Any) -> dict[str, Any]:
+    # `response` should be a Union[dict[str, Any], ChatCompletionMessage], but last isinstance check wouldn't be reachable
+    if isinstance(response, dict):
+        # Start with this isinstance check first to import `openai` lazily
+        return response
+
+    try:
+        from openai.types.chat import ChatCompletionMessage
+    except ImportError as e:
+        raise ImportError(
+            "OpenAI is required to handle ChatCompletionMessage objects directly. Please install it with `pip install openai`."
+        ) from e
+
+    if not isinstance(response, ChatCompletionMessage):
+        raise TypeError(f"Expected response to be a dict or ChatCompletionMessage object, got {type(response).__name__}")
+
+    return response.model_dump()

@@ -14,7 +14,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
-from cleanlab_tlm.utils.chat import form_prompt_string, form_response_string_chat_completions_api
+from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions_api
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
@@ -82,11 +82,28 @@ class TLMChatCompletion(BaseTLM):
         Returns:
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
+        self._validate_chat_completion(response)
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
         tools = openai_kwargs.get("tools", None)
 
-        prompt_text = form_prompt_string(messages, tools)
-        response_text = form_response_string_chat_completions_api(response)
+        prompt_text = _form_prompt_chat_completions_api(messages, tools)
+        response_text = form_response_string_chat_completions_api(response=response.choices[0].message)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+
+    def _validate_chat_completion(self, response: Any) -> None:
+        # `response` should be a ChatCompletion, but isinstance checks wouldn't be reachable
+        try:
+            from openai.types.chat import ChatCompletion
+        except ImportError as e:
+            raise ImportError(
+                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
+            ) from e
+        if not isinstance(response, ChatCompletion):
+            raise TypeError("The response is not an OpenAI ChatCompletion object.")
+        
+        message = response.choices[0].message
+        if message.content is None and message.tool_calls is None:
+            raise ValueError("The OpenAI ChatCompletion object does not contain a message content or tool calls.")
+        
