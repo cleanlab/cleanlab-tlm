@@ -61,18 +61,13 @@ class TLM(BaseTLM):
 
     Args:
         quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
-            the quality of TLM responses and trustworthiness scores vs. latency/costs.
+            the quality of TLM trustworthiness scores vs. latency/costs.
 
-            The "best" and "high" presets auto-improve LLM responses,
-            with "best" also returning more reliable trustworthiness scores than "high".
-            The "medium", "low", and "base" presets return standard LLM responses along with associated trustworthiness scores,
-            with "medium" producing more reliable trustworthiness scores than "low".
+            Higher presets (e.g. "best" and "high") return more reliable trustworthiness scores.
             The "base" preset provides the lowest possible latency/cost.
 
             Higher presets have increased runtime and cost. Reduce your preset if you see token-limit errors.
             Details about each present are documented in [TLMOptions](#class-tlmoptions).
-            Ignore "best" or "high" presets if you just want trustworthiness scores (i.e. are using `TLM.get_trustworthiness_score()` rather than `TLM.prompt()`).
-            These "best" or "high" presets can additionally improve the LLM response itself, but do not return more reliable trustworthiness scores than "medium" or "low" presets.
 
         task ({"default", "classification", "code_generation"}, default = "default"): determines configurations used for scoring LLM response trustworthiness (similar to `quality_preset`).
             - "default": for general tasks such as question-answering, summarization, extraction, etc.
