@@ -150,6 +150,6 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
 
     with pytest.raises(
         ValueError,
-        match="The OpenAI ChatCompletion object does not contain a message content.",
+        match="The OpenAI ChatCompletion object does not contain a message content or tool calls.",
     ):
         tlm_chat.score(response=response, **openai_kwargs)

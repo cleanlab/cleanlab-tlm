@@ -491,17 +491,20 @@ def form_response_string_chat_completions_api(response: Union[dict[str, Any], "C
 
     return str(content)
 
-def _response_to_dict(response: Union[dict[str, Any], "ChatCompletionMessage"]) -> dict[str, Any]:
-    # Handle OpenAI ChatCompletionMessage object
-    if hasattr(response, 'model_dump') or hasattr(response, 'to_dict'):
-        # It's an OpenAI object, convert to dict
-        if hasattr(response, 'model_dump'):
-            response_dict = response.model_dump()
-        else:
-            response_dict = response.to_dict()
-    elif isinstance(response, dict):
-        # It's already a dictionary
-        response_dict = response
-    else:
+def _response_to_dict(response: Any) -> dict[str, Any]:
+    # `response` should be a Union[dict[str, Any], ChatCompletionMessage], but last isinstance check wouldn't be reachable
+    if isinstance(response, dict):
+        # Start with this isinstance check first to import `openai` lazily
+        return response
+
+    try:
+        from openai.types.chat import ChatCompletionMessage
+    except ImportError as e:
+        raise ImportError(
+            "OpenAI is required to handle ChatCompletionMessage objects directly. Please install it with `pip install openai`."
+        ) from e
+
+    if not isinstance(response, ChatCompletionMessage):
         raise TypeError(f"Expected response to be a dict or ChatCompletionMessage object, got {type(response).__name__}")
-    return response_dict
+
+    return response.model_dump()
