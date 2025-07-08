@@ -1,9 +1,11 @@
+import json
 import pytest
 from openai.types.chat import (
     ChatCompletion,
-    ChatCompletionMessage,
+    ChatCompletionMessage
 )
 from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_message_tool_call import Function, ChatCompletionMessageToolCall
 
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
@@ -153,3 +155,57 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
         match="The OpenAI ChatCompletion object does not contain a message content or tool calls.",
     ):
         tlm_chat.score(response=response, **openai_kwargs)
+
+def test_tlm_chat_completion_score_tool_calls() -> None:
+    tlm_chat = TLMChatCompletion()
+    
+    openai_kwargs = {
+        "model": "gpt-4.1-mini",
+        "messages": [{"role": "user", "content": "What is the capital of France?"}],
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "search",
+                    "description": "Search the web for information",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The search query",
+                            }
+                        },
+                        "required": ["query"],
+                    },
+                },
+            }
+        ],
+    }
+    
+    _bad_arguments = json.dumps({"query": "Capital of Germany"})
+    response = ChatCompletion(
+        id="test",
+        choices=[
+            Choice(
+                index=0,
+                message=ChatCompletionMessage(role="assistant", content=None, tool_calls=[
+                    ChatCompletionMessageToolCall(
+                        id="test",
+                        function=Function(name="search", arguments=_bad_arguments),
+                        type="function",
+                    )
+                ]),
+                finish_reason="tool_calls",
+            )
+        ],
+        created=1234567890,
+        model="test-model",
+        object="chat.completion",
+    )
+
+    score = tlm_chat.score(response=response, **openai_kwargs)
+
+    assert score is not None
+    assert score["trustworthiness_score"] < 0.5
+    assert is_trustworthiness_score_json_format(score)
