@@ -67,7 +67,7 @@ class TrustworthyRAG(BaseTLM):
     differences are described below. For details about each argument, refer to the [TLM](../tlm/#class-tlm) documentation.
 
     Args:
-        quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
+        quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
             the quality of generated LLM responses and trustworthiness scores vs. latency/costs.
 
         api_key (str, optional): API key for accessing TLM. If not provided, this client will
