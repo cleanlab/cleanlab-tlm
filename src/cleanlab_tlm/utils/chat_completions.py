@@ -94,7 +94,7 @@ class TLMChatCompletion(BaseTLM):
 
     @staticmethod
     def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":
-        return response.choices[0].message  
+        return response.choices[0].message
 
     def _validate_chat_completion(self, response: Any) -> None:
         # `response` should be a ChatCompletion, but isinstance checks wouldn't be reachable
