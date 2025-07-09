@@ -17,7 +17,7 @@ from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
 from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions_api
 
 if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletion
+    from openai.types.chat import ChatCompletion, ChatCompletionMessage
 
 
 class TLMChatCompletion(BaseTLM):
@@ -88,9 +88,13 @@ class TLMChatCompletion(BaseTLM):
         tools = openai_kwargs.get("tools", None)
 
         prompt_text = _form_prompt_chat_completions_api(messages, tools)
-        response_text = form_response_string_chat_completions_api(response=response.choices[0].message)
+        response_text = form_response_string_chat_completions_api(response=self._get_response_message(response))
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+
+    @staticmethod
+    def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":
+        return response.choices[0].message  
 
     def _validate_chat_completion(self, response: Any) -> None:
         # `response` should be a ChatCompletion, but isinstance checks wouldn't be reachable
@@ -103,6 +107,6 @@ class TLMChatCompletion(BaseTLM):
         if not isinstance(response, ChatCompletion):
             raise TypeError("The response is not an OpenAI ChatCompletion object.")
 
-        message = response.choices[0].message
+        message = self._get_response_message(response)
         if message.content is None and message.tool_calls is None:
             raise ValueError("The OpenAI ChatCompletion object does not contain a message content or tool calls.")
