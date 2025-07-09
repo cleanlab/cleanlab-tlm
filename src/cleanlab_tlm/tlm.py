@@ -612,7 +612,11 @@ class TLMOptions(TypedDict):
         If you experience token/rate-limit errors, try lowering this number.
         For OpenAI models, this parameter must be between 64 and 4096. For Claude models, this parameter must be between 64 and 512.
 
-        num_self_reflections(int, default = 3): the number of different evaluations to perform where the LLM reflects on the response, a factor affecting trust scoring.
+        reasoning_effort ({"none", "low", "medium", "high"}, default = "high"): how much internal LLM calls are allowed to reason (number of thinking tokens)
+        when generating alternative possible responses and reflecting on responses during trustworthiness scoring.
+        Reduce this value to reduce runtimes. Higher values may improve trust scoring.
+
+        num_self_reflections (int, default = 3): the number of different evaluations to perform where the LLM reflects on the response, a factor affecting trust scoring.
         The maximum number currently supported is 3. Lower values can reduce runtimes.
         Reflection helps quantify aleatoric uncertainty associated with challenging prompts and catches responses that are noticeably incorrect/bad upon further analysis.
 
@@ -630,13 +634,9 @@ class TLMOptions(TypedDict):
         and "string" (based on character/word overlap). Set this to "string" for minimal runtimes.
         This parameter has no effect when `num_consistency_samples = 0`.
 
-        reasoning_effort ({"none", "low", "medium", "high"}, default = "high"): how much internal LLM calls are allowed to reason (number of thinking tokens)
-        when generating alternative possible responses and reflecting on responses during trustworthiness scoring.
-        Reduce this value to reduce runtimes.
-
         num_candidate_responses (int, default = 1): how many alternative candidate responses are internally generated in `TLM.prompt()`.
         `TLM.prompt()` scores the trustworthiness of each candidate response, and then returns the most trustworthy one.
-        You an auto-improve responses by increasing this parameter, but at higher runtimes/costs.
+        You can auto-improve responses by increasing this parameter, but at higher runtimes/costs.
         This parameter must be between 1 and 20. It has no effect on `TLM.score()`.
         When this parameter is 1, `TLM.prompt()` simply returns a standard LLM response and does not attempt to auto-improve it.
     """
