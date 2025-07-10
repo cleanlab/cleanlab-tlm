@@ -7,7 +7,10 @@ import pytest
 
 from cleanlab_tlm.errors import APITimeoutError, MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.api import api
-from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
+from cleanlab_tlm.internal.constants import (
+    _TLM_DEFAULT_MODEL,
+    _VALID_TLM_QUALITY_PRESETS,
+)
 from cleanlab_tlm.tlm import TLMOptions
 from cleanlab_tlm.utils.rag import (
     _DEFAULT_EVALS,
@@ -179,7 +182,7 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
     options: TLMOptions = {
         "model": "gpt-4",
         "max_tokens": max_tokens,
-        "use_self_reflection": True,
+        "num_self_reflections": 3,
     }
 
     rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
@@ -188,20 +191,14 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
     assert rag._options is not None
     assert rag._options["model"] == "gpt-4"
     assert rag._options["max_tokens"] == max_tokens
-    assert rag._options["use_self_reflection"] is True
+    assert rag._options["num_self_reflections"] == 3  # noqa: PLR2004
 
 
-def test_init_with_quality_preset(trustworthy_rag_api_key: str) -> None:
-    rag_medium = TrustworthyRAG(quality_preset="medium", api_key=trustworthy_rag_api_key)
-    assert rag_medium is not None
-    assert rag_medium._quality_preset == "medium"
-
-    rag_low = TrustworthyRAG(quality_preset="low", api_key=trustworthy_rag_api_key)
-    assert rag_low is not None
-    assert rag_low._quality_preset == "low"
-
-    with pytest.raises(ValidationError):
-        TrustworthyRAG(quality_preset="high", api_key=trustworthy_rag_api_key)
+@pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
+def test_init_with_quality_preset(trustworthy_rag_api_key: str, quality_preset: str) -> None:
+    tlm_rag = TrustworthyRAG(quality_preset=quality_preset, api_key=trustworthy_rag_api_key)  # type: ignore
+    assert tlm_rag is not None
+    assert tlm_rag._quality_preset == quality_preset
 
 
 def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
