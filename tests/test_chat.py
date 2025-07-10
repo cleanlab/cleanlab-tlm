@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
+from openai.types.chat import ChatCompletionMessage
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
 
 from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
@@ -1366,13 +1368,13 @@ def test_form_response_string_chat_completions_api_empty_arguments() -> None:
 
 def test_form_response_string_chat_completions_api_invalid_input() -> None:
     """Test form_response_string_chat_completions_api raises TypeError for invalid input."""
-    with pytest.raises(TypeError, match="Expected response to be a dict, got str"):
+    with pytest.raises(TypeError, match="Expected response to be a dict or ChatCompletionMessage object, got str"):
         form_response_string_chat_completions_api("not a dict")  # type: ignore[arg-type]
 
-    with pytest.raises(TypeError, match="Expected response to be a dict, got list"):
+    with pytest.raises(TypeError, match="Expected response to be a dict or ChatCompletionMessage object, got list"):
         form_response_string_chat_completions_api([])  # type: ignore[arg-type]
 
-    with pytest.raises(TypeError, match="Expected response to be a dict, got NoneType"):
+    with pytest.raises(TypeError, match="Expected response to be a dict or ChatCompletionMessage object, got NoneType"):
         form_response_string_chat_completions_api(None)  # type: ignore[arg-type]
 
 
@@ -1406,3 +1408,184 @@ def test_form_response_string_chat_completions_api_malformed_tool_calls() -> Non
     with pytest.warns(UserWarning, match="Error formatting tool_calls in response.*Returning content only"):
         result = form_response_string_chat_completions_api(response)
         assert result == "Let me check that."
+
+
+############## ChatCompletionMessage tests ##############
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_just_content() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing just content."""
+
+    content = "Hello, how can I help you today?"
+    message = ChatCompletionMessage(
+        role="assistant",
+        content=content,
+    )
+    result = form_response_string_chat_completions_api(message)
+    assert result == content
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_just_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing just tool calls."""
+    message = ChatCompletionMessage(
+        role="assistant",
+        content=None,
+        tool_calls=[
+            ChatCompletionMessageToolCall(
+                id="call_123",
+                function=Function(
+                    name="search_restaurants",
+                    arguments='{"city": "Tokyo", "cuisine_type": "sushi", "max_price": 150, "dietary_restrictions": ["vegetarian", "gluten-free"], "open_now": true}',
+                ),
+                type="function",
+            )
+        ],
+    )
+    expected = (
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "search_restaurants",\n'
+        '  "arguments": {\n'
+        '    "city": "Tokyo",\n'
+        '    "cuisine_type": "sushi",\n'
+        '    "max_price": 150,\n'
+        '    "dietary_restrictions": [\n'
+        '      "vegetarian",\n'
+        '      "gluten-free"\n'
+        "    ],\n"
+        '    "open_now": true\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_response_string_chat_completions_api(message)
+    assert result == expected
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_content_and_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing both content and tool calls."""
+    message = ChatCompletionMessage(
+        role="assistant",
+        content="I'll check the weather for you.",
+        tool_calls=[
+            ChatCompletionMessageToolCall(
+                id="call_123",
+                function=Function(
+                    name="get_weather",
+                    arguments='{"location": "Paris"}',
+                ),
+                type="function",
+            )
+        ],
+    )
+    expected = (
+        "I'll check the weather for you.\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_response_string_chat_completions_api(message)
+    assert result == expected
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_multiple_tool_calls() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing multiple tool calls."""
+    message = ChatCompletionMessage(
+        role="assistant",
+        content="Let me check multiple things for you.",
+        tool_calls=[
+            ChatCompletionMessageToolCall(
+                id="call_123",
+                function=Function(
+                    name="get_weather",
+                    arguments='{"location": "Paris"}',
+                ),
+                type="function",
+            ),
+            ChatCompletionMessageToolCall(
+                id="call_456",
+                function=Function(
+                    name="get_time",
+                    arguments='{"timezone": "UTC"}',
+                ),
+                type="function",
+            ),
+        ],
+    )
+    expected = (
+        "Let me check multiple things for you.\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_weather",\n'
+        '  "arguments": {\n'
+        '    "location": "Paris"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "get_time",\n'
+        '  "arguments": {\n'
+        '    "timezone": "UTC"\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_response_string_chat_completions_api(message)
+    assert result == expected
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_empty_content() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing empty content."""
+    message = ChatCompletionMessage(
+        role="assistant",
+        content="",
+    )
+    expected = ""
+    result = form_response_string_chat_completions_api(message)
+    assert result == expected
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_empty_arguments() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing empty arguments."""
+    message = ChatCompletionMessage(
+        role="assistant",
+        content="Running action",
+        tool_calls=[
+            ChatCompletionMessageToolCall(
+                id="call_123",
+                function=Function(
+                    name="execute_action",
+                    arguments="",
+                ),
+                type="function",
+            )
+        ],
+    )
+    expected = (
+        "Running action\n"
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "execute_action",\n'
+        '  "arguments": {}\n'
+        "}\n"
+        "</tool_call>"
+    )
+    result = form_response_string_chat_completions_api(message)
+    assert result == expected
+
+
+def test_form_response_string_chat_completions_api_chatcompletion_message_none_content() -> None:
+    """Test form_response_string_chat_completions_api with ChatCompletionMessage containing None content."""
+    message = ChatCompletionMessage(
+        role="assistant",
+        content=None,
+    )
+    expected = ""
+    result = form_response_string_chat_completions_api(message)
+    assert result == expected
