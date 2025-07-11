@@ -5,8 +5,10 @@ If you are using OpenAI's Chat Completions API, this module allows you to incorp
 It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs that are also usable via Chat Completions API (Gemini, DeepSeek, Llama, etc).
 """
 
+import asyncio
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
     _DEFAULT_TLM_QUALITY_PRESET,
@@ -85,12 +87,32 @@ class TLMChatCompletion(BaseTLM):
         self._validate_chat_completion(response)
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
-        tools = openai_kwargs.get("tools", None)
 
+        combined_kwargs = {**openai_kwargs, **self._options}
+
+        # handle structured outputs differently
+        if openai_kwargs.get("response_format"):
+            return cast(
+                TLMScore,
+                self._event_loop.run_until_complete(
+                    asyncio.wait_for(
+                        tlm_chat_completions_score(
+                            api_key=self._api_key,
+                            response=response,
+                            **combined_kwargs,
+                        ),
+                        timeout=self._timeout,
+                    )
+                ),
+            )
+        # all other cases
+        tools = openai_kwargs.get("tools", None)
         prompt_text = _form_prompt_chat_completions_api(messages, tools)
         response_text = form_response_string_chat_completions_api(response=self._get_response_message(response))
-
-        return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+        return cast(
+            TLMScore,
+            self._tlm.get_trustworthiness_score(prompt_text, response_text),
+        )
 
     @staticmethod
     def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":
