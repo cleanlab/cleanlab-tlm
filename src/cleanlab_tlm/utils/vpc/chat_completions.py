@@ -60,6 +60,7 @@ class TLMChatCompletion(BaseTLM):
             options=options,
             timeout=timeout,
             verbose=False,
+            allow_custom_model=True,
         )
 
     def score(
