@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.16] - 2025-07-15
+
+### Changed
+
+- Add internal setting to bypass model validation check (for custom/VPC models)
+
 ## [1.1.15] - 2025-07-14
 
 ### Changed
@@ -244,7 +250,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.15...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.16...HEAD
+[1.1.16]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.15...v1.1.16
 [1.1.15]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.14...v1.1.15
 [1.1.14]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.13...v1.1.14
 [1.1.13]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.12...v1.1.13
