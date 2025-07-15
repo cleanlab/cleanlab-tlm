@@ -66,7 +66,11 @@ def validate_tlm_prompt_response(prompt: Union[str, Sequence[str]], response: Un
             )
 
 
-def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True) -> None:
+def validate_tlm_options(
+    options: Any,
+    support_custom_eval_criteria: bool = True,
+    allow_custom_model: bool = False,
+) -> None:
     from cleanlab_tlm.tlm import TLMOptions
 
     if SKIP_VALIDATE_TLM_OPTIONS:
@@ -98,7 +102,7 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
                 )
 
         elif option == "model":
-            if val not in _VALID_TLM_MODELS:
+            if not allow_custom_model and val not in _VALID_TLM_MODELS:
                 raise ValidationError(f"{val} is not a supported model, valid models include: {_VALID_TLM_MODELS}")
 
         elif option == "num_candidate_responses":
