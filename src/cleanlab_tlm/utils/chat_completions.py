@@ -105,7 +105,7 @@ class TLMChatCompletion(BaseTLM):
                     )
                 ),
             )
-        
+
         # all other cases
         tools = openai_kwargs.get("tools", None)
 
@@ -113,7 +113,6 @@ class TLMChatCompletion(BaseTLM):
         response_text = form_response_string_chat_completions_api(response=self._get_response_message(response))
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
-
 
     @staticmethod
     def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":

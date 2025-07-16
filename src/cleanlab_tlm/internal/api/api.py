@@ -534,16 +534,16 @@ async def tlm_rag_score(
 @tlm_retry
 async def tlm_chat_completions_score(
     api_key: str,
-    response: "ChatCompletion",  # noqa
+    response: ChatCompletion,
     client_session: Optional[aiohttp.ClientSession] = None,
     **input_kwargs: Any,
 ) -> JSONDict:
     """
-    Score a response using Trustworthy Language Model with RAG (Retrieval-Augmented Generation) evaluation
+    Score an OpenAI ChatCompletion response using Trustworthy Language Model
 
     Args:
         api_key (str): API key for auth
-        response (str): response to be evaluated
+        response (ChatCompletion): response to be evaluated (OpenAI ChatCompletion object)
         client_session (aiohttp.ClientSession): client session used to issue TLM request
         **input_kwargs: additional keyword arguments (openai arguments or TLM options) to pass to the TLM request.
     Returns:
