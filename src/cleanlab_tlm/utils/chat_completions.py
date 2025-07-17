@@ -12,7 +12,7 @@ from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
     _DEFAULT_TLM_QUALITY_PRESET,
-    _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
@@ -54,7 +54,7 @@ class TLMChatCompletion(BaseTLM):
         """
         super().__init__(
             quality_preset=quality_preset,
-            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
             support_custom_eval_criteria=True,
             api_key=api_key,
             options=options,
