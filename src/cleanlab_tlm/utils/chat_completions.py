@@ -5,12 +5,14 @@ If you are using OpenAI's Chat Completions API, this module allows you to incorp
 It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs that are also usable via Chat Completions API (Gemini, DeepSeek, Llama, etc).
 """
 
+import asyncio
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
     _DEFAULT_TLM_QUALITY_PRESET,
-    _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
@@ -52,7 +54,7 @@ class TLMChatCompletion(BaseTLM):
         """
         super().__init__(
             quality_preset=quality_preset,
-            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
             support_custom_eval_criteria=True,
             api_key=api_key,
             options=options,
@@ -85,6 +87,26 @@ class TLMChatCompletion(BaseTLM):
         self._validate_chat_completion(response)
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
+
+        combined_kwargs = {**openai_kwargs, **self._options}
+
+        # handle structured outputs differently
+        if openai_kwargs.get("response_format"):
+            return cast(
+                TLMScore,
+                self._event_loop.run_until_complete(
+                    asyncio.wait_for(
+                        tlm_chat_completions_score(
+                            api_key=self._api_key,
+                            response=response,
+                            **combined_kwargs,
+                        ),
+                        timeout=self._timeout,
+                    )
+                ),
+            )
+
+        # all other cases
         tools = openai_kwargs.get("tools", None)
 
         prompt_text = _form_prompt_chat_completions_api(messages, tools)

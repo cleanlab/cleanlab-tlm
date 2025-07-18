@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.17] - 2025-07-18
+
+### Changed
+
+- Enabled `TLMChatCompletion.score()`to evaluate structured outputs in `ChatCompletion` objects
+
+
 ## [1.1.16] - 2025-07-15
 
 ### Changed
 
 - Add internal setting to bypass model validation check (for custom/VPC models)
+
 
 ## [1.1.15] - 2025-07-14
 
@@ -28,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for `best` and `high` preset in `TrustworthyRAG`
 
 ### Changed 
+
 - Deprecate `use_self_reflection`
 - Documentation updates for new default configurations
 
