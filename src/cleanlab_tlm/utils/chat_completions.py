@@ -88,7 +88,11 @@ class TLMChatCompletion(BaseTLM):
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
 
-        combined_kwargs = {**openai_kwargs, **self._options}
+        combined_kwargs = {
+            "quality_preset": self._quality_preset,
+            **openai_kwargs,
+            **self._options,
+        }
 
         # handle structured outputs differently
         if openai_kwargs.get("response_format"):
