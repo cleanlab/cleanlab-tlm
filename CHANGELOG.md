@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.19] - 2025-07-25
+
+### Changed
+
+- Updated `TLMChatCompletion.score()` to use `form_response_string_chat_completions` instead of `form_response_string_chat_completions_api`
+
 ## [1.1.18] - 2025-07-25
 
 ### Fixed
@@ -265,7 +271,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.18...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.19...HEAD
+[1.1.19]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.18...v1.1.19
 [1.1.18]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.17...v1.1.18
 [1.1.17]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.16...v1.1.17
 [1.1.16]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.15...v1.1.16
