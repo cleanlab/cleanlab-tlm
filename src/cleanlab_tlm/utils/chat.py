@@ -442,8 +442,12 @@ def form_prompt_string(
         else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
     )
 
+def form_response_string_chat_completions_api(response: "ChatCompletion") -> str:
+    """ Form a single string representing the response, out of the raw response object returned by OpenAI's Chat Completions API."""
+    response_msg = response.choices[0].message
+    return _form_response_string_chat_completions_message(response_msg)
 
-def form_response_string_chat_completions_api(response: Union[dict[str, Any], "ChatCompletionMessage"]) -> str:
+def _form_response_string_chat_completions_message(response: Union[dict[str, Any], "ChatCompletionMessage"]) -> str:
     """
     Format an assistant response message dictionary from the Chat Completions API into a single string.
 
