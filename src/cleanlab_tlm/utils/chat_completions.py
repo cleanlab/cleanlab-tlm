@@ -30,7 +30,7 @@ class TLMChatCompletion(BaseTLM):
     by passing in the inputs to OpenAI's Chat Completions API and the ChatCompletion response object.
 
     Args:
-        quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
+        quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
             the quality of TLM trustworthiness scores vs. latency/costs.
 
         api_key (str, optional): Cleanlab TLM API key. If not provided, will attempt to read from CLEANLAB_API_KEY environment variable.
