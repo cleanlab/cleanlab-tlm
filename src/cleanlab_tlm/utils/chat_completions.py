@@ -16,7 +16,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
-from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions_api
+from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -114,7 +114,7 @@ class TLMChatCompletion(BaseTLM):
         tools = openai_kwargs.get("tools", None)
 
         prompt_text = _form_prompt_chat_completions_api(messages, tools)
-        response_text = form_response_string_chat_completions_api(response=self._get_response_message(response))
+        response_text = form_response_string_chat_completions(response=response)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
 
