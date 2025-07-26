@@ -105,6 +105,6 @@ class BaseTLM:
 
     def get_model_name(self) -> str:
         """Returns the underlying LLM used to generate responses and score their trustworthiness.
-        Available base LLMs that you can run TLM with are listed under "model" configuration in [TLMOptions](#class-tlmoptions).
+        Available base LLMs that you can run TLM with are listed under "model" configuration in TLMOptions.
         """
         return cast(str, self._options["model"])
