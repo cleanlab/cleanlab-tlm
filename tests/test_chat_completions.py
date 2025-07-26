@@ -11,6 +11,7 @@ from openai.types.completion_usage import (
     PromptTokensDetails,
 )
 
+from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLMScore
 from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
@@ -20,6 +21,14 @@ from tests.test_get_trustworthiness_score import is_trustworthiness_score_json_f
 
 test_prompt = make_text_unique(TEST_PROMPT)
 test_response = make_text_unique(TEST_RESPONSE)
+
+
+def test_get_model_name() -> None:
+    tlm = TLMChatCompletion()
+    model_name = tlm.get_model_name()
+
+    assert model_name == tlm._options["model"]
+    assert model_name == _TLM_DEFAULT_MODEL
 
 
 @pytest.mark.parametrize(
