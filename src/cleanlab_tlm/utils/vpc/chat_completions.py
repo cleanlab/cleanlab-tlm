@@ -62,8 +62,8 @@ class TLMChatCompletion(BaseTLM):
             timeout=timeout,
             verbose=False,
             allow_custom_model=True,
-            request_headers=request_headers,
         )
+        self._request_headers = request_headers or {}
 
     def score(
         self,
