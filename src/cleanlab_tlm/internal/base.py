@@ -41,6 +41,7 @@ class BaseTLM:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
         allow_custom_model: bool = False,
+        request_headers: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Initialize base TLM functionality.
@@ -54,6 +55,8 @@ class BaseTLM:
             timeout: Timeout (in seconds) to apply to each TLM prompt.
             verbose: Whether to print outputs during execution.
         """
+        self._request_headers = request_headers or {}
+
         self._api_key = api_key or os.environ.get("CLEANLAB_TLM_API_KEY")
         if self._api_key is None:
             raise MissingApiKeyError
