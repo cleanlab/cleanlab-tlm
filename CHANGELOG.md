@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.21] - 2025-07-28
+
+### Changed
+
+- Updated the VPC version of `TLMChatCompletion` to accept `request_headers` parameter, which is forwarded to the TLM app as part of API requests
+
 ## [1.1.20] - 2025-07-28
 
 ### Changed
@@ -279,7 +285,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.20...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.21...HEAD
+[1.1.21]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.20...v1.1.21
 [1.1.20]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.19...v1.1.20
 [1.1.19]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.18...v1.1.19
 [1.1.18]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.17...v1.1.18
