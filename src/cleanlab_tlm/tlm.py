@@ -531,12 +531,6 @@ class TLM(BaseTLM):
 
         return {"trustworthiness_score": response_json["confidence_score"]}
 
-    def get_model_name(self) -> str:
-        """Returns the underlying LLM used to generate responses and score their trustworthiness.
-        Available base LLMs that you can run TLM with are listed under "model" configuration in [TLMOptions](#class-tlmoptions).
-        """
-        return cast(str, self._options["model"])
-
 
 class TLMResponse(TypedDict):
     """A typed dict containing the response, trustworthiness score, and additional logs output by the Trustworthy Language Model.

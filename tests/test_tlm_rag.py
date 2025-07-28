@@ -201,6 +201,13 @@ def test_init_with_quality_preset(trustworthy_rag_api_key: str, quality_preset: 
     assert tlm_rag._quality_preset == quality_preset
 
 
+def test_get_model_name(trustworthy_rag: TrustworthyRAG) -> None:
+    model_name = trustworthy_rag.get_model_name()
+
+    assert model_name == trustworthy_rag._options["model"]
+    assert model_name == _TLM_DEFAULT_MODEL
+
+
 def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
     evals = trustworthy_rag.get_evals()
 
