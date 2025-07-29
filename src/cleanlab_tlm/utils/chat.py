@@ -4,6 +4,8 @@ This module provides helper functions for working with chat messages in the form
 OpenAI's chat models.
 """
 
+from __future__ import annotations
+
 import json
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
@@ -209,7 +211,7 @@ def _find_index_after_first_system_block(messages: list[dict[str, Any]]) -> int:
 
 
 def _form_prompt_responses_api(
-    messages: list[dict[str, Any]],
+    messages: list[dict[str, Any]] | str,
     tools: Optional[list[dict[str, Any]]] = None,
     **responses_api_kwargs: Any,
 ) -> str:
@@ -227,7 +229,9 @@ def _form_prompt_responses_api(
     Returns:
         str: A formatted string representing the chat history as a single prompt.
     """
-    messages = messages.copy()
+
+    messages = [{"role": "user", "content": messages}] if isinstance(messages, str) else messages.copy()
+
     output = ""
 
     # Find the index after the first consecutive block of system messages
@@ -302,7 +306,7 @@ def _form_prompt_responses_api(
 
 
 def _form_prompt_chat_completions_api(
-    messages: list["ChatCompletionMessageParam"],
+    messages: list[ChatCompletionMessageParam],
     tools: Optional[list[dict[str, Any]]] = None,
 ) -> str:
     """
@@ -444,7 +448,9 @@ def form_prompt_string(
     )
 
 
-def form_response_string_chat_completions_api(response: Union[dict[str, Any], "ChatCompletionMessage"]) -> str:
+def form_response_string_chat_completions_api(
+    response: Union[dict[str, Any], ChatCompletionMessage],
+) -> str:
     """
     Format an assistant response message dictionary from the Chat Completions API into a single string.
 
@@ -493,7 +499,7 @@ def form_response_string_chat_completions_api(response: Union[dict[str, Any], "C
     return str(content)
 
 
-def form_response_string_responses_api(response: "Response") -> str:
+def form_response_string_responses_api(response: Response) -> str:
     """
     Format an assistant response message dictionary from the Responses API into a single string.
 

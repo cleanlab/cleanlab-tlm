@@ -92,7 +92,11 @@ class TLMResponses(BaseTLM):
         if "text" in openai_kwargs or "text_format" in openai_kwargs:
             converted_chat_completion = _convert_responses_to_chat_completion(response)
             converted_kwargs = _responses_kwargs_to_chat_completion_kwargs(openai_kwargs)
-            combined_kwargs = {**converted_kwargs, **self._options}
+            combined_kwargs = {
+                "quality_preset": self._quality_preset,
+                **converted_kwargs,
+                **self._options,
+            }
 
             return cast(
                 TLMScore,
@@ -196,8 +200,24 @@ def _responses_kwargs_to_chat_completion_kwargs(
     # TODO: also add "instruction" to the messages (system prompt)?
     if "input" in responses_kwargs:
         input_message = responses_kwargs["input"]
+
         if isinstance(input_message, str):
             chat_completion_kwargs["messages"] = [{"role": "user", "content": input_message}]
+
+        elif isinstance(input_message, list):
+            for message in input_message:
+                content_item = message.get("content")
+                if not (isinstance(content_item, list) and content_item and isinstance(content_item[0], dict)):
+                    continue
+
+                for item in content_item:
+                    if isinstance(item, dict) and item.get("type") == "input_text":
+                        item["type"] = "text"
+                    elif isinstance(item, dict) and item.get("type") == "input_image":
+                        item["type"] = "image_url"
+
+            chat_completion_kwargs["messages"] = input_message
+
         else:
             chat_completion_kwargs["messages"] = input_message
 
