@@ -534,12 +534,15 @@ def form_response_string_responses_api(response: Response) -> str:
     with JSON content, consistent with the format used in `form_prompt_string`.
 
     Args:
-        response (Responses): A Response object from the OpenAI Responses API containing:
+        response (Responses): A Response object from the OpenAI Responses API containing output elements with message content and/or function calls
 
     Returns:
         str: A formatted string containing the response content and any tool calls.
              Tool calls are formatted as XML tags containing JSON with function
              name and arguments.
+
+    Raises:
+        ImportError: If openai is not installed.
     """
     try:
         from openai.types.responses.response_output_text import ResponseOutputText
