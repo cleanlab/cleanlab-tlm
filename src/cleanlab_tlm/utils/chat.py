@@ -4,12 +4,16 @@ This module provides helper functions for working with chat messages in the form
 OpenAI's chat models.
 """
 
+from __future__ import annotations
+
 import json
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion, ChatCompletionMessage, ChatCompletionMessageParam
+    from openai.types.responses import Response
+
 
 # Define message prefixes
 _SYSTEM_PREFIX = "System: "
@@ -208,7 +212,7 @@ def _find_index_after_first_system_block(messages: list[dict[str, Any]]) -> int:
 
 
 def _form_prompt_responses_api(
-    messages: list[dict[str, Any]],
+    messages: list[dict[str, Any]] | str,
     tools: Optional[list[dict[str, Any]]] = None,
     **responses_api_kwargs: Any,
 ) -> str:
@@ -226,7 +230,9 @@ def _form_prompt_responses_api(
     Returns:
         str: A formatted string representing the chat history as a single prompt.
     """
-    messages = messages.copy()
+
+    messages = [{"role": "user", "content": messages}] if isinstance(messages, str) else messages.copy()
+
     output = ""
 
     # Find the index after the first consecutive block of system messages
@@ -301,7 +307,7 @@ def _form_prompt_responses_api(
 
 
 def _form_prompt_chat_completions_api(
-    messages: list["ChatCompletionMessageParam"],
+    messages: list[ChatCompletionMessageParam],
     tools: Optional[list[dict[str, Any]]] = None,
 ) -> str:
     """
@@ -443,7 +449,7 @@ def form_prompt_string(
     )
 
 
-def form_response_string_chat_completions(response: "ChatCompletion") -> str:
+def form_response_string_chat_completions(response: ChatCompletion) -> str:
     """Form a single string representing the response, out of the raw response object returned by OpenAI's Chat Completions API.
 
     This function extracts the assistant's response message from a ChatCompletion object
@@ -468,7 +474,9 @@ def form_response_string_chat_completions(response: "ChatCompletion") -> str:
     return form_response_string_chat_completions_api(response_msg)
 
 
-def form_response_string_chat_completions_api(response: Union[dict[str, Any], "ChatCompletionMessage"]) -> str:
+def form_response_string_chat_completions_api(
+    response: Union[dict[str, Any], ChatCompletionMessage],
+) -> str:
     """
     Form a single string representing the response, out of an assistant response message dictionary in Chat Completions API format.
 
@@ -515,6 +523,60 @@ def form_response_string_chat_completions_api(response: Union[dict[str, Any], "C
             )
 
     return str(content)
+
+
+def form_response_string_responses_api(response: Response) -> str:
+    """
+    Format an assistant response message dictionary from the Responses API into a single string.
+
+    Given a Response object from the Responses API, this function formats the response into a string
+    that includes both content and tool calls (if present). Tool calls are formatted using XML tags
+    with JSON content, consistent with the format used in `form_prompt_string`.
+
+    Args:
+        response (Responses): A Response object from the OpenAI Responses API containing output elements with message content and/or function calls
+
+    Returns:
+        str: A formatted string containing the response content and any tool calls.
+             Tool calls are formatted as XML tags containing JSON with function
+             name and arguments.
+
+    Raises:
+        ImportError: If openai is not installed.
+    """
+    try:
+        from openai.types.responses.response_output_text import ResponseOutputText
+    except ImportError as e:
+        raise ImportError("OpenAI is a required dependency. Please install it with `pip install openai`.") from e
+
+    content_parts = []
+
+    for output in response.output:
+        if output.type == "message":
+            output_content = [content.text for content in output.content if isinstance(content, ResponseOutputText)]
+            content_parts.append("\n".join(output_content))
+        elif output.type == "function_call":
+            try:
+                tool_call = {
+                    "name": output.name,
+                    "arguments": (json.loads(output.arguments) if output.arguments else {}),
+                    "call_id": output.call_id,
+                }
+                content_parts.append(f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}")
+            except (AttributeError, TypeError, json.JSONDecodeError) as e:
+                warnings.warn(
+                    f"Error formatting tool call in response: {e}. Skipping this tool call.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        else:
+            warnings.warn(
+                f"Unexpected output type: {output.type}. Skipping this output.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    return "\n".join(content_parts)
 
 
 def _response_to_dict(response: Any) -> dict[str, Any]:

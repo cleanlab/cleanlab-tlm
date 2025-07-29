@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.22] - 2025-07-29
+
+### Added
+
+- Added `TLMResponses` module, providing support for trust scoring with OpenAI Responses object
+
 ## [1.1.21] - 2025-07-28
 
 ### Changed
@@ -285,7 +291,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.21...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.22...HEAD
+[1.1.22]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.21...v1.1.22
 [1.1.21]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.20...v1.1.21
 [1.1.20]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.19...v1.1.20
 [1.1.19]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.18...v1.1.19
