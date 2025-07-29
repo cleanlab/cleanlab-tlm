@@ -118,9 +118,6 @@ class TLMResponses(BaseTLM):
         prompt_text = _form_prompt_responses_api(openai_kwargs["input"], tools)
         response_text = form_response_string_responses_api(response=response)
 
-        print("prompt_text", prompt_text)
-        print("response_text", response_text)
-
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
 
 
@@ -143,6 +140,21 @@ def _convert_responses_to_chat_completion(response: "Response") -> "ChatCompleti
             "OpenAI is required to use the TLMResponses class. Please install it with `pip install openai`."
         ) from e
 
+    try:
+        message_content = response.output[0].content[0].text  # type: ignore
+    except Exception:
+        raise ValueError("response does not have a message content - response.output[0].content[0].text is not present")
+
+    try:
+        message_role = response.output[0].role  # type: ignore
+    except Exception:
+        raise ValueError("response does not have a message role - response.output[0].role is not present")
+
+    try:
+        logprobs_list = response.output[0].content[0].logprobs or []  # type: ignore
+    except Exception:
+        logprobs_list = []
+
     return ChatCompletion(
         id=response.id,
         choices=[
@@ -150,8 +162,8 @@ def _convert_responses_to_chat_completion(response: "Response") -> "ChatCompleti
                 finish_reason="stop",
                 index=0,
                 message=ChatCompletionMessage(
-                    content=response.output[0].content[0].text,  # type: ignore
-                    role=response.output[0].role,  # type: ignore
+                    content=message_content,
+                    role=message_role,
                 ),
                 logprobs=ChoiceLogprobs(
                     content=[
@@ -168,7 +180,7 @@ def _convert_responses_to_chat_completion(response: "Response") -> "ChatCompleti
                                 for top in lp.top_logprobs
                             ],
                         )
-                        for lp in response.output[0].content[0].logprobs  # type: ignore
+                        for lp in logprobs_list
                     ],
                     refusal=None,
                 ),
