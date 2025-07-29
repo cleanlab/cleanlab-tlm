@@ -11,8 +11,9 @@ import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
+    from openai.types.chat import ChatCompletion, ChatCompletionMessage, ChatCompletionMessageParam
     from openai.types.responses import Response
+
 
 # Define message prefixes
 _SYSTEM_PREFIX = "System: "
@@ -448,13 +449,38 @@ def form_prompt_string(
     )
 
 
+def form_response_string_chat_completions(response: ChatCompletion) -> str:
+    """Form a single string representing the response, out of the raw response object returned by OpenAI's Chat Completions API.
+
+    This function extracts the assistant's response message from a ChatCompletion object
+    and formats it into a single string representation using the Chat Completions API format.
+    It handles both text content and tool calls, formatting them consistently with the
+    format used in other functions in this module.
+
+    Args:
+        response (ChatCompletion): A ChatCompletion object returned by OpenAI's
+            chat.completions.create(). The function uses the first choice
+            from the response (response.choices[0].message).
+
+    Returns:
+        str: A formatted string containing the response content and any tool calls.
+             Tool calls are formatted as XML tags containing JSON with function
+             name and arguments, consistent with the format used in form_prompt_string.
+
+    See also:
+        [form_response_string_chat_completions_api](#function-form_response_string_chat_completions_api)
+    """
+    response_msg = response.choices[0].message
+    return form_response_string_chat_completions_api(response_msg)
+
+
 def form_response_string_chat_completions_api(
     response: Union[dict[str, Any], ChatCompletionMessage],
 ) -> str:
     """
-    Format an assistant response message dictionary from the Chat Completions API into a single string.
+    Form a single string representing the response, out of an assistant response message dictionary in Chat Completions API format.
 
-    Given a ChatCompletion object `response` from `chat.completions.create()`,
+    Given a ChatCompletion object `response` from OpenAI's `chat.completions.create()`,
     this function can take either a ChatCompletionMessage object from `response.choices[0].message`
     or a dictionary from `response.choices[0].message.to_dict()`.
 

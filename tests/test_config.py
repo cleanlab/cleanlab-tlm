@@ -2,6 +2,7 @@ import pytest
 import tiktoken
 
 from cleanlab_tlm.errors import TlmBadRequestError
+from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.tlm import TLM
 from cleanlab_tlm.utils.config import (
     get_default_context_limit,
@@ -12,6 +13,13 @@ from cleanlab_tlm.utils.config import (
 from tests.constants import WORD_THAT_EQUALS_ONE_TOKEN
 
 tlm_with_default_setting = TLM()
+
+
+def test_get_model_name(tlm: TLM) -> None:
+    model_name = tlm.get_model_name()
+
+    assert model_name == tlm._options["model"]
+    assert model_name == _TLM_DEFAULT_MODEL
 
 
 def test_get_default_model(tlm: TLM) -> None:

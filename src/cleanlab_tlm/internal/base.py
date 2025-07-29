@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
@@ -102,3 +102,9 @@ class BaseTLM:
         except RuntimeError:
             self._event_loop = asyncio.new_event_loop()
         self._rate_handler = TlmRateHandler()
+
+    def get_model_name(self) -> str:
+        """Returns the underlying LLM used to generate responses and score their trustworthiness.
+        Available base LLMs that you can run TLM with are listed under "model" configuration in TLMOptions.
+        """
+        return cast(str, self._options["model"])

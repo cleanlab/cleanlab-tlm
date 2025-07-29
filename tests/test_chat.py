@@ -1,13 +1,15 @@
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
-from openai.types.chat import ChatCompletionMessage
+from openai.types.chat import ChatCompletion, ChatCompletionMessage
+from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
 
 from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
     _form_prompt_responses_api,
     form_prompt_string,
+    form_response_string_chat_completions,
     form_response_string_chat_completions_api,
 )
 
@@ -1589,3 +1591,91 @@ def test_form_response_string_chat_completions_api_chatcompletion_message_none_c
     expected = ""
     result = form_response_string_chat_completions_api(message)
     assert result == expected
+
+
+def test_form_response_string_chat_completions_just_content() -> None:
+    """Test form_response_string_chat_completions with ChatCompletion containing just content."""
+
+    content = "Hello, how can I help you today?"
+
+    message = ChatCompletionMessage(role="assistant", content=content)
+    response = ChatCompletion(
+        id="test",
+        choices=[
+            Choice(
+                index=0,
+                message=message,
+                finish_reason="stop",
+            )
+        ],
+        created=1234567890,
+        model="test-model",
+        object="chat.completion",
+    )
+
+    result = form_response_string_chat_completions(response)
+    assert result == content
+
+    assert result == form_response_string_chat_completions_api(message)
+
+
+def test_form_response_string_chat_completions_multiple_choices() -> None:
+    """Test form_response_string_chat_completions with ChatCompletion containing multiple choices."""
+
+    content_first = "Hello, how can I help you today?"
+    content_second = "Hi there! What can I do for you?"
+
+    message_first = ChatCompletionMessage(role="assistant", content=content_first)
+    message_second = ChatCompletionMessage(role="assistant", content=content_second)
+    response = ChatCompletion(
+        id="test",
+        choices=[
+            Choice(
+                index=0,
+                message=message_first,
+                finish_reason="stop",
+            ),
+            Choice(
+                index=1,
+                message=message_second,
+                finish_reason="stop",
+            ),
+        ],
+        created=1234567890,
+        model="test-model",
+        object="chat.completion",
+    )
+
+    result = form_response_string_chat_completions(response)
+    assert result == content_first
+
+    assert result == form_response_string_chat_completions_api(message_first)
+
+
+def test_form_response_string_chat_completions_uses_api_function() -> None:
+    """Test that form_response_string_chat_completions calls form_response_string_chat_completions_api."""
+    from unittest.mock import patch
+
+    message = ChatCompletionMessage(role="assistant", content="Test response")
+    response = ChatCompletion(
+        id="test",
+        choices=[
+            Choice(
+                index=0,
+                message=message,
+                finish_reason="stop",
+            )
+        ],
+        created=1234567890,
+        model="test-model",
+        object="chat.completion",
+    )
+
+    # Mock the api function and test that it's called
+    with patch("cleanlab_tlm.utils.chat.form_response_string_chat_completions_api") as mock_api_func:
+        mock_api_func.return_value = "Mocked response"
+
+        result = form_response_string_chat_completions(response)
+
+        mock_api_func.assert_called_once_with(message)
+        assert result == "Mocked response"
