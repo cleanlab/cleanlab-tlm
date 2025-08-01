@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.23] - 2025-08-01
+
+### Changed
+
+- Updated `TLMOptions` to support `disable_trustworthiness` parameter
+    - Skips trustworthiness scoring when `disable_trustworthiness` is True, assuming either custom evaluation criteria (TLM) or RAG Evals (TrustworthyRAG) are provided
+
+
 ## [1.1.22] - 2025-07-29
 
 ### Added
@@ -291,7 +299,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.22...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.23...HEAD
+[1.1.23]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.22...v1.1.23
 [1.1.22]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.21...v1.1.22
 [1.1.21]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.20...v1.1.21
 [1.1.20]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.19...v1.1.20
