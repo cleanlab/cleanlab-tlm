@@ -75,6 +75,7 @@ class TrustworthyRAG(BaseTLM):
 
         options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
+            However, the "disable_trustworthiness" key is supported for `TrustworthyRAG`, but only when evaluation criteria are available (see the `evals` argument description below for how evaluations are determined).
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
 
@@ -130,6 +131,22 @@ class TrustworthyRAG(BaseTLM):
                 raise ValidationError("'evals' must be a list of Eval objects")
 
             self._evals = evals
+
+        # Check if trustworthiness is disabled but no evaluations are available
+        if options and options.get("disable_trustworthiness", False):
+            if not self._evals:
+                if evals is None:
+                    # This shouldn't happen if _DEFAULT_EVALS is properly configured, but defensive check
+                    raise ValidationError(
+                        f"Cannot disable trustworthiness scoring in {self.__class__.__name__}: no evaluation criteria available. "
+                        "Please provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
+                    )
+                else:
+                    # User explicitly provided empty evals list
+                    raise ValidationError(
+                        f"When disable_trustworthiness=True in {self.__class__.__name__}, at least one evaluation must be provided. "
+                        "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
+                    )
 
     def score(
         self,

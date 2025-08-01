@@ -633,6 +633,10 @@ class TLMOptions(TypedDict):
         You can auto-improve responses by increasing this parameter, but at higher runtimes/costs.
         This parameter must be between 1 and 20. It has no effect on `TLM.score()`.
         When this parameter is 1, `TLM.prompt()` simply returns a standard LLM response and does not attempt to auto-improve it.
+        
+        disable_trustworthiness (bool, default = False): if True, trustworthiness scoring is disabled and TLM will not compute trust scores for responses.
+        This is useful when you only want to use custom evaluation criteria or when you want to minimize computational overhead and only need the base LLM response.
+        
     """
 
     model: NotRequired[str]
@@ -645,3 +649,4 @@ class TLMOptions(TypedDict):
     reasoning_effort: NotRequired[str]
     log: NotRequired[list[str]]
     custom_eval_criteria: NotRequired[list[dict[str, Any]]]
+    disable_trustworthiness: NotRequired[bool]
