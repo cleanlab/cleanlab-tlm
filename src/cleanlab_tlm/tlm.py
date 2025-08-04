@@ -613,12 +613,14 @@ class TLMOptions(TypedDict):
         num_self_reflections (int, default = 3): the number of different evaluations to perform where the LLM reflects on the response, a factor affecting trust scoring.
         The maximum number currently supported is 3. Lower values can reduce runtimes.
         Reflection helps quantify aleatoric uncertainty associated with challenging prompts and catches responses that are noticeably incorrect/bad upon further analysis.
+        This parameter has no effect when `disable_trustworthiness` is True.
 
         num_consistency_samples (int, default = 8): the amount of internal sampling to measure LLM response consistency, a factor affecting trust scoring.
         Must be between 0 and 20. Lower values can reduce runtimes.
         Measuring consistency helps quantify the epistemic uncertainty associated with
         strange prompts or prompts that are too vague/open-ended to receive a clearly defined 'good' response.
         TLM measures consistency via the degree of contradiction between sampled responses that the model considers plausible.
+        This parameter has no effect when `disable_trustworthiness` is True.
 
         similarity_measure ({"semantic", "string", "embedding", "embedding_large", "code", "discrepancy"}, default = "discrepancy"): how the
         trustworthiness scoring's consistency algorithm measures similarity between alternative responses considered plausible by the model.
@@ -633,9 +635,11 @@ class TLMOptions(TypedDict):
         You can auto-improve responses by increasing this parameter, but at higher runtimes/costs.
         This parameter must be between 1 and 20. It has no effect on `TLM.score()`.
         When this parameter is 1, `TLM.prompt()` simply returns a standard LLM response and does not attempt to auto-improve it.
+        This parameter has no effect when `disable_trustworthiness` is True.
 
         disable_trustworthiness (bool, default = False): if True, trustworthiness scoring is disabled and TLM will not compute trust scores for responses.
         This is useful when you only want to use custom evaluation criteria or when you want to minimize computational overhead and only need the base LLM response.
+        The following parameters will be ignored when `disable_trustworthiness` is True: `num_consistency_samples`, `num_self_reflections`, `num_candidate_responses`.
     """
 
     model: NotRequired[str]
