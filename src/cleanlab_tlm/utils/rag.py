@@ -132,21 +132,17 @@ class TrustworthyRAG(BaseTLM):
 
             self._evals = evals
 
-        # Check if trustworthiness is disabled but no evaluations are available
-        if options and options.get("disable_trustworthiness", False):
-            if not self._evals:
-                if evals is None:
-                    # This shouldn't happen if _DEFAULT_EVALS is properly configured, but defensive check
-                    raise ValidationError(
-                        f"Cannot disable trustworthiness scoring in {self.__class__.__name__}: no evaluation criteria available. "
-                        "Please provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
-                    )
-                else:
-                    # User explicitly provided empty evals list
-                    raise ValidationError(
-                        f"When disable_trustworthiness=True in {self.__class__.__name__}, at least one evaluation must be provided. "
-                        "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
-                    )
+        self._validate_disable_trustworthiness_option(options)
+
+    def _validate_disable_trustworthiness_option(self, options: Optional[TLMOptions]) -> None:
+        """Validate that when trustworthiness scoring is disabled, alternative evaluations are available."""
+        disable_trustworthiness = options and options.get("disable_trustworthiness", False)
+
+        if disable_trustworthiness and not self._evals:
+            raise ValidationError(
+                f"When disable_trustworthiness=True in {self.__class__.__name__}, at least one evaluation must be provided. "
+                "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
+            )
 
     def score(
         self,
