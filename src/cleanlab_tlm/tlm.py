@@ -639,7 +639,7 @@ class TLMOptions(TypedDict):
 
         disable_trustworthiness (bool, default = False): if True, trustworthiness scoring is disabled and TLM will not compute trust scores for responses.
         This is useful when you only want to use custom evaluation criteria or when you want to minimize computational overhead and only need the base LLM response.
-        The following parameters will be ignored when `disable_trustworthiness` is True: `num_consistency_samples`, `num_self_reflections`, `num_candidate_responses`.
+        The following parameters will be ignored when `disable_trustworthiness` is True: `num_consistency_samples`, `num_self_reflections`, `num_candidate_responses`, `reasoning_effort`, `similarity_measure`.
     """
 
     model: NotRequired[str]
