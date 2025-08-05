@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import os
 import warnings
 from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
@@ -23,6 +25,10 @@ from cleanlab_tlm.internal.constants import (
     VALID_RESPONSE_OPTIONS,
 )
 from cleanlab_tlm.internal.types import Task
+
+if TYPE_CHECKING:
+    from cleanlab_tlm.tlm import TLMOptions
+    from cleanlab_tlm.utils.rag import Eval
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 
@@ -203,6 +209,22 @@ def validate_tlm_options(
                 raise ValidationError(f"Invalid type {type(val)}, disable_trustworthiness must be a boolean")
             if val and support_custom_eval_criteria and not options.get("custom_eval_criteria"):
                 raise ValidationError("disable_trustworthiness is only supported when custom_eval_criteria is provided")
+
+
+def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized_evals: list[Eval]) -> None:
+    """To be used for ensuring TLMOptions are set correctly given other parameters to TrustworthyRAG
+
+    options: TLMOptions
+    initialized_evals: list[Eval]
+        The evals field configured in TrustworthyRAG.__init__. Required to validate disable_trustworthiness option.
+    """
+    disable_trustworthiness = options and options.get("disable_trustworthiness", False)
+
+    if disable_trustworthiness and not initialized_evals:
+        raise ValidationError(
+            "When disable_trustworthiness=True in TrustworthyRAG, at least one evaluation must be provided. "
+            "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
+        )
 
 
 def process_and_validate_kwargs_constrain_outputs(

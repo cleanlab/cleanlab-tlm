@@ -42,6 +42,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.validation import (
+    _validate_trustworthy_rag_options,
     tlm_score_process_response_and_kwargs,
     validate_rag_inputs,
 )
@@ -132,17 +133,7 @@ class TrustworthyRAG(BaseTLM):
 
             self._evals = evals
 
-        self._validate_disable_trustworthiness_option(options)
-
-    def _validate_disable_trustworthiness_option(self, options: Optional[TLMOptions]) -> None:
-        """Validate that when trustworthiness scoring is disabled, alternative evaluations are available."""
-        disable_trustworthiness = options and options.get("disable_trustworthiness", False)
-
-        if disable_trustworthiness and not self._evals:
-            raise ValidationError(
-                f"When disable_trustworthiness=True in {self.__class__.__name__}, at least one evaluation must be provided. "
-                "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
-            )
+        _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
 
     def score(
         self,
