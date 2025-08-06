@@ -821,16 +821,17 @@ def test_disable_trustworthiness_without_custom_criteria_raises_error(tlm_api_ke
     with pytest.raises(
         ValidationError, match="^disable_trustworthiness is only supported when custom_eval_criteria is provided"
     ):
-        TLM(api_key=tlm_api_key, options=TLMOptions(disable_trustworthiness=True))
+        TLM(api_key=tlm_api_key, options={"disable_trustworthiness": True})
 
 
 def test_disable_trustworthiness_with_custom_criteria_works(tlm_api_key: str) -> None:
     """Test that disable_trustworthiness=True with custom_eval_criteria works normally."""
     TLM(
         api_key=tlm_api_key,
-        options=TLMOptions(
-            disable_trustworthiness=True, custom_eval_criteria=[{"name": "test", "criteria": "test criteria"}]
-        ),
+        options={
+            "disable_trustworthiness": True,
+            "custom_eval_criteria": [{"name": "test", "criteria": "test criteria"}],
+        },
     )
 
 
@@ -839,11 +840,11 @@ def test_disable_trustworthiness_without_custom_criteria_raises_error_rag(tlm_ap
     from cleanlab_tlm.utils.rag import TrustworthyRAG
 
     with pytest.raises(ValidationError, match="^When disable_trustworthiness=True in TrustworthyRAG"):
-        TrustworthyRAG(evals=[], api_key=tlm_api_key, options=TLMOptions(disable_trustworthiness=True))
+        TrustworthyRAG(evals=[], api_key=tlm_api_key, options={"disable_trustworthiness": True})
 
 
 def test_disable_trustworthiness_with_custom_criteria_works_rag(tlm_api_key: str) -> None:
     """Test that disable_trustworthiness=True with custom_eval_criteria works normally for TrustworthyRAG."""
     from cleanlab_tlm.utils.rag import TrustworthyRAG
 
-    TrustworthyRAG(api_key=tlm_api_key, options=TLMOptions(disable_trustworthiness=True))
+    TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
