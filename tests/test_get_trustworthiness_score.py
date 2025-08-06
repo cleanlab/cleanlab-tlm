@@ -203,3 +203,26 @@ def reset_tlm(tlm: TLM) -> Generator[None, None, None]:
     original_timeout = tlm._timeout
     yield
     tlm._timeout = original_timeout
+
+
+def test_get_trustworthiness_score_with_disable_trustworthiness(tlm_api_key: str) -> None:
+    """Tests get_trustworthiness_score with disable_trustworthiness option.
+
+    When disable_trustworthiness is enabled (along with custom_eval_criteria),
+    the trustworthiness_score should be None in the response.
+
+    Expected:
+    - TLM should return a response
+    - trustworthiness_score should be None
+    - No exceptions are raised
+    """
+    tlm = TLM(
+        api_key=tlm_api_key,
+        options={
+            "disable_trustworthiness": True,
+            "custom_eval_criteria": [{"name": "test", "criteria": "test criteria"}],
+        },
+    )
+    response = tlm.get_trustworthiness_score(test_prompt, TEST_RESPONSE)
+    assert not isinstance(response, list)
+    assert response["trustworthiness_score"] is None

@@ -42,6 +42,7 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.validation import (
+    _validate_trustworthy_rag_options,
     tlm_score_process_response_and_kwargs,
     validate_rag_inputs,
 )
@@ -75,6 +76,7 @@ class TrustworthyRAG(BaseTLM):
 
         options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
+            The "disable_trustworthiness" key is only supported for `TrustworthyRAG` when it's set to run `Evals`. See the `evals` argument description below for how evaluations are determined.
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
 
@@ -130,6 +132,8 @@ class TrustworthyRAG(BaseTLM):
                 raise ValidationError("'evals' must be a list of Eval objects")
 
             self._evals = evals
+
+        _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
 
     def score(
         self,

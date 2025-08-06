@@ -962,3 +962,30 @@ def reset_rag_timeout(trustworthy_rag: TrustworthyRAG) -> Generator[None, None, 
     old_timeout = trustworthy_rag._timeout
     yield
     trustworthy_rag._timeout = old_timeout
+
+
+def test_score_with_disable_trustworthiness(trustworthy_rag_api_key: str) -> None:
+    """Tests score with disable_trustworthiness option.
+
+    When disable_trustworthiness is enabled (along with valid evals),
+    the trustworthiness score should be None in the response.
+
+    Expected:
+    - TrustworthyRAG should return a response
+    - response should have the trustworthiness key
+    - trustworthiness score should be None
+    - No exceptions are raised
+    """
+    trustworthy_rag = TrustworthyRAG(
+        api_key=trustworthy_rag_api_key,
+        options={"disable_trustworthiness": True},
+    )
+    response = trustworthy_rag.score(
+        query=test_query,
+        context=test_context,
+        response=test_response,
+        prompt=test_prompt,
+    )
+    assert not isinstance(response, list)
+    assert "trustworthiness" in response
+    assert response["trustworthiness"]["score"] is None
