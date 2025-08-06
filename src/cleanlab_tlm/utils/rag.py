@@ -76,7 +76,7 @@ class TrustworthyRAG(BaseTLM):
 
         options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
-            However, the "disable_trustworthiness" key is supported for `TrustworthyRAG`, but only when evaluation criteria are available (see the `evals` argument description below for how evaluations are determined).
+            The "disable_trustworthiness" key is only supported for `TrustworthyRAG` when it's set to run `Evals`. See the `evals` argument description below for how evaluations are determined.
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
 
