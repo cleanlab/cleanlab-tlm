@@ -591,7 +591,7 @@ class TLMOptions(TypedDict):
         Underlying base LLM to use (better models yield better results, faster models yield faster results).
         - Models still in beta: "gpt-5", "gpt-5-mini", "gpt-5-nano", "o3", "o1", "o4-mini", "o3-mini", "o1-mini", "gpt-4.5-preview", \
             "claude-opus-4-0", "claude-sonnet-4-0", "claude-3.7-sonnet", "claude-3.5-haiku".
-        - Recommended models for accuracy: "gpt-5", "o4-mini", "o3", "claude-opus-4-0", "claude-sonnet-4-0".
+        - Recommended models for accuracy: "gpt-5", "gpt-4.1", "o4-mini", "o3", "claude-opus-4-0", "claude-sonnet-4-0".
         - Recommended models for low latency/costs: "gpt-4.1-nano", "nova-micro".
 
         log (list[str], default = []): optionally specify additional logs or metadata that TLM should return.
