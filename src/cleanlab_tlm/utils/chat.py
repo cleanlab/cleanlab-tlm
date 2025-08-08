@@ -374,7 +374,9 @@ def _form_prompt_chat_completions_api(
                             else {},
                             "call_id": call_id,
                         }
-                        output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+                        output += (
+                            f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+                        )
         elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
             output += _TOOL_PREFIX
