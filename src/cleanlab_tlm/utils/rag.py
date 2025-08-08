@@ -41,6 +41,7 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
+from cleanlab_tlm.internal.rag import _handle_tool_call_filtering
 from cleanlab_tlm.internal.validation import (
     _validate_trustworthy_rag_options,
     tlm_score_process_response_and_kwargs,
@@ -87,6 +88,10 @@ class TrustworthyRAG(BaseTLM):
             To come up with your custom `evals`, we recommend you first run [get_default_evals()](#function-get_default_evals) and then add/remove/modify the returned list.
             Each [Eval](#class-eval) in this list provides real-time detection of specific issues in your RAG application based on the user query, retrieved context (documents), and/or LLM-generated response.
             Set this to an empty list to only score response trustworthiness without additional evaluations.
+
+        Tool call handling: by default, when a tool call response is detected, evaluations that analyze the response content
+        (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
+        `_configure_tool_call_eval_overrides()`.
     """
 
     def __init__(
@@ -134,6 +139,45 @@ class TrustworthyRAG(BaseTLM):
             self._evals = evals
 
         _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
+
+        # Optional per-eval tool call overrides
+        # These are name-based include/exclude sets used only in the _handle_tool_call_filtering decorator
+        self._configure_tool_call_eval_overrides(exclude_names=[k.name for k in self._evals if k.response_identifier])
+
+    def _configure_tool_call_eval_overrides(
+        self,
+        *,
+        exclude_names: Optional[list[str]] = None,
+    ) -> None:
+        """Configure per-eval overrides for tool call handling.
+
+        This method allows fine-grained control over which evals are processed vs.
+        skipped (scored as None) when the response is detected as a tool call, without
+        modifying the Eval objects.
+
+        - If an eval name is in exclude_names, it will be filtered (score=None) during tool call handling.
+
+        Args:
+            exclude_names (list[str] | None): Evaluation names to always filter during tool calls.
+                This replaces the existing exclude set.
+        """
+        exclude_names = exclude_names or []
+
+        def _is_valid_name(name: str) -> bool:
+            is_eval_name = any(eval_obj.name == name for eval_obj in self._evals)
+            eval_obj = next((eval_obj for eval_obj in self._evals if eval_obj.name == name), None)
+            has_response_identifier = eval_obj is not None and eval_obj.response_identifier is not None
+            return is_eval_name and has_response_identifier
+
+        # Validate that the exclude names are valid eval names
+        invalid_names = [name for name in exclude_names if not _is_valid_name(name)]
+
+        if invalid_names:
+            raise ValidationError(
+                f"Invalid eval name{'s' if len(invalid_names) > 1 else ''}: {', '.join(invalid_names)}"
+            )
+
+        self._tool_call_eval_exclude_names = set(exclude_names)
 
     def score(
         self,
@@ -434,6 +478,7 @@ class TrustworthyRAG(BaseTLM):
             await gather_task,
         )
 
+    @_handle_tool_call_filtering
     @handle_tlm_exceptions("TrustworthyRAGResponse")
     async def _generate_async(
         self,
@@ -480,6 +525,7 @@ class TrustworthyRAG(BaseTLM):
             ),
         )
 
+    @_handle_tool_call_filtering
     @handle_tlm_exceptions("TrustworthyRAGScore")
     async def _score_async(
         self,

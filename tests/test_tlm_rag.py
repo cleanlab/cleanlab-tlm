@@ -989,3 +989,82 @@ def test_score_with_disable_trustworthiness(trustworthy_rag_api_key: str) -> Non
     assert not isinstance(response, list)
     assert "trustworthiness" in response
     assert response["trustworthiness"]["score"] is None
+
+
+def test_trustworthy_rag_score_tool_call_handling(trustworthy_rag: TrustworthyRAG) -> None:
+    """For tool calls, response-based evals are filtered by default (score=None)."""
+    # setup
+    with mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=True) as mock_is_tool_call:
+        response = trustworthy_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+            prompt=test_prompt,
+        )
+        assert mock_is_tool_call.call_count > 0
+
+    affected_evals = ["response_helpfulness", "response_groundedness"]
+    for eval_name in affected_evals:
+        assert eval_name in response
+        assert response[eval_name]["score"] is None  # type: ignore
+
+    for eval_name in cast(TrustworthyRAGScore, response):
+        if eval_name not in affected_evals:
+            assert isinstance(response[eval_name]["score"], float)  # type: ignore
+
+    with mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=False) as mock_is_tool_call:
+        response_no_tool_call = trustworthy_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+            prompt=test_prompt,
+        )
+        assert mock_is_tool_call.call_count > 0
+
+    assert set(response.keys()) == set(response_no_tool_call.keys())  # type: ignore
+
+    # Test trustworthy_rag.generate as well
+    with mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=True) as mock_is_tool_call:
+        response_generate = trustworthy_rag.generate(
+            query=test_query,
+            context=test_context,
+        )
+        assert mock_is_tool_call.call_count > 0
+
+    for eval_name in affected_evals:
+        assert eval_name in response_generate
+        assert response_generate[eval_name]["score"] is None  # type: ignore
+
+
+def test_tool_call_include_override_runs_response_eval(trustworthy_rag: TrustworthyRAG) -> None:
+    """Including one response-based eval lets it run; others remain filtered for tool calls."""
+    # Include response_helpfulness so it is processed even for tool calls
+    trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["response_groundedness"])  # type: ignore[attr-defined]
+
+    with mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=True):
+        response = trustworthy_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+            prompt=test_prompt,
+        )
+
+    # response_helpfulness should now be processed (float score), groundedness remains filtered (None)
+    assert "response_helpfulness" in response
+    assert isinstance(response["response_helpfulness"]["score"], float)  # type: ignore
+    assert "response_groundedness" in response
+    assert response["response_groundedness"]["score"] is None  # type: ignore
+
+
+def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG) -> None:
+    """Invalid or non-response eval names raise a ValidationError in overrides."""
+    with pytest.raises(ValidationError, match="Invalid eval name:"):
+        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["not_a_real_eval"])  # type: ignore[attr-defined]
+
+    existing_eval_name = "context_sufficiency"
+    assert any(eval_obj.name == existing_eval_name for eval_obj in trustworthy_rag._evals)
+    with pytest.raises(ValidationError, match="Invalid eval name: context_sufficiency"):
+        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name])  # type: ignore[attr-defined]
+
+    with pytest.raises(ValidationError, match="Invalid eval names: context_sufficiency, not_a_real_eval"):
+        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])  # type: ignore[attr-defined]
