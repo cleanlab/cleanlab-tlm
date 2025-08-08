@@ -4,7 +4,7 @@ from typing import Callable
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
+from openai.types.chat.chat_completion_message_function_tool_call import ChatCompletionMessageFunctionToolCall, Function
 from openai.types.completion_usage import (
     CompletionTokensDetails,
     CompletionUsage,
@@ -289,7 +289,7 @@ def test_tlm_chat_completion_score_tool_calls(arguments: str, condition: Callabl
                     role="assistant",
                     content=None,
                     tool_calls=[
-                        ChatCompletionMessageToolCall(
+                        ChatCompletionMessageFunctionToolCall(
                             id="test",
                             function=Function(name="search", arguments=arguments),
                             type="function",
