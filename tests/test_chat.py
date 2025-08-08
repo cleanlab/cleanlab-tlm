@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.chat.chat_completion_message_function_tool_call import ChatCompletionMessageFunctionToolCall, Function
 
 from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
@@ -12,6 +11,7 @@ from cleanlab_tlm.utils.chat import (
     form_response_string_chat_completions,
     form_response_string_chat_completions_api,
 )
+from tests.openai_compat import ChatCompletionMessageToolCall, Function
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam
@@ -1433,7 +1433,7 @@ def test_form_response_string_chat_completions_api_chatcompletion_message_just_t
         role="assistant",
         content=None,
         tool_calls=[
-            ChatCompletionMessageFunctionToolCall(
+            ChatCompletionMessageToolCall(
                 id="call_123",
                 function=Function(
                     name="search_restaurants",
@@ -1470,7 +1470,7 @@ def test_form_response_string_chat_completions_api_chatcompletion_message_conten
         role="assistant",
         content="I'll check the weather for you.",
         tool_calls=[
-            ChatCompletionMessageFunctionToolCall(
+            ChatCompletionMessageToolCall(
                 id="call_123",
                 function=Function(
                     name="get_weather",
@@ -1501,7 +1501,7 @@ def test_form_response_string_chat_completions_api_chatcompletion_message_multip
         role="assistant",
         content="Let me check multiple things for you.",
         tool_calls=[
-            ChatCompletionMessageFunctionToolCall(
+            ChatCompletionMessageToolCall(
                 id="call_123",
                 function=Function(
                     name="get_weather",
@@ -1509,7 +1509,7 @@ def test_form_response_string_chat_completions_api_chatcompletion_message_multip
                 ),
                 type="function",
             ),
-            ChatCompletionMessageFunctionToolCall(
+            ChatCompletionMessageToolCall(
                 id="call_456",
                 function=Function(
                     name="get_time",
@@ -1559,7 +1559,7 @@ def test_form_response_string_chat_completions_api_chatcompletion_message_empty_
         role="assistant",
         content="Running action",
         tool_calls=[
-            ChatCompletionMessageFunctionToolCall(
+            ChatCompletionMessageToolCall(
                 id="call_123",
                 function=Function(
                     name="execute_action",
