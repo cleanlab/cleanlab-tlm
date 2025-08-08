@@ -4,7 +4,6 @@ from typing import Callable
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
 from openai.types.completion_usage import (
     CompletionTokensDetails,
     CompletionUsage,
@@ -17,6 +16,7 @@ from cleanlab_tlm.tlm import TLMScore
 from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
 from tests.conftest import make_text_unique
 from tests.constants import TEST_PROMPT, TEST_RESPONSE
+from tests.openai_compat import ChatCompletionMessageToolCall, Function
 from tests.test_get_trustworthiness_score import is_trustworthiness_score_json_format
 
 test_prompt = make_text_unique(TEST_PROMPT)

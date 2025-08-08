@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall, Function
 
 from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
@@ -12,6 +11,7 @@ from cleanlab_tlm.utils.chat import (
     form_response_string_chat_completions,
     form_response_string_chat_completions_api,
 )
+from tests.openai_compat import ChatCompletionMessageToolCall, Function
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam
