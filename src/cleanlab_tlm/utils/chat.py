@@ -364,25 +364,21 @@ def _form_prompt_chat_completions_api(
                 output += f"{content_value}\n\n"
             # Handle tool calls if present
             if "tool_calls" in msg:
-                # Cast for type-checking compatibility: OpenAI Param type is a union that
-                # may include custom tool calls which do not have a "function" key.
-                for tool_call in cast(list[dict[str, Any]], msg["tool_calls"]):
-                    call_id = cast(str, tool_call.get("id", ""))
-                    tool_function = cast(Optional[dict[str, Any]], tool_call.get("function"))
-                    # Skip non-function tool calls (e.g., custom tools) for now
-                    if not tool_function:
-                        continue
-                    function_name = cast(str, tool_function.get("name", "function"))
-                    function_args_str = cast(Optional[str], tool_function.get("arguments"))
-
-                    function_names[call_id] = function_name
-                    # Format function call as JSON within XML tags, now including call_id
-                    function_call = {
-                        "name": function_name,
-                        "arguments": (json.loads(function_args_str) if function_args_str else {}),
-                        "call_id": call_id,
-                    }
-                    output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+                for tool_call in msg["tool_calls"]:
+                    if tool_call["type"] == "function":
+                        call_id = tool_call["id"]
+                        function_names[call_id] = tool_call["function"]["name"]
+                        # Format function call as JSON within XML tags, now including call_id
+                        function_call = {
+                            "name": tool_call["function"]["name"],
+                            "arguments": json.loads(tool_call["function"]["arguments"])
+                            if tool_call["function"]["arguments"]
+                            else {},
+                            "call_id": call_id,
+                        }
+                        output += (
+                            f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+                        )
         elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
             output += _TOOL_PREFIX

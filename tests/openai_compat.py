@@ -25,11 +25,10 @@ try:  # OpenAI SDK >= 1.99.2
         Function,
     )
 except Exception:  # OpenAI SDK <= 1.99.1
-    # Use dynamic import to avoid static linter errors against newer SDKs
     import importlib
 
     _legacy = importlib.import_module("openai.types.chat.chat_completion_message_tool_call")
-    ChatCompletionMessageToolCall = _legacy.ChatCompletionMessageToolCall
-    Function = _legacy.Function
+    ChatCompletionMessageToolCall = _legacy.ChatCompletionMessageToolCall  # type: ignore
+    Function = _legacy.Function  # type: ignore
 
 __all__ = ["ChatCompletionMessageToolCall", "Function"]
