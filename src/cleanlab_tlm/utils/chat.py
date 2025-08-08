@@ -339,7 +339,8 @@ def _form_prompt_chat_completions_api(
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and (tools is None or len(tools) == 0):
-        return output + str(messages[0]["content"])
+        first_msg = cast(dict[str, Any], messages[0])
+        return output + str(first_msg["content"])
 
     # Warn if the last message is an assistant message with tool calls
     if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
@@ -358,19 +359,27 @@ def _form_prompt_chat_completions_api(
         if msg["role"] == _ASSISTANT_ROLE:
             output += _ASSISTANT_PREFIX
             # Handle content if present
-            if msg.get("content"):
-                output += f"{msg['content']}\n\n"
+            content_value = cast(Optional[str], msg.get("content"))
+            if content_value:
+                output += f"{content_value}\n\n"
             # Handle tool calls if present
             if "tool_calls" in msg:
-                for tool_call in msg["tool_calls"]:
-                    call_id = tool_call["id"]
-                    function_names[call_id] = tool_call["function"]["name"]
+                # Cast for type-checking compatibility: OpenAI Param type is a union that
+                # may include custom tool calls which do not have a "function" key.
+                for tool_call in cast(list[dict[str, Any]], msg["tool_calls"]):
+                    call_id = cast(str, tool_call.get("id", ""))
+                    tool_function = cast(Optional[dict[str, Any]], tool_call.get("function"))
+                    # Skip non-function tool calls (e.g., custom tools) for now
+                    if not tool_function:
+                        continue
+                    function_name = cast(str, tool_function.get("name", "function"))
+                    function_args_str = cast(Optional[str], tool_function.get("arguments"))
+
+                    function_names[call_id] = function_name
                     # Format function call as JSON within XML tags, now including call_id
                     function_call = {
-                        "name": tool_call["function"]["name"],
-                        "arguments": json.loads(tool_call["function"]["arguments"])
-                        if tool_call["function"]["arguments"]
-                        else {},
+                        "name": function_name,
+                        "arguments": (json.loads(function_args_str) if function_args_str else {}),
                         "call_id": call_id,
                     }
                     output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
@@ -506,13 +515,19 @@ def form_response_string_chat_completions_api(
     """
     response_dict = _response_to_dict(response)
     content = response_dict.get("content") or ""
-    tool_calls = response_dict.get("tool_calls")
+    tool_calls = cast(Optional[list[dict[str, Any]]], response_dict.get("tool_calls"))
     if tool_calls is not None:
         try:
-            tool_calls_str = "\n".join(
-                f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': json.loads(call['function']['arguments']) if call['function']['arguments'] else {}}, indent=2)}\n{_TOOL_CALL_TAG_END}"
-                for call in tool_calls
-            )
+            rendered_calls: list[str] = []
+            for call in tool_calls:
+                function_dict = call["function"]
+                name = cast(str, function_dict["name"])
+                args_str = cast(Optional[str], function_dict.get("arguments"))
+                args_obj = json.loads(args_str) if args_str else {}
+                rendered_calls.append(
+                    f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': name, 'arguments': args_obj}, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                )
+            tool_calls_str = "\n".join(rendered_calls)
             return f"{content}\n{tool_calls_str}".strip() if content else tool_calls_str
         except (KeyError, TypeError, json.JSONDecodeError) as e:
             # Log the error but continue with just the content
