@@ -48,7 +48,7 @@ extra-dependencies = [
   "pytest-asyncio",
   "python-dotenv",
   "tiktoken",
-  "openai",
+  "openai<=1.99.1",
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --strict --install-types --non-interactive {args:src/cleanlab_tlm tests}"
@@ -60,7 +60,7 @@ extra-dependencies = [
   "python-dotenv",
   "pytest-asyncio",
   "tiktoken",
-  "openai",
+  "openai<=1.99.1",
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]
