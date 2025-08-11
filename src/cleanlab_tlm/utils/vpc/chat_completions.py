@@ -99,5 +99,8 @@ class TLMChatCompletion(BaseTLM):
         )
 
         res_json = res.json()
+        tlm_result = {"trustworthiness_score": res_json["tlm_metadata"]["trustworthiness_score"]}
+        if explanation := res_json["tlm_metadata"].get("log", {}).get("explanation"):
+            tlm_result["log"] = {"explanation": explanation}
 
-        return {"trustworthiness_score": res_json["tlm_metadata"]["trustworthiness_score"]}
+        return tlm_result
