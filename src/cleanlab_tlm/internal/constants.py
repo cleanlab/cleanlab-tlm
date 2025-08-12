@@ -16,6 +16,9 @@ _VALID_TLM_MODELS: list[str] = [
     "gpt-4.1",
     "gpt-4.1-mini",
     "gpt-4.1-nano",
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
     "o1-preview",
     "o1",
     "o1-mini",
@@ -69,14 +72,6 @@ TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: set[str] = {
     _TLM_CONSTRAIN_OUTPUTS_KEY,
 }
 TLM_VALID_PROMPT_KWARGS: set[str] = {_TLM_CONSTRAIN_OUTPUTS_KEY}
-TLM_MODELS_NOT_SUPPORTING_EXPLANATION: set[str] = {
-    "o1-mini",
-    "o1-preview",
-    "o1",
-    "o3-mini",
-    "o3",
-    "o4-mini",
-}
 VALID_RESPONSE_OPTIONS: set[str] = {"max_tokens"}
 INVALID_SCORE_OPTIONS: set[str] = {"num_candidate_responses"}
 

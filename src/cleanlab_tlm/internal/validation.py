@@ -12,7 +12,6 @@ from cleanlab_tlm.internal.constants import (
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
     INVALID_SCORE_OPTIONS,
-    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
     TLM_NUM_SELF_REFLECTIONS_RANGE,
@@ -167,8 +166,6 @@ def validate_tlm_options(
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
 
             model = options.get("model", _TLM_DEFAULT_MODEL)
-            if "explanation" in val and model in TLM_MODELS_NOT_SUPPORTING_EXPLANATION:
-                raise ValidationError(f"Explanation is not supported for this model: {model}. ")
 
             if invalid_log_options:
                 raise ValidationError(
