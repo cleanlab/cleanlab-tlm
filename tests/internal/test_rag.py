@@ -169,7 +169,7 @@ def test_ordering_rebuilt_for_tool_calls(trustworthy_rag_api_key: str) -> None: 
     assert isinstance(result, dict)
 
     # Non-eval keys (trustworthiness) should appear first preserving backend order
-    expected_keys = ["trustworthiness"] + eval_order
+    expected_keys = ["trustworthiness", *eval_order]
     assert list(result.keys()) == expected_keys
 
     # Filtered response-based evals should be present with None score
