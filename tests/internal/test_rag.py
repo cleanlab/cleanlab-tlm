@@ -117,7 +117,7 @@ def test_ordering_preserved_for_non_tool_calls(trustworthy_rag_api_key: str) -> 
         "context_sufficiency": {"score": 0.22},
         "response_helpfulness": {"score": 0.33},
         "response_groundedness": {"score": 0.44},
-        
+
     }
 
     with (
@@ -173,7 +173,7 @@ def test_ordering_rebuilt_for_tool_calls(trustworthy_rag_api_key: str) -> None: 
     assert list(result.keys()) == expected_keys
 
     # Filtered response-based evals should be present with None score
-    assert result["response_groundedness"]["score"] is None  # type: ignore[index]
-    assert result["response_helpfulness"]["score"] is None  # type: ignore[index]
-    assert result["query_ease"]["score"] == mocked_backend_processed["query_ease"]["score"]  # type: ignore[index]
-    assert result["context_sufficiency"]["score"] == mocked_backend_processed["context_sufficiency"]["score"]  # type: ignore[index]
+    assert result["response_groundedness"]["score"] is None
+    assert result["response_helpfulness"]["score"] is None
+    assert result["query_ease"]["score"] == mocked_backend_processed["query_ease"]["score"]
+    assert result["context_sufficiency"]["score"] == mocked_backend_processed["context_sufficiency"]["score"]

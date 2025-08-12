@@ -1039,7 +1039,7 @@ def test_trustworthy_rag_score_tool_call_handling(trustworthy_rag: TrustworthyRA
 def test_tool_call_include_override_runs_response_eval(trustworthy_rag: TrustworthyRAG) -> None:
     """Including one response-based eval lets it run; others remain filtered for tool calls."""
     # Include response_helpfulness so it is processed even for tool calls
-    trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["response_groundedness"])  # type: ignore[attr-defined]
+    trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["response_groundedness"])
 
     with mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=True):
         response = trustworthy_rag.score(
@@ -1059,12 +1059,12 @@ def test_tool_call_include_override_runs_response_eval(trustworthy_rag: Trustwor
 def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG) -> None:
     """Invalid or non-response eval names raise a ValidationError in overrides."""
     with pytest.raises(ValidationError, match="Invalid eval name:"):
-        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["not_a_real_eval"])  # type: ignore[attr-defined]
+        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["not_a_real_eval"])
 
     existing_eval_name = "context_sufficiency"
     assert any(eval_obj.name == existing_eval_name for eval_obj in trustworthy_rag._evals)
     with pytest.raises(ValidationError, match="Invalid eval name: context_sufficiency"):
-        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name])  # type: ignore[attr-defined]
+        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name])
 
     with pytest.raises(ValidationError, match="Invalid eval names: context_sufficiency, not_a_real_eval"):
-        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])  # type: ignore[attr-defined]
+        trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])
