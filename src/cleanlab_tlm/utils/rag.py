@@ -159,7 +159,6 @@ class TrustworthyRAG(BaseTLM):
 
         Args:
             exclude_names (list[str] | None): Evaluation names to always filter during tool calls.
-                This replaces the existing exclude set.
         """
         names = exclude_names or []
         eligible = {e.name for e in self._evals if e.response_identifier is not None}
