@@ -111,6 +111,7 @@ def _handle_tool_call_filtering(
 
     return wrapper
 
+
 def _rebuild_response(backend_response: ResponseT, evals: list[Any]) -> ResponseT:
     eval_names = [e.name for e in evals]
     ordered = {}

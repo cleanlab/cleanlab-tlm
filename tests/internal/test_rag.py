@@ -117,7 +117,6 @@ def test_ordering_preserved_for_non_tool_calls(trustworthy_rag_api_key: str) -> 
         "context_sufficiency": {"score": 0.22},
         "response_helpfulness": {"score": 0.33},
         "response_groundedness": {"score": 0.44},
-
     }
 
     with (
