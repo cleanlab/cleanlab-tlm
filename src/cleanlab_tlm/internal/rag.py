@@ -81,10 +81,6 @@ def _handle_tool_call_filtering(
             # Start from default filtering decision
             is_filtered = eval_obj.response_identifier is not None and eval_obj.name in exclude_names
 
-            # Apply exclude override (forces filtering)
-            if eval_obj.name in exclude_names:
-                is_filtered = True
-
             if is_filtered:
                 tool_call_filtered_evals.append(eval_obj)
             else:
@@ -110,12 +106,26 @@ def _handle_tool_call_filtering(
 
         # Use the wrapper instance to call the original method
         wrapper_instance = _EvalsContextWrapper(self, evals_to_process)
-        backend_response = await func(wrapper_instance, **kwargs)
-
-        # Add None scores for the filtered evals
-        for eval_obj in tool_call_filtered_evals:
-            backend_response[eval_obj.name] = {"score": None}  # type: ignore
-
-        return backend_response
+        backend_response: ResponseT = await func(wrapper_instance, **kwargs)
+        return _rebuild_response(backend_response, self._evals)
 
     return wrapper
+
+def _rebuild_response(backend_response: ResponseT, evals: list[Any]) -> ResponseT:
+    eval_names = [e.name for e in evals]
+    ordered = {}
+
+    for k, v in backend_response.items():  # type: ignore
+        if k not in eval_names:
+            ordered[k] = v
+
+    # 2) add eval keys exactly in original self._evals order,
+    #    using backend value when present, else score=None
+    for e in evals:
+        name = e.name
+        if name in backend_response:  # type: ignore
+            ordered[name] = backend_response[name]  # type: ignore
+        else:
+            ordered[name] = {"score": None}  # filtered or missing
+
+    return ordered  # type: ignore

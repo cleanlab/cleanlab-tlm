@@ -103,3 +103,77 @@ def test_decorator_calls_api_with_full_evals_for_non_tool_calls(trustworthy_rag_
     assert isinstance(response, dict)
     for eval_dict in response.values():
         assert isinstance(eval_dict["score"], float)
+
+
+def test_ordering_preserved_for_non_tool_calls(trustworthy_rag_api_key: str) -> None:  # noqa: F811
+    """When not a tool call, ordering should match exactly what the mocked api.tlm_rag_score returns."""
+    tlm_rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
+
+    # Construct a mocked backend result with a specific insertion order
+    mocked_backend = {
+        "trustworthiness": {"score": 0.91},
+        # Put evals in a custom order to ensure we preserve this order
+        "query_ease": {"score": 0.11},
+        "context_sufficiency": {"score": 0.22},
+        "response_helpfulness": {"score": 0.33},
+        "response_groundedness": {"score": 0.44},
+        
+    }
+
+    with (
+        mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=False),
+        mock.patch("cleanlab_tlm.internal.api.api.tlm_rag_score", return_value=mocked_backend),
+    ):
+        result = tlm_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+        )
+
+    assert isinstance(result, dict)
+    assert list(result.keys()) == list(mocked_backend.keys())
+
+
+def test_ordering_rebuilt_for_tool_calls(trustworthy_rag_api_key: str) -> None:  # noqa: F811
+    """For tool calls, non-eval keys keep backend order, then all evals in self._evals order with filtered as None."""
+    tlm_rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
+
+    # Default eval order from TrustworthyRAG
+    eval_order = [e.name for e in tlm_rag._evals]
+    assert eval_order == [
+        "context_sufficiency",
+        "response_groundedness",
+        "response_helpfulness",
+        "query_ease",
+    ]
+
+    # Backend only processes non-response evals during tool-calls (decorator filters response-based evals)
+    # Intentionally put processed evals in a non-evals order to ensure rebuild will override to eval_order
+    mocked_backend_processed = {
+        "trustworthiness": {"score": 0.9},
+        "query_ease": {"score": 0.5},
+        "context_sufficiency": {"score": 0.8},
+    }
+
+    with (
+        mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=True),
+        mock.patch("cleanlab_tlm.internal.api.api.tlm_rag_score", return_value=mocked_backend_processed),
+    ):
+        result = tlm_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+            prompt=test_prompt,
+        )
+
+    assert isinstance(result, dict)
+
+    # Non-eval keys (trustworthiness) should appear first preserving backend order
+    expected_keys = ["trustworthiness"] + eval_order
+    assert list(result.keys()) == expected_keys
+
+    # Filtered response-based evals should be present with None score
+    assert result["response_groundedness"]["score"] is None  # type: ignore[index]
+    assert result["response_helpfulness"]["score"] is None  # type: ignore[index]
+    assert result["query_ease"]["score"] == mocked_backend_processed["query_ease"]["score"]  # type: ignore[index]
+    assert result["context_sufficiency"]["score"] == mocked_backend_processed["context_sufficiency"]["score"]  # type: ignore[index]
