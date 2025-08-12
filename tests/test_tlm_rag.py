@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Generator
 from typing import Any, cast
 from unittest import mock
@@ -1058,13 +1059,28 @@ def test_tool_call_include_override_runs_response_eval(trustworthy_rag: Trustwor
 
 def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG) -> None:
     """Invalid or non-response eval names raise a ValidationError in overrides."""
-    with pytest.raises(ValidationError, match="Invalid eval name:"):
+    with pytest.raises(
+        ValidationError,
+        match=re.escape(
+            "Invalid eval name(s) for tool-call exclusion (must exist and have response_identifier): not_a_real_eval"
+        ),
+    ):
         trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=["not_a_real_eval"])
 
     existing_eval_name = "context_sufficiency"
     assert any(eval_obj.name == existing_eval_name for eval_obj in trustworthy_rag._evals)
-    with pytest.raises(ValidationError, match="Invalid eval name: context_sufficiency"):
+    with pytest.raises(
+        ValidationError,
+        match=re.escape(
+            "Invalid eval name(s) for tool-call exclusion (must exist and have response_identifier): context_sufficiency"
+        ),
+    ):
         trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name])
 
-    with pytest.raises(ValidationError, match="Invalid eval names: context_sufficiency, not_a_real_eval"):
+    with pytest.raises(
+        ValidationError,
+        match=re.escape(
+            "Invalid eval name(s) for tool-call exclusion (must exist and have response_identifier): context_sufficiency, not_a_real_eval"
+        ),
+    ):
         trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])

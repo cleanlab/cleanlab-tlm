@@ -149,11 +149,11 @@ class TrustworthyRAG(BaseTLM):
         *,
         exclude_names: Optional[list[str]] = None,
     ) -> None:
-        """Configure per-eval overrides for tool call handling.
+        """Validates and stores tool-call exclusion names.
 
-        This method allows fine-grained control over which evals are processed vs.
-        skipped (scored as None) when the response is detected as a tool call, without
-        modifying the Eval objects.
+        Only evals that read from the model response (have a non-None `response_identifier`)
+        are eligible for tool-call filtering. We validate here (configuration boundary) so the
+        decorator `_handle_tool_call_filtering` can assume a correct set and remain simple.
 
         - If an eval name is in exclude_names, it will be filtered (score=None) during tool call handling.
 
@@ -161,23 +161,14 @@ class TrustworthyRAG(BaseTLM):
             exclude_names (list[str] | None): Evaluation names to always filter during tool calls.
                 This replaces the existing exclude set.
         """
-        exclude_names = exclude_names or []
-
-        def _is_valid_name(name: str) -> bool:
-            is_eval_name = any(eval_obj.name == name for eval_obj in self._evals)
-            eval_obj = next((eval_obj for eval_obj in self._evals if eval_obj.name == name), None)
-            has_response_identifier = eval_obj is not None and eval_obj.response_identifier is not None
-            return is_eval_name and has_response_identifier
-
-        # Validate that the exclude names are valid eval names
-        invalid_names = [name for name in exclude_names if not _is_valid_name(name)]
-
-        if invalid_names:
+        names = exclude_names or []
+        eligible = {e.name for e in self._evals if e.response_identifier is not None}
+        invalid = [n for n in names if n not in eligible]
+        if invalid:
             raise ValidationError(
-                f"Invalid eval name{'s' if len(invalid_names) > 1 else ''}: {', '.join(invalid_names)}"
+                f"Invalid eval name(s) for tool-call exclusion (must exist and have response_identifier): {', '.join(invalid)}"
             )
-
-        self._tool_call_eval_exclude_names = set(exclude_names)
+        self._tool_call_eval_exclude_names = set(names)  # membership filter; order/dupes irrelevant
 
     def score(
         self,
