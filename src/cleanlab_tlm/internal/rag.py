@@ -120,8 +120,6 @@ def _rebuild_response(backend_response: ResponseT, evals: list[Any]) -> Response
         if k not in eval_names:
             ordered[k] = v
 
-    # 2) add eval keys exactly in original self._evals order,
-    #    using backend value when present, else score=None
     for e in evals:
         name = e.name
         if name in backend_response:  # type: ignore
