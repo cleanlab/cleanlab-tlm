@@ -22,6 +22,8 @@ from tests.test_get_trustworthiness_score import (
 )
 from tests.test_prompt import is_tlm_response
 
+QUALITY_PRESETS_WITH_NO_CONSISTENCY_SAMPLES = ["base", "low", "medium"]
+
 test_prompt_single = make_text_unique(TEST_PROMPT)
 test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
@@ -53,13 +55,23 @@ def _test_log_batch(responses: list[dict[str, Any]], options: dict[str, Any]) ->
 def _is_valid_prompt_response(
     response: dict[str, Any],
     options: dict[str, Any],
+    quality_preset: str,
+    model: str,
     allow_none_response: bool = False,
     allow_null_trustworthiness_score: bool = False,
 ) -> bool:
     """Returns true if prompt response is valid based on properties for prompt() functionality."""
     _test_log(response, options)
-    if {"use_self_reflection", "num_consistency_samples"}.issubset(options) and (
-        options["num_consistency_samples"] == 0 and not options["use_self_reflection"]
+    if (
+        {"num_self_reflections", "num_consistency_samples"}.issubset(options)
+        and options["num_consistency_samples"] == 0
+        and options["num_self_reflections"] == 0
+    ) or (
+        {"num_self_reflections"}.issubset(options)
+        and options["num_self_reflections"] == 0
+        and not {"num_consistency_samples"}.issubset(options)
+        and quality_preset in QUALITY_PRESETS_WITH_NO_CONSISTENCY_SAMPLES
+        and model in MODELS_WITH_NO_PERPLEXITY_SCORE
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
         return is_tlm_response(
@@ -83,14 +95,14 @@ def _is_valid_get_trustworthiness_score_response(
     """Returns true if trustworthiness score is valid based on properties for get_trustworthiness_score() functionality."""
     assert isinstance(response, dict)
 
-    quality_preset_keys = {"use_self_reflection"}
-    consistency_sample_keys = {"num_consistency_samples", "use_self_reflection"}
-
     if (
-        (quality_preset_keys.issubset(options)) and not options["use_self_reflection"] and quality_preset == "base"
+        {"num_self_reflections"}.issubset(options)
+        and options["num_self_reflections"] == 0
+        and not {"num_consistency_samples"}.issubset(options)
+        and quality_preset in QUALITY_PRESETS_WITH_NO_CONSISTENCY_SAMPLES
     ) or (
-        (consistency_sample_keys.issubset(options))
-        and not options["use_self_reflection"]
+        {"num_consistency_samples", "num_self_reflections"}.issubset(options)
+        and options["num_self_reflections"] == 0
         and options["num_consistency_samples"] == 0
     ):
         print("Options dictinary called with strange parameters. Allowing none in response.")
@@ -104,6 +116,8 @@ def _is_valid_get_trustworthiness_score_response(
 def _test_prompt_response(
     response: dict[str, Any],
     options: dict[str, Any],
+    quality_preset: str,
+    model: str,
     allow_none_response: bool = False,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
@@ -111,6 +125,8 @@ def _test_prompt_response(
     assert _is_valid_prompt_response(
         response=response,
         options=options,
+        quality_preset=quality_preset,
+        model=model,
         allow_none_response=allow_none_response,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
@@ -119,6 +135,8 @@ def _test_prompt_response(
 def _test_batch_prompt_response(
     responses: list[dict[str, Any]],
     options: dict[str, Any],
+    quality_preset: str,
+    model: str,
     allow_none_response: bool = False,
     allow_null_trustworthiness_score: bool = False,
 ) -> None:
@@ -131,6 +149,8 @@ def _test_batch_prompt_response(
         _is_valid_prompt_response(
             response,
             options,
+            quality_preset,
+            model,
             allow_none_response=allow_none_response,
             allow_null_trustworthiness_score=allow_null_trustworthiness_score,
         )
@@ -219,6 +239,8 @@ def test_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> No
     _test_prompt_response(
         response,
         {},
+        quality_preset,
+        model,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 
@@ -231,6 +253,8 @@ def test_prompt(tlm_dict: dict[str, Any], model: str, quality_preset: str) -> No
     _test_batch_prompt_response(
         responses,
         options,
+        quality_preset,
+        model,
         allow_none_response=True,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
@@ -256,7 +280,13 @@ def test_prompt_async(tlm_dict: dict[str, Any], model: str, quality_preset: str)
         tlm_no_options_kwargs["constrain_outputs"] = TEST_CONSTRAIN_OUTPUTS_BINARY
     response = asyncio.run(_run_prompt_async(tlm_no_options, test_prompt_single, **tlm_no_options_kwargs))
     print("TLM Single Response:", response)
-    _test_prompt_response(response, {}, allow_null_trustworthiness_score=allow_null_trustworthiness_score)
+    _test_prompt_response(
+        response,
+        {},
+        quality_preset,
+        model,
+        allow_null_trustworthiness_score=allow_null_trustworthiness_score,
+    )
 
     # test prompt with batch prompt
     tlm_kwargs = {}
@@ -267,6 +297,8 @@ def test_prompt_async(tlm_dict: dict[str, Any], model: str, quality_preset: str)
     _test_batch_prompt_response(
         responses,
         options,
+        quality_preset,
+        model,
         allow_null_trustworthiness_score=allow_null_trustworthiness_score,
     )
 

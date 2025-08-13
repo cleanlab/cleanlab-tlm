@@ -38,10 +38,11 @@ from cleanlab_tlm.internal.constants import (
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
     _TLM_MAX_RETRIES,
-    _VALID_TLM_QUALITY_PRESETS_RAG,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.validation import (
+    _validate_trustworthy_rag_options,
     tlm_score_process_response_and_kwargs,
     validate_rag_inputs,
 )
@@ -67,7 +68,7 @@ class TrustworthyRAG(BaseTLM):
     differences are described below. For details about each argument, refer to the [TLM](../tlm/#class-tlm) documentation.
 
     Args:
-        quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
+        quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
             the quality of generated LLM responses and trustworthiness scores vs. latency/costs.
 
         api_key (str, optional): API key for accessing TLM. If not provided, this client will
@@ -75,6 +76,7 @@ class TrustworthyRAG(BaseTLM):
 
         options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
+            The "disable_trustworthiness" key is only supported for `TrustworthyRAG` when it's set to run `Evals`. See the `evals` argument description below for how evaluations are determined.
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
 
@@ -103,7 +105,7 @@ class TrustworthyRAG(BaseTLM):
         # Initialize base class
         super().__init__(
             quality_preset=quality_preset,
-            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_RAG,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
             support_custom_eval_criteria=False,
             api_key=api_key,
             options=options,
@@ -130,6 +132,8 @@ class TrustworthyRAG(BaseTLM):
                 raise ValidationError("'evals' must be a list of Eval objects")
 
             self._evals = evals
+
+        _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
 
     def score(
         self,

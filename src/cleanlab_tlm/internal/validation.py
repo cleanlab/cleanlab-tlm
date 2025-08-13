@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
+import warnings
 from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
@@ -9,9 +12,9 @@ from cleanlab_tlm.internal.constants import (
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
     INVALID_SCORE_OPTIONS,
-    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
     TLM_NUM_CANDIDATE_RESPONSES_RANGE,
     TLM_NUM_CONSISTENCY_SAMPLES_RANGE,
+    TLM_NUM_SELF_REFLECTIONS_RANGE,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
     TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS,
@@ -21,6 +24,10 @@ from cleanlab_tlm.internal.constants import (
     VALID_RESPONSE_OPTIONS,
 )
 from cleanlab_tlm.internal.types import Task
+
+if TYPE_CHECKING:
+    from cleanlab_tlm.tlm import TLMOptions
+    from cleanlab_tlm.utils.rag import Eval
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 
@@ -64,7 +71,11 @@ def validate_tlm_prompt_response(prompt: Union[str, Sequence[str]], response: Un
             )
 
 
-def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True) -> None:
+def validate_tlm_options(
+    options: Any,
+    support_custom_eval_criteria: bool = True,
+    allow_custom_model: bool = False,
+) -> None:
     from cleanlab_tlm.tlm import TLMOptions
 
     if SKIP_VALIDATE_TLM_OPTIONS:
@@ -96,7 +107,7 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
                 )
 
         elif option == "model":
-            if val not in _VALID_TLM_MODELS:
+            if not allow_custom_model and val not in _VALID_TLM_MODELS:
                 raise ValidationError(f"{val} is not a supported model, valid models include: {_VALID_TLM_MODELS}")
 
         elif option == "num_candidate_responses":
@@ -117,9 +128,24 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
                     f"Invalid value {val}, num_consistency_samples must be in the range {TLM_NUM_CONSISTENCY_SAMPLES_RANGE}"
                 )
 
+        elif option == "num_self_reflections":
+            if not isinstance(val, int):
+                raise ValidationError(f"Invalid type {type(val)}, num_self_reflections must be an integer")
+
+            if val < TLM_NUM_SELF_REFLECTIONS_RANGE[0] or val > TLM_NUM_SELF_REFLECTIONS_RANGE[1]:
+                raise ValidationError(
+                    f"Invalid value {val}, num_self_reflections must be in the range {TLM_NUM_SELF_REFLECTIONS_RANGE}"
+                )
+
         elif option == "use_self_reflection":
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, use_self_reflection must be a boolean")
+
+            warnings.warn(
+                "Deprecated method. Use `num_self_reflections` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         elif option == "similarity_measure":
             if val not in TLM_SIMILARITY_MEASURES:
@@ -140,8 +166,6 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
 
             model = options.get("model", _TLM_DEFAULT_MODEL)
-            if "explanation" in val and model in TLM_MODELS_NOT_SUPPORTING_EXPLANATION:
-                raise ValidationError(f"Explanation is not supported for this model: {model}. ")
 
             if invalid_log_options:
                 raise ValidationError(
@@ -177,6 +201,27 @@ def validate_tlm_options(options: Any, support_custom_eval_criteria: bool = True
 
                 if not isinstance(criteria.get("criteria"), str):
                     raise ValidationError(f"'criteria' in custom_eval_criteria item {i} must be a string.")
+        elif option == "disable_trustworthiness":
+            if not isinstance(val, bool):
+                raise ValidationError(f"Invalid type {type(val)}, disable_trustworthiness must be a boolean")
+            if val and support_custom_eval_criteria and not options.get("custom_eval_criteria"):
+                raise ValidationError("disable_trustworthiness is only supported when custom_eval_criteria is provided")
+
+
+def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized_evals: list[Eval]) -> None:
+    """To be used for ensuring TLMOptions are set correctly given other parameters to TrustworthyRAG
+
+    options: TLMOptions
+    initialized_evals: list[Eval]
+        The evals field configured in TrustworthyRAG.__init__. Required to validate disable_trustworthiness option.
+    """
+    disable_trustworthiness = options and options.get("disable_trustworthiness", False)
+
+    if disable_trustworthiness and not initialized_evals:
+        raise ValidationError(
+            "When disable_trustworthiness=True in TrustworthyRAG, at least one evaluation must be provided. "
+            "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
+        )
 
 
 def process_and_validate_kwargs_constrain_outputs(

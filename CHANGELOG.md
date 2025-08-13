@@ -7,6 +7,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.25] - 2025-08-12
+
+### Added
+
+- Add support for explanations for VPC ChatCompletion module
+
+### Fixed
+
+- Unittest logic for quality preset changes
+- Typing in `chat.py` for new `openai` versions
+
+## [1.1.24] - 2025-08-07
+
+### Added
+
+- Add new OpenAI models: `gpt-5`, `gpt-5-mini`, `gpt-5-nano`
+
+## [1.1.23] - 2025-08-06
+
+### Changed
+
+- Updated `TLMOptions` to support `disable_trustworthiness` parameter
+    - Skips trustworthiness scoring when `disable_trustworthiness` is True, assuming either custom evaluation criteria (TLM) or RAG Evals (TrustworthyRAG) are provided
+
+
+## [1.1.22] - 2025-07-29
+
+### Added
+
+- Added `TLMResponses` module, providing support for trust scoring with OpenAI Responses object
+
+## [1.1.21] - 2025-07-28
+
+### Changed
+
+- Updated the VPC version of `TLMChatCompletion` to accept `request_headers` parameter, which is forwarded to the TLM app as part of API requests
+
+## [1.1.20] - 2025-07-28
+
+### Changed
+
+- Updated `TLMChatCompletion.score()` to use `form_response_string_chat_completions` instead of `form_response_string_chat_completions_api`
+
+## [1.1.19] - 2025-07-25
+
+### Added
+
+- Add `get_model_name()` method to `TrustworthyRAG`, `TLMChatCompletion`
+
+
+## [1.1.18] - 2025-07-25
+
+### Fixed
+
+- Properly pass quality preset in `TLMChatCompletion`
+
+
+## [1.1.17] - 2025-07-18
+
+### Changed
+
+- Enabled `TLMChatCompletion.score()`to evaluate structured outputs in `ChatCompletion` objects
+
+
+## [1.1.16] - 2025-07-15
+
+### Changed
+
+- Add internal setting to bypass model validation check (for custom/VPC models)
+
+
+## [1.1.15] - 2025-07-14
+
+### Changed
+
+- Enabled `TLMChatCompletion.score()`to evaluate tool calls in `ChatCompletion` objects
+
+
+## [1.1.14] - 2025-07-08
+
+### Added
+
+- New TLMOption `num_self_reflections`
+- Support for `best` and `high` preset in `TrustworthyRAG`
+
+### Changed 
+
+- Deprecate `use_self_reflection`
+- Documentation updates for new default configurations
+
+
+## [1.1.13] - 2025-06-26
+
+### Added
+
+- Added `form_response_string_chat_completions_api` in `chat.py`
+
+
 ## [1.1.12] - 2025-06-23
 
 ### Fixed
@@ -23,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bug fix in `chat.py` for empty tool list still using tools prompt
 - Bug fix in `chat.py` for handling empty strings args
+
 
 ## [1.1.10] - 2025-06-20
 
@@ -216,7 +315,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.12...HEAD
+
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.25...HEAD
+[1.1.25]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.24...v1.1.25
+[1.1.24]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.23...v1.1.24
+[1.1.23]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.22...v1.1.23
+[1.1.22]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.21...v1.1.22
+[1.1.21]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.20...v1.1.21
+[1.1.20]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.19...v1.1.20
+[1.1.19]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.18...v1.1.19
+[1.1.18]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.17...v1.1.18
+[1.1.17]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.16...v1.1.17
+[1.1.16]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.15...v1.1.16
+[1.1.15]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.14...v1.1.15
+[1.1.14]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.13...v1.1.14
+[1.1.13]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.12...v1.1.13
 [1.1.12]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.11...v1.1.12
 [1.1.11]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.10...v1.1.11
 [1.1.10]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.9...v1.1.10

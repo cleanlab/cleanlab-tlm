@@ -48,6 +48,7 @@ class TLMChatCompletion(BaseTLM):
         *,
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
+        request_headers: Optional[dict[str, str]] = None,
     ):
         """
         lazydocs: ignore
@@ -60,7 +61,9 @@ class TLMChatCompletion(BaseTLM):
             options=options,
             timeout=timeout,
             verbose=False,
+            allow_custom_model=True,
         )
+        self._request_headers = request_headers or {}
 
     def score(
         self,
@@ -92,8 +95,12 @@ class TLMChatCompletion(BaseTLM):
                 **openai_kwargs,
             },
             timeout=self._timeout,
+            headers=self._request_headers,
         )
 
         res_json = res.json()
+        tlm_result = {"trustworthiness_score": res_json["tlm_metadata"]["trustworthiness_score"]}
+        if explanation := res_json["tlm_metadata"].get("log", {}).get("explanation"):
+            tlm_result["log"] = {"explanation": explanation}
 
-        return {"trustworthiness_score": res_json["tlm_metadata"]["trustworthiness_score"]}
+        return tlm_result

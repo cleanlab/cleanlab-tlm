@@ -3,7 +3,6 @@ from cleanlab_tlm.internal.types import Task, TLMQualityPreset
 # TLM constants
 # prepend constants with _ so that they don't show up in help.cleanlab.ai docs
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
-_VALID_TLM_QUALITY_PRESETS_RAG: list[str] = ["medium", "low", "base"]
 _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS: list[str] = ["medium", "low", "base"]
 _DEFAULT_TLM_QUALITY_PRESET: TLMQualityPreset = "medium"
 _DEFAULT_TLM_MAX_TOKENS: int = 512
@@ -17,6 +16,9 @@ _VALID_TLM_MODELS: list[str] = [
     "gpt-4.1",
     "gpt-4.1-mini",
     "gpt-4.1-nano",
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
     "o1-preview",
     "o1",
     "o1-mini",
@@ -54,6 +56,7 @@ _TLM_MAX_TOKEN_RANGE: dict[str, tuple[int, int]] = {  # model: (min, max)
 _TLM_CONSTRAIN_OUTPUTS_KEY: str = "constrain_outputs"
 TLM_NUM_CANDIDATE_RESPONSES_RANGE: tuple[int, int] = (1, 20)  # (min, max)
 TLM_NUM_CONSISTENCY_SAMPLES_RANGE: tuple[int, int] = (0, 20)  # (min, max)
+TLM_NUM_SELF_REFLECTIONS_RANGE: tuple[int, int] = (0, 3)
 TLM_SIMILARITY_MEASURES: set[str] = {
     "semantic",
     "string",
@@ -69,14 +72,6 @@ TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: set[str] = {
     _TLM_CONSTRAIN_OUTPUTS_KEY,
 }
 TLM_VALID_PROMPT_KWARGS: set[str] = {_TLM_CONSTRAIN_OUTPUTS_KEY}
-TLM_MODELS_NOT_SUPPORTING_EXPLANATION: set[str] = {
-    "o1-mini",
-    "o1-preview",
-    "o1",
-    "o3-mini",
-    "o3",
-    "o4-mini",
-}
 VALID_RESPONSE_OPTIONS: set[str] = {"max_tokens"}
 INVALID_SCORE_OPTIONS: set[str] = {"num_candidate_responses"}
 

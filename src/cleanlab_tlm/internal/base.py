@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 from cleanlab_tlm.errors import MissingApiKeyError, ValidationError
 from cleanlab_tlm.internal.concurrency import TlmRateHandler
@@ -40,6 +40,7 @@ class BaseTLM:
         options: Optional[TLMOptions] = None,
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
+        allow_custom_model: bool = False,
     ) -> None:
         """
         Initialize base TLM functionality.
@@ -63,7 +64,7 @@ class BaseTLM:
         self._return_log = False
 
         options_dict = options or {}
-        validate_tlm_options(options_dict, support_custom_eval_criteria)
+        validate_tlm_options(options_dict, support_custom_eval_criteria, allow_custom_model)
         if "log" in options_dict and len(options_dict["log"]) > 0:
             self._return_log = True
 
@@ -101,3 +102,9 @@ class BaseTLM:
         except RuntimeError:
             self._event_loop = asyncio.new_event_loop()
         self._rate_handler = TlmRateHandler()
+
+    def get_model_name(self) -> str:
+        """Returns the underlying LLM used to generate responses and score their trustworthiness.
+        Available base LLMs that you can run TLM with are listed under "model" configuration in TLMOptions.
+        """
+        return cast(str, self._options["model"])

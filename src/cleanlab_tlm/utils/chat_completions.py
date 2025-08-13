@@ -5,21 +5,26 @@ If you are using OpenAI's Chat Completions API, this module allows you to incorp
 It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs that are also usable via Chat Completions API (Gemini, DeepSeek, Llama, etc).
 """
 
+import asyncio
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 import numpy as np
 
+from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
     _DEFAULT_TLM_QUALITY_PRESET,
-    _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
-from cleanlab_tlm.utils.chat import form_prompt_string
+from cleanlab_tlm.utils.chat import (
+    _form_prompt_chat_completions_api,
+    form_response_string_chat_completions,
+)
 
 if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletion
+    from openai.types.chat import ChatCompletion, ChatCompletionMessage
 
 
 class TLMChatCompletion(BaseTLM):
@@ -30,7 +35,7 @@ class TLMChatCompletion(BaseTLM):
     by passing in the inputs to OpenAI's Chat Completions API and the ChatCompletion response object.
 
     Args:
-        quality_preset ({"base", "low", "medium"}, default = "medium"): an optional preset configuration to control
+        quality_preset ({"base", "low", "medium", "high", "best"}, default = "medium"): an optional preset configuration to control
             the quality of TLM trustworthiness scores vs. latency/costs.
 
         api_key (str, optional): Cleanlab TLM API key. If not provided, will attempt to read from CLEANLAB_API_KEY environment variable.
@@ -54,7 +59,7 @@ class TLMChatCompletion(BaseTLM):
         """
         super().__init__(
             quality_preset=quality_preset,
-            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS,
+            valid_quality_presets=_VALID_TLM_QUALITY_PRESETS,
             support_custom_eval_criteria=True,
             api_key=api_key,
             options=options,
@@ -84,12 +89,37 @@ class TLMChatCompletion(BaseTLM):
         Returns:
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
+        self._validate_chat_completion(response)
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
+
+        combined_kwargs = {
+            "quality_preset": self._quality_preset,
+            **openai_kwargs,
+            **self._options,
+        }
+
+        # handle structured outputs differently
+        if openai_kwargs.get("response_format"):
+            return cast(
+                TLMScore,
+                self._event_loop.run_until_complete(
+                    asyncio.wait_for(
+                        tlm_chat_completions_score(
+                            api_key=self._api_key,
+                            response=response,
+                            **combined_kwargs,
+                        ),
+                        timeout=self._timeout,
+                    )
+                ),
+            )
+
+        # all other cases
         tools = openai_kwargs.get("tools", None)
 
-        prompt_text = form_prompt_string(messages, tools)
-        response_text = _get_string_response(response)
+        prompt_text = _form_prompt_chat_completions_api(messages, tools)
+        response_text = form_response_string_chat_completions(response=response)
 
         scoring_kwargs = {}
         # add perplexity to tlm.get_trustworthiness_score kwargs if it exists
@@ -99,23 +129,31 @@ class TLMChatCompletion(BaseTLM):
 
         return cast(
             TLMScore,
-            self._tlm.get_trustworthiness_score(prompt_text, response_text, **scoring_kwargs),
+            self._tlm.get_trustworthiness_score(
+                prompt_text, response_text, **scoring_kwargs
+            ),
         )
 
+    @staticmethod
+    def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":
+        return response.choices[0].message
 
-def _get_string_response(response: "ChatCompletion") -> str:
-    try:
-        from openai.types.chat import ChatCompletion
-    except ImportError:
-        raise ImportError(
-            "OpenAI is required to use the TLMChatCompletion class. Please install it with `pip install openai`."
-        )
+    def _validate_chat_completion(self, response: Any) -> None:
+        # `response` should be a ChatCompletion, but isinstance checks wouldn't be reachable
+        try:
+            from openai.types.chat import ChatCompletion
+        except ImportError as e:
+            raise ImportError(
+                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
+            ) from e
+        if not isinstance(response, ChatCompletion):
+            raise TypeError("The response is not an OpenAI ChatCompletion object.")
 
-    if not isinstance(response, ChatCompletion):
-        raise TypeError("The response is not an OpenAI ChatCompletion object.")
-    if response.choices[0].message.content is None:
-        raise ValueError("The OpenAI ChatCompletion object does not contain a message content.")
-    return str(response.choices[0].message.content)
+        message = self._get_response_message(response)
+        if message.content is None and message.tool_calls is None:
+            raise ValueError(
+                "The OpenAI ChatCompletion object does not contain a message content or tool calls."
+            )
 
 
 def _extract_perplexity(response: "ChatCompletion") -> Optional[float]:

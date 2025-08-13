@@ -14,7 +14,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_MAX_TOKEN_RANGE,
     _VALID_TLM_MODELS,
     _VALID_TLM_TASKS,
-    TLM_MODELS_NOT_SUPPORTING_EXPLANATION,
+    TLM_NUM_SELF_REFLECTIONS_RANGE,
     TLM_REASONING_EFFORT_VALUES,
     TLM_SIMILARITY_MEASURES,
 )
@@ -89,12 +89,10 @@ def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
     add_max_tokens = np.random.choice([True, False])
     add_num_candidate_responses = np.random.choice([True, False])
     add_num_consistency_samples = np.random.choice([True, False])
-    add_use_self_reflection = np.random.choice([True, False])
+    add_num_self_reflections = np.random.choice([True, False])
     add_similarity_measure = np.random.choice([True, False])
     add_reasoning_effort = np.random.choice([True, False])
-    add_log_explanation = (
-        np.random.choice([True, False]) if model not in TLM_MODELS_NOT_SUPPORTING_EXPLANATION else False
-    )
+    add_log_explanation = np.random.choice([True, False])
     add_log_perplexity_score = np.random.choice([True, False])
 
     options: dict[str, Any] = {}
@@ -105,8 +103,8 @@ def _get_options_dictionary(model: Optional[str]) -> TLMOptions:
     if add_max_tokens:
         max_tokens_limit = _TLM_MAX_TOKEN_RANGE.get(model or _TLM_DEFAULT_MODEL, _TLM_MAX_TOKEN_RANGE["default"])[1]
         options["max_tokens"] = int(np.random.randint(64, max_tokens_limit))
-    if add_use_self_reflection:
-        options["use_self_reflection"] = random.choice([True, False])
+    if add_num_self_reflections:
+        options["num_self_reflections"] = int(np.random.randint(*TLM_NUM_SELF_REFLECTIONS_RANGE))
     if add_num_candidate_responses:
         options["num_candidate_responses"] = int(np.random.randint(1, 5))
     if add_num_consistency_samples:
