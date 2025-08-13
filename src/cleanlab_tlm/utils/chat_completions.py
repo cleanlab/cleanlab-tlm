@@ -122,16 +122,19 @@ class TLMChatCompletion(BaseTLM):
         response_text = form_response_string_chat_completions(response=response)
 
         scoring_kwargs = {}
+
         # add perplexity to tlm.get_trustworthiness_score kwargs if it exists
-        perplexity = _extract_perplexity(response)
+        try:
+            perplexity = _extract_perplexity(response)
+        except Exception:
+            perplexity = None
+
         if perplexity is not None:
             scoring_kwargs["perplexity"] = perplexity
 
         return cast(
             TLMScore,
-            self._tlm.get_trustworthiness_score(
-                prompt_text, response_text, **scoring_kwargs
-            ),
+            self._tlm.get_trustworthiness_score(prompt_text, response_text, **scoring_kwargs),
         )
 
     @staticmethod
@@ -151,9 +154,7 @@ class TLMChatCompletion(BaseTLM):
 
         message = self._get_response_message(response)
         if message.content is None and message.tool_calls is None:
-            raise ValueError(
-                "The OpenAI ChatCompletion object does not contain a message content or tool calls."
-            )
+            raise ValueError("The OpenAI ChatCompletion object does not contain a message content or tool calls.")
 
 
 def _extract_perplexity(response: "ChatCompletion") -> Optional[float]:
@@ -162,5 +163,5 @@ def _extract_perplexity(response: "ChatCompletion") -> Optional[float]:
         return None
 
     logprobs_list = [completion.logprob for completion in response_logprobs.content]
-    perplexity = np.mean(np.exp(logprobs_list))
+    perplexity = np.exp(np.mean(logprobs_list))
     return float(perplexity)

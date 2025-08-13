@@ -207,6 +207,7 @@ def test_tlm_chat_completion_score_with_perplexity() -> None:
     score = tlm_chat.score(response=response, **openai_kwargs)
     returned_perplexity = score["log"]["perplexity"]
 
+    assert returned_perplexity is not None
     assert manually_calculated_perplexity == returned_perplexity
 
 
@@ -292,9 +293,7 @@ def test_tlm_chat_completion_score_invalid_response() -> None:
     }
     invalid_response = {"invalid": "response"}
 
-    with pytest.raises(
-        TypeError, match="The response is not an OpenAI ChatCompletion object."
-    ):
+    with pytest.raises(TypeError, match="The response is not an OpenAI ChatCompletion object."):
         tlm_chat.score(response=invalid_response, **openai_kwargs)  # type: ignore
 
 
@@ -330,18 +329,16 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
     [
         (
             json.dumps({"query": "Capital of Germany"}),
-            lambda score: score["trustworthiness_score"] < 0.5,
+            lambda score: score["trustworthiness_score"] < 0.5,  # noqa: PLR2004
         ),
         (
             json.dumps({"query": "Capital of France"}),
-            lambda score: score["trustworthiness_score"] >= 0.8,
+            lambda score: score["trustworthiness_score"] >= 0.8,  # noqa: PLR2004
         ),
     ],
     ids=["bad_arguments", "good_arguments"],
 )
-def test_tlm_chat_completion_score_tool_calls(
-    arguments: str, condition: Callable[[TLMScore], bool]
-) -> None:
+def test_tlm_chat_completion_score_tool_calls(arguments: str, condition: Callable[[TLMScore], bool]) -> None:
     tlm_chat = TLMChatCompletion()
 
     openai_kwargs = {
