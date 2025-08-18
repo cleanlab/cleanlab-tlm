@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.26] - 2025-08-18
+
+### Added
+
+- TrustworthyRAG now skips response-based evaluations when tool calls are detected in the response text.
+
 ## [1.1.25] - 2025-08-12
 
 ### Added
@@ -316,7 +322,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.25...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.26...HEAD
+[1.1.26]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.25...v1.1.26
 [1.1.25]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.24...v1.1.25
 [1.1.24]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.23...v1.1.24
 [1.1.23]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.22...v1.1.23
