@@ -4,6 +4,7 @@ import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
+from cleanlab_tlm.internal.rag import _is_tool_call_response
 from cleanlab_tlm.utils.chat import (
     _form_prompt_chat_completions_api,
     _form_prompt_responses_api,
@@ -1679,3 +1680,103 @@ def test_form_response_string_chat_completions_uses_api_function() -> None:
 
         mock_api_func.assert_called_once_with(message)
         assert result == "Mocked response"
+
+
+class TestIsToolCallResponse:
+    """Test suite for the _is_tool_call_response function."""
+
+    # pytest.param is required to create test cases with readable ids
+    # the lambda function approach in the pytest.mark.parametrize(ids=...) is not working.
+    @pytest.mark.parametrize(
+        "response_text,expected",  # noqa: PT006
+        [
+            pytest.param(
+                """<tool_call>
+{
+  "name": "get_weather",
+  "arguments": {
+    "location": "New York"
+  }
+}
+</tool_call>""",
+                True,
+                id="basic_tool_call",
+            ),
+            pytest.param(
+                """
+    <tool_call>
+{
+  "name": "calculate",
+  "arguments": {"x": 10, "y": 5}
+}
+</tool_call>   """,
+                True,
+                id="tool_call_with_whitespace",
+            ),
+            pytest.param(
+                """<tool_call>
+{"name": "function1", "arguments": {}}
+</tool_call>
+<tool_call>
+{"name": "function2", "arguments": {}}
+</tool_call>""",
+                True,
+                id="consecutive_tool_calls",
+            ),
+            pytest.param("This is a regular text response from the assistant.", False, id="regular_text"),
+            pytest.param("", False, id="empty_string"),
+            pytest.param("None", False, id="none_as_string"),
+            pytest.param("<tool_cal", False, id="partial_tag"),
+            pytest.param(
+                """<incorrect_tag>
+{"name": "function", "arguments": {}}
+</incorrect_tag>""",
+                False,
+                id="incorrect_tag",
+            ),
+            pytest.param(
+                """Here is some text before the tool call.
+<tool_call>
+{"name": "function", "arguments": {}}
+</tool_call>""",
+                False,
+                id="text_before_tool_call",
+            ),
+            pytest.param(
+                """<tool_call>
+{"name": "function", "arguments": {}}
+</tool_call>
+And here is some text after the tool call.""",
+                False,
+                id="text_after_tool_call",
+            ),
+            pytest.param(
+                """
+<tool_call>
+{"name": "first_function", "arguments": {"param": "value"}}
+</tool_call>
+Here is some explanatory text between two tool calls.
+<tool_call>
+{"name": "second_function", "arguments": {"other_param": 42}}
+</tool_call>""",
+                False,
+                id="text_between_tool_calls",
+            ),
+            pytest.param(
+                """Starting with some text.
+<tool_call>
+{"name": "function1", "arguments": {}}
+</tool_call>
+Text in the middle.
+<tool_call>
+{"name": "function2", "arguments": {}}
+</tool_call>
+Ending with more text.""",
+                False,
+                id="text_everywhere",
+            ),
+        ],
+    )
+    def test_is_tool_call_response(self, response_text: str, expected: bool) -> None:
+        """Test _is_tool_call_response with various input scenarios."""
+        assert _is_tool_call_response(response_text) is expected
