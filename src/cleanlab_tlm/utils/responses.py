@@ -118,6 +118,12 @@ class TLMResponses(BaseTLM):
         prompt_text = _form_prompt_responses_api(openai_kwargs["input"], tools)
         response_text = form_response_string_responses_api(response=response)
 
+        print()
+        print(prompt_text)
+        print()
+        print(response_text)
+        print()
+
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
 
 
