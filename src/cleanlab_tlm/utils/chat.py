@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
+from trafilatura import fetch_url, extract
+from concurrent.futures import ThreadPoolExecutor
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion, ChatCompletionMessage, ChatCompletionMessageParam
@@ -69,6 +71,8 @@ _TOOL_CALL_SCHEMA_PREFIX = (
     "However, do not generate your own call_id when making a function call."
 )
 
+# Set up a URL cache so that we can avoid fetching the same URL multiple times
+_url_cache = {}
 
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
     """
@@ -98,13 +102,49 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
                 },
             }
         else:  # responses format
-            tool_dict = {
-                "type": "function",
-                "name": tool["name"],
-                "description": tool["description"],
-                "parameters": tool["parameters"],
-                "strict": tool.get("strict", True),
-            }
+            if tool["type"] == "function":
+                tool_dict = {
+                    "type": "function",
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["parameters"],
+                    "strict": tool.get("strict", True),
+                }
+            elif tool["type"] == "file_search":
+                tool_dict = {
+                    "type": "function",
+                    "name": "file_search",
+                    "description": "Search user-uploaded documents for relevant passages.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "queries": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Search queries to run against the document index.",
+                            },
+                        },
+                        "required": ["queries"],
+                    },
+                }
+            elif tool["type"] == "web_search_preview":
+                tool_dict = {
+                    "type": "function",
+                    "name": "web_search_call",
+                    "description": "Search the web for relevant information.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search the web with a query and return relevant pages.",
+                            },
+                        },
+                        "required": ["query"],
+                    },
+                }
+            else:
+                continue
         tool_strings.append(json.dumps(tool_dict, separators=(",", ":")))
 
     system_message += "\n".join(tool_strings)
@@ -264,46 +304,7 @@ def _form_prompt_responses_api(
             stacklevel=2,
         )
 
-    # Track function names by call_id for function call outputs
-    function_names = {}
-    prev_msg_role = None
-
-    for msg in messages:
-        if "type" in msg:
-            if msg["type"] == _FUNCTION_CALL_TYPE:
-                output += _ASSISTANT_PREFIX
-                # If there's content in the message, add it before the tool call
-                if msg.get("content"):
-                    output += f"{msg['content']}\n\n"
-                call_id = msg.get("call_id", "")
-                function_names[call_id] = msg["name"]
-                # Format function call as JSON within XML tags, now including call_id
-                function_call = {
-                    "name": msg["name"],
-                    "arguments": json.loads(msg["arguments"]) if msg["arguments"] else {},
-                    "call_id": call_id,
-                }
-                output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
-            elif msg["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
-                output += _TOOL_PREFIX
-                call_id = msg.get("call_id", "")
-                name = function_names.get(call_id, "function")
-                # Format function response as JSON within XML tags
-                tool_response = {
-                    "name": name,
-                    "call_id": call_id,
-                    "output": msg["output"],
-                }
-                output += (
-                    f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}\n\n"
-                )
-        else:
-            prefix = _get_prefix(msg, prev_msg_role)
-            output += f"{prefix}{msg['content']}\n\n"
-            prev_msg_role = msg["role"]
-
-    output += _ASSISTANT_PREFIX
-    return output.strip()
+    return (_messages_to_string(messages) + "\n\n" + _ASSISTANT_PREFIX).strip()
 
 
 def _form_prompt_chat_completions_api(
@@ -339,8 +340,7 @@ def _form_prompt_chat_completions_api(
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and (tools is None or len(tools) == 0):
-        first_msg = cast(dict[str, Any], messages[0])
-        return output + str(first_msg["content"])
+        return output + str(messages[0]["content"])
 
     # Warn if the last message is an assistant message with tool calls
     if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
@@ -359,26 +359,22 @@ def _form_prompt_chat_completions_api(
         if msg["role"] == _ASSISTANT_ROLE:
             output += _ASSISTANT_PREFIX
             # Handle content if present
-            content_value = cast(Optional[str], msg.get("content"))
-            if content_value:
-                output += f"{content_value}\n\n"
+            if msg.get("content"):
+                output += f"{msg['content']}\n\n"
             # Handle tool calls if present
             if "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
-                    if tool_call["type"] == "function":
-                        call_id = tool_call["id"]
-                        function_names[call_id] = tool_call["function"]["name"]
-                        # Format function call as JSON within XML tags, now including call_id
-                        function_call = {
-                            "name": tool_call["function"]["name"],
-                            "arguments": json.loads(tool_call["function"]["arguments"])
-                            if tool_call["function"]["arguments"]
-                            else {},
-                            "call_id": call_id,
-                        }
-                        output += (
-                            f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
-                        )
+                    call_id = tool_call["id"]
+                    function_names[call_id] = tool_call["function"]["name"]
+                    # Format function call as JSON within XML tags, now including call_id
+                    function_call = {
+                        "name": tool_call["function"]["name"],
+                        "arguments": json.loads(tool_call["function"]["arguments"])
+                        if tool_call["function"]["arguments"]
+                        else {},
+                        "call_id": call_id,
+                    }
+                    output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
         elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
             output += _TOOL_PREFIX
@@ -511,19 +507,13 @@ def form_response_string_chat_completions_api(
     """
     response_dict = _response_to_dict(response)
     content = response_dict.get("content") or ""
-    tool_calls = cast(Optional[list[dict[str, Any]]], response_dict.get("tool_calls"))
+    tool_calls = response_dict.get("tool_calls")
     if tool_calls is not None:
         try:
-            rendered_calls: list[str] = []
-            for call in tool_calls:
-                function_dict = call["function"]
-                name = cast(str, function_dict["name"])
-                args_str = cast(Optional[str], function_dict.get("arguments"))
-                args_obj = json.loads(args_str) if args_str else {}
-                rendered_calls.append(
-                    f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': name, 'arguments': args_obj}, indent=2)}\n{_TOOL_CALL_TAG_END}"
-                )
-            tool_calls_str = "\n".join(rendered_calls)
+            tool_calls_str = "\n".join(
+                f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': json.loads(call['function']['arguments']) if call['function']['arguments'] else {}}, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                for call in tool_calls
+            )
             return f"{content}\n{tool_calls_str}".strip() if content else tool_calls_str
         except (KeyError, TypeError, json.JSONDecodeError) as e:
             # Log the error but continue with just the content
@@ -560,34 +550,11 @@ def form_response_string_responses_api(response: Response) -> str:
     except ImportError as e:
         raise ImportError("OpenAI is a required dependency. Please install it with `pip install openai`.") from e
 
-    content_parts = []
-
-    for output in response.output:
-        if output.type == "message":
-            output_content = [content.text for content in output.content if isinstance(content, ResponseOutputText)]
-            content_parts.append("\n".join(output_content))
-        elif output.type == "function_call":
-            try:
-                tool_call = {
-                    "name": output.name,
-                    "arguments": (json.loads(output.arguments) if output.arguments else {}),
-                    "call_id": output.call_id,
-                }
-                content_parts.append(f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}")
-            except (AttributeError, TypeError, json.JSONDecodeError) as e:
-                warnings.warn(
-                    f"Error formatting tool call in response: {e}. Skipping this tool call.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-        else:
-            warnings.warn(
-                f"Unexpected output type: {output.type}. Skipping this output.",
-                UserWarning,
-                stacklevel=2,
-            )
-
-    return "\n".join(content_parts)
+    return (
+        _messages_to_string([message.model_dump() for message in response.output])
+        .replace("Assistant:", "", 1)
+        .strip()
+    )
 
 
 def _response_to_dict(response: Any) -> dict[str, Any]:
@@ -609,3 +576,221 @@ def _response_to_dict(response: Any) -> dict[str, Any]:
         )
 
     return response.model_dump()
+
+
+def _get_role(message: dict[str, Any]) -> str:
+    if message.get("type", "message") == "message":
+        return message.get("role", _USER_ROLE)
+    elif message["type"] == _FUNCTION_CALL_TYPE:
+        return _ASSISTANT_ROLE
+    elif message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
+        return _TOOL_ROLE
+    elif message["type"] == "file_search_call":
+        return _TOOL_ROLE
+    elif message["type"] == "web_search_call":
+        return _TOOL_ROLE
+    else:
+        return _USER_ROLE
+
+
+def _messages_to_string(messages: list[dict[str, Any]]) -> str:
+    content_parts = []
+    for i, message in enumerate(messages):
+        if message.get("type", "message") == "message":
+            if isinstance(message["content"], str):
+                output_content = message["content"]
+            else:
+                output_content = "\n".join(
+                    [
+                        content["text"]
+                        for content in message["content"]
+                        if content["type"] == "output_text"
+                    ]
+                )
+
+            if i == 0 or _get_role(message) != _get_role(messages[i - 1]):
+                content_parts.append(
+                    _get_prefix(message, messages[i - 1].get("role") if i > 0 else None)
+                )
+            content_parts.append(output_content)
+
+        elif message["type"] == _FUNCTION_CALL_TYPE:
+            try:
+                arguments = (
+                    json.loads(message["arguments"]) if message["arguments"] else {}
+                )
+                tool_call = {
+                    "name": message["name"],
+                    "arguments": arguments,
+                    "call_id": message["call_id"],
+                }
+
+                if i == 0 or _get_role(messages[i - 1]) != _ASSISTANT_ROLE:
+                    content_parts.append(_ASSISTANT_PREFIX)
+                content_parts.append(
+                    f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                )
+            except (AttributeError, TypeError, json.JSONDecodeError) as e:
+                warnings.warn(
+                    f"Error formatting tool call in response: {e}. Skipping this tool call.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        elif message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
+            try:
+                tool_call = [
+                    m
+                    for m in messages[:i]
+                    if m.get("call_id", "") == message["call_id"]
+                ][0]
+
+                tool_response = {
+                    "name": tool_call["name"],
+                    "call_id": message["call_id"],
+                    "output": message["output"],
+                }
+                response = json.dumps(tool_response, indent=2)
+
+                if i == 0 or _get_role(messages[i - 1]) != _TOOL_ROLE:
+                    content_parts.append(_TOOL_PREFIX)
+                content_parts.append(
+                    f"{_TOOL_RESPONSE_TAG_START}\n{response}\n{_TOOL_RESPONSE_TAG_END}"
+                )
+            except (AttributeError, TypeError, json.JSONDecodeError) as e:
+                warnings.warn(
+                    f"Error formatting tool call response: {e}. Skipping this tool call.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        elif message["type"] == "file_search_call":
+            if message["results"] == None:
+                warnings.warn(
+                    f"File search call returned no results. Please include include=['file_search_call.results'] in your request.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
+
+            tool_call = {
+                "name": "file_search",
+                "arguments": {"queries": message["queries"]},
+                "call_id": message["id"],
+            }
+
+            if i == 0 or _get_role(messages[i - 1]) != _ASSISTANT_ROLE:
+                content_parts.append(_ASSISTANT_PREFIX)
+            content_parts.append(
+                f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
+            )
+
+            results_list = [
+                {
+                    "attributes": result["attributes"],
+                    "file_id": result["file_id"],
+                    "filename": result["filename"],
+                    "score": result["score"],
+                    "text": result["text"],
+                }
+                for result in message["results"]
+            ]
+
+            tool_call_response = {
+                "name": "file_search",
+                "call_id": message["id"],
+                "output": results_list,
+            }
+
+            content_parts.append("")
+            content_parts.append(_TOOL_PREFIX)
+            content_parts.append(
+                f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_call_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}"
+            )
+
+        elif message["type"] == "web_search_call":
+            if message["action"]["type"] == "search":
+                output_message = [
+                    m["content"][0] for m in messages[i + 1 :] if m["type"] == "message"
+                ][0]
+
+                if output_message["type"] == "refusal":
+                    continue
+
+                annotations = list(
+                    set(
+                        [
+                            (annotation["url"], annotation["title"])
+                            for annotation in output_message["annotations"]
+                            if annotation["type"] == "url_citation"
+                        ]
+                    )
+                )
+
+                with ThreadPoolExecutor() as executor:
+
+                    def extract_text(pair):
+                        url = pair[0]
+                        if url in _url_cache:
+                            return _url_cache[url]
+                        response = extract(fetch_url(url), output_format="markdown")
+                        _url_cache[url] = response
+                        return response
+
+                    requests = list(
+                        executor.map(
+                            extract_text,
+                            annotations,
+                        )
+                    )
+
+                websites = [
+                    {
+                        "url": url,
+                        "title": title,
+                        "content": data,
+                    }
+                    for (url, title), data in zip(annotations, requests)
+                ]
+
+                tool_call = {
+                    "name": "web_search_call",
+                    "arguments": {"query": message["action"]["query"]},
+                    "call_id": message["id"],
+                }
+
+                tool_response = {
+                    "name": "web_search_call",
+                    "call_id": message["id"],
+                    "output": websites,
+                }
+
+                if i == 0 or _get_role(messages[i - 1]) != _ASSISTANT_ROLE:
+                    content_parts.append(_ASSISTANT_PREFIX)
+                content_parts.append(
+                    f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                )
+
+                content_parts.append("")
+                content_parts.append(_TOOL_PREFIX)
+                content_parts.append(
+                    f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}"
+                )
+
+            else:
+                warnings.warn(
+                    f"Unexpected output type: {message["type"]} - {message["action"]["type"]}. Skipping this output.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        else:
+            warnings.warn(
+                f"Unexpected output type: {message["type"]}. Skipping this output.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        content_parts.append("")
+
+    return "\n".join(content_parts).strip()
