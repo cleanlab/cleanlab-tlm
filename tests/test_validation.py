@@ -713,11 +713,7 @@ def test_validate_tlm_options_disable_persistence_success() -> None:
     validate_tlm_options({"disable_persistence": False})
 
     # Should work with other options
-    validate_tlm_options({
-        "disable_persistence": True,
-        "max_tokens": 100,
-        "model": "gpt-4.1-mini"
-    })
+    validate_tlm_options({"disable_persistence": True, "max_tokens": 100, "model": "gpt-4.1-mini"})
 
 
 def test_validate_tlm_options_disable_persistence_failure() -> None:
