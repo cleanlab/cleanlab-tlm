@@ -704,6 +704,44 @@ def test_validate_tlm_options_support_custom_eval_criteria() -> None:
         )
 
 
+def test_validate_tlm_options_disable_persistence_success() -> None:
+    """Tests that validate_tlm_options accepts valid disable_persistence boolean values."""
+    from cleanlab_tlm.internal.validation import validate_tlm_options
+
+    # Valid boolean values should pass validation
+    validate_tlm_options({"disable_persistence": True})
+    validate_tlm_options({"disable_persistence": False})
+
+    # Should work with other options
+    validate_tlm_options({"disable_persistence": True, "max_tokens": 100, "model": "gpt-4.1-mini"})
+
+
+def test_validate_tlm_options_disable_persistence_failure() -> None:
+    """Tests that validate_tlm_options rejects invalid disable_persistence values."""
+    from cleanlab_tlm.internal.validation import validate_tlm_options
+
+    # Invalid: not a boolean
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type <class 'str'>, disable_persistence must be a boolean$",
+    ):
+        validate_tlm_options({"disable_persistence": "not a boolean"})
+
+    # Invalid: not a boolean
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type <class 'int'>, disable_persistence must be a boolean$",
+    ):
+        validate_tlm_options({"disable_persistence": 1})
+
+    # Invalid: not a boolean
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type <class 'list'>, disable_persistence must be a boolean$",
+    ):
+        validate_tlm_options({"disable_persistence": [True, False]})
+
+
 def test_validate_rag_inputs_mixed_string_and_sequence() -> None:
     """Tests that validate_rag_inputs rejects mixed inputs where some are strings and others are sequences."""
     from cleanlab_tlm.internal.validation import validate_rag_inputs

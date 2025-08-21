@@ -652,3 +652,4 @@ class TLMOptions(TypedDict):
     log: NotRequired[list[str]]
     custom_eval_criteria: NotRequired[list[dict[str, Any]]]
     disable_trustworthiness: NotRequired[bool]
+    disable_persistence: NotRequired[bool]
