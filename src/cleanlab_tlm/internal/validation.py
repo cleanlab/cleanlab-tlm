@@ -206,6 +206,9 @@ def validate_tlm_options(
                 raise ValidationError(f"Invalid type {type(val)}, disable_trustworthiness must be a boolean")
             if val and support_custom_eval_criteria and not options.get("custom_eval_criteria"):
                 raise ValidationError("disable_trustworthiness is only supported when custom_eval_criteria is provided")
+        elif option == "disable_persistence":
+            if not isinstance(val, bool):
+                raise ValidationError(f"Invalid type {type(val)}, disable_persistence must be a boolean")
 
 
 def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized_evals: list[Eval]) -> None:
