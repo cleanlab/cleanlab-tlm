@@ -711,7 +711,7 @@ def test_validate_tlm_options_disable_persistence_success() -> None:
     # Valid boolean values should pass validation
     validate_tlm_options({"disable_persistence": True})
     validate_tlm_options({"disable_persistence": False})
-    
+
     # Should work with other options
     validate_tlm_options({
         "disable_persistence": True,
