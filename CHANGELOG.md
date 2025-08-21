@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.27] - 2025-08-21
+
+### Added
+
+- TLMOptions includes disable_persistence option.
+
 ## [1.1.26] - 2025-08-19
 
 ### Added
@@ -322,7 +328,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.26...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.27...HEAD
+[1.1.27]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.26...v1.1.27
 [1.1.26]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.25...v1.1.26
 [1.1.25]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.24...v1.1.25
 [1.1.24]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.23...v1.1.24
