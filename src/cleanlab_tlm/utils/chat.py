@@ -254,6 +254,7 @@ def _find_index_after_first_system_block(messages: list[dict[str, Any]]) -> int:
 def _form_prompt_responses_api(
     messages: list[dict[str, Any]] | str,
     tools: Optional[list[dict[str, Any]]] = None,
+    response: Optional[Response] = None,
     **responses_api_kwargs: Any,
 ) -> str:
     """
@@ -272,6 +273,22 @@ def _form_prompt_responses_api(
     """
 
     messages = [{"role": "user", "content": messages}] if isinstance(messages, str) else messages.copy()
+
+    if response:
+        for i, message in enumerate(response.output[:-1]):
+            raw_message = message.model_dump()
+            if message.type == "web_search_call":
+                next_text_message = response.output[i + 1]
+                if next_text_message.type != "message":
+                    continue
+                next_text_content = next_text_message.content[0]
+                if next_text_content.type != "output_text":
+                    continue
+                raw_message["annotations"] = [
+                    annotation.model_dump()
+                    for annotation in next_text_content.annotations
+                ]
+            messages.append(raw_message)
 
     output = ""
 
@@ -551,7 +568,7 @@ def form_response_string_responses_api(response: Response) -> str:
         raise ImportError("OpenAI is a required dependency. Please install it with `pip install openai`.") from e
 
     return (
-        _messages_to_string([message.model_dump() for message in response.output])
+        _messages_to_string([response.output[-1].model_dump()])
         .replace("Assistant:", "", 1)
         .strip()
     )
@@ -710,18 +727,22 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
 
         elif message["type"] == "web_search_call":
             if message["action"]["type"] == "search":
-                output_message = [
-                    m["content"][0] for m in messages[i + 1 :] if m["type"] == "message"
-                ][0]
+                if "annotations" in message:
+                    annotations = message["annotations"]
+                else:
+                    next_text_message = messages[i + 1]
+                    if next_text_message["type"] != "message":
+                        continue
+                    next_text_content = next_text_message["content"][0]
+                    if next_text_content["type"] != "output_text":
+                        continue
+                    annotations = next_text_content["annotations"]
 
-                if output_message["type"] == "refusal":
-                    continue
-
-                annotations = list(
+                urls = list(
                     set(
                         [
                             (annotation["url"], annotation["title"])
-                            for annotation in output_message["annotations"]
+                            for annotation in annotations
                             if annotation["type"] == "url_citation"
                         ]
                     )
@@ -733,14 +754,21 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                         url = pair[0]
                         if url in _url_cache:
                             return _url_cache[url]
-                        response = extract(fetch_url(url), output_format="markdown")
+                        response_text = extract(
+                            fetch_url(url), output_format="markdown"
+                        )
+                        if response_text is None:
+                            return "Response is not shown, but the LLM can still access it. Assume that whatever the LLM references in this URL is true."
+                        response = response_text.encode("ascii", "ignore").decode(
+                            "ascii"
+                        )
                         _url_cache[url] = response
                         return response
 
                     requests = list(
                         executor.map(
                             extract_text,
-                            annotations,
+                            urls,
                         )
                     )
 
@@ -750,7 +778,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                         "title": title,
                         "content": data,
                     }
-                    for (url, title), data in zip(annotations, requests)
+                    for (url, title), data in zip(urls, requests)
                 ]
 
                 tool_call = {
