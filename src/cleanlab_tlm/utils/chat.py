@@ -612,7 +612,17 @@ def _get_role(message: dict[str, Any]) -> str:
 
 def _messages_to_string(messages: list[dict[str, Any]]) -> str:
     content_parts = []
-    for i, message in enumerate(messages):
+
+    adjusted_messages = []
+    for message in messages:
+        if message.get("type", "message") != "message" and message.get("content"):
+            adjusted_messages.append(
+                {"role": _ASSISTANT_ROLE, "content": message["content"]}
+            )
+
+        adjusted_messages.append(message)
+
+    for i, message in enumerate(adjusted_messages):
         if message.get("type", "message") == "message":
             if isinstance(message["content"], str):
                 output_content = message["content"]
@@ -625,9 +635,11 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                     ]
                 )
 
-            if i == 0 or _get_role(message) != _get_role(messages[i - 1]):
+            if i == 0 or _get_role(message) != _get_role(adjusted_messages[i - 1]):
                 content_parts.append(
-                    _get_prefix(message, messages[i - 1].get("role") if i > 0 else None)
+                    _get_prefix(
+                        message, adjusted_messages[i - 1].get("role") if i > 0 else None
+                    )
                 )
             content_parts.append(output_content)
 
@@ -642,7 +654,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                     "call_id": message["call_id"],
                 }
 
-                if i == 0 or _get_role(messages[i - 1]) != _ASSISTANT_ROLE:
+                if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                     content_parts.append(_ASSISTANT_PREFIX)
                 content_parts.append(
                     f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
@@ -658,7 +670,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
             try:
                 tool_call = [
                     m
-                    for m in messages[:i]
+                    for m in adjusted_messages[:i]
                     if m.get("call_id", "") == message["call_id"]
                 ][0]
 
@@ -669,7 +681,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 }
                 response = json.dumps(tool_response, indent=2)
 
-                if i == 0 or _get_role(messages[i - 1]) != _TOOL_ROLE:
+                if i == 0 or _get_role(adjusted_messages[i - 1]) != _TOOL_ROLE:
                     content_parts.append(_TOOL_PREFIX)
                 content_parts.append(
                     f"{_TOOL_RESPONSE_TAG_START}\n{response}\n{_TOOL_RESPONSE_TAG_END}"
@@ -696,7 +708,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 "call_id": message["id"],
             }
 
-            if i == 0 or _get_role(messages[i - 1]) != _ASSISTANT_ROLE:
+            if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                 content_parts.append(_ASSISTANT_PREFIX)
             content_parts.append(
                 f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
@@ -730,7 +742,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 if "annotations" in message:
                     annotations = message["annotations"]
                 else:
-                    next_text_message = messages[i + 1]
+                    next_text_message = adjusted_messages[i + 1]
                     if next_text_message["type"] != "message":
                         continue
                     next_text_content = next_text_message["content"][0]
@@ -793,7 +805,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                     "output": websites,
                 }
 
-                if i == 0 or _get_role(messages[i - 1]) != _ASSISTANT_ROLE:
+                if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                     content_parts.append(_ASSISTANT_PREFIX)
                 content_parts.append(
                     f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
@@ -819,6 +831,6 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 stacklevel=2,
             )
 
-        content_parts.append("")
+        content_parts.append("\n\n")
 
-    return "\n".join(content_parts).strip()
+    return "".join(content_parts).strip()
