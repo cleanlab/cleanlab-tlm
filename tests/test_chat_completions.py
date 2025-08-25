@@ -3,7 +3,8 @@ from typing import Callable
 
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion import Choice, ChoiceLogprobs
+from openai.types.chat.chat_completion_token_logprob import ChatCompletionTokenLogprob
 from openai.types.completion_usage import (
     CompletionTokensDetails,
     CompletionUsage,
@@ -13,7 +14,7 @@ from openai.types.completion_usage import (
 from cleanlab_tlm.internal.constants import _TLM_DEFAULT_MODEL
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLMScore
-from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
+from cleanlab_tlm.utils.chat_completions import TLMChatCompletion, _extract_perplexity
 from tests.conftest import make_text_unique
 from tests.constants import TEST_PROMPT, TEST_RESPONSE
 from tests.openai_compat import ChatCompletionMessageToolCall, Function
@@ -85,6 +86,8 @@ def test_tlm_chat_completion_score_with_options() -> None:
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
+    assert score["log"]["explanation"] is not None
+    assert score["log"]["perplexity"] is None
 
 
 def test_tlm_chat_completion_score_with_tools() -> None:
@@ -130,6 +133,82 @@ def test_tlm_chat_completion_score_with_tools() -> None:
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
+
+
+def test_tlm_chat_completion_score_with_perplexity() -> None:
+    tlm_chat = TLMChatCompletion(options={"log": ["perplexity"]})
+    openai_kwargs = {
+        "model": "gpt-4.1-mini",
+        "messages": [{"role": "user", "content": test_prompt}],
+    }
+    response = ChatCompletion(
+        id="test",
+        choices=[
+            Choice(
+                index=0,
+                message=ChatCompletionMessage(role="assistant", content=test_response),
+                finish_reason="stop",
+                logprobs=ChoiceLogprobs(
+                    content=[
+                        ChatCompletionTokenLogprob(
+                            token="The",  # noqa: S106
+                            bytes=[84, 104, 101],
+                            logprob=0.0,
+                            top_logprobs=[],
+                        ),
+                        ChatCompletionTokenLogprob(
+                            token=" capital",  # noqa: S106
+                            bytes=[32, 99, 97, 112, 105, 116, 97, 108],
+                            logprob=0.0,
+                            top_logprobs=[],
+                        ),
+                        ChatCompletionTokenLogprob(
+                            token=" of",  # noqa: S106
+                            bytes=[32, 111, 102],
+                            logprob=0.0,
+                            top_logprobs=[],
+                        ),
+                        ChatCompletionTokenLogprob(
+                            token=" France",  # noqa: S106
+                            bytes=[32, 70, 114, 97, 110, 99, 101],
+                            logprob=0.0,
+                            top_logprobs=[],
+                        ),
+                        ChatCompletionTokenLogprob(
+                            token=" is",  # noqa: S106
+                            bytes=[32, 105, 115],
+                            logprob=0.0,
+                            top_logprobs=[],
+                        ),
+                        ChatCompletionTokenLogprob(
+                            token=" Paris",  # noqa: S106
+                            bytes=[32, 80, 97, 114, 105, 115],
+                            logprob=0.0,
+                            top_logprobs=[],
+                        ),
+                        ChatCompletionTokenLogprob(
+                            token=".",  # noqa: S106
+                            bytes=[46],
+                            logprob=-1.9361264946837764e-07,
+                            top_logprobs=[],
+                        ),
+                    ],
+                    refusal=None,
+                ),
+            )
+        ],
+        created=1234567890,
+        model="test-model",
+        object="chat.completion",
+    )
+
+    manually_calculated_perplexity = _extract_perplexity(response)
+
+    score = tlm_chat.score(response=response, **openai_kwargs)
+    returned_perplexity = score["log"]["perplexity"]
+
+    assert returned_perplexity is not None
+    assert manually_calculated_perplexity == returned_perplexity
 
 
 def test_tlm_chat_completion_score_with_structured_output() -> None:
@@ -248,8 +327,14 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
 @pytest.mark.parametrize(
     "arguments, condition",  # noqa: PT006
     [
-        (json.dumps({"query": "Capital of Germany"}), lambda score: score["trustworthiness_score"] < 0.5),  # noqa: PLR2004
-        (json.dumps({"query": "Capital of France"}), lambda score: score["trustworthiness_score"] >= 0.8),  # noqa: PLR2004
+        (
+            json.dumps({"query": "Capital of Germany"}),
+            lambda score: score["trustworthiness_score"] < 0.5,  # noqa: PLR2004
+        ),
+        (
+            json.dumps({"query": "Capital of France"}),
+            lambda score: score["trustworthiness_score"] >= 0.8,  # noqa: PLR2004
+        ),
     ],
     ids=["bad_arguments", "good_arguments"],
 )

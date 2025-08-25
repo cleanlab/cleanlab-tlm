@@ -8,6 +8,8 @@ It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs tha
 import asyncio
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+import numpy as np
+
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
@@ -16,7 +18,10 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
-from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions
+from cleanlab_tlm.utils.chat import (
+    _form_prompt_chat_completions_api,
+    form_response_string_chat_completions,
+)
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -116,7 +121,21 @@ class TLMChatCompletion(BaseTLM):
         prompt_text = _form_prompt_chat_completions_api(messages, tools)
         response_text = form_response_string_chat_completions(response=response)
 
-        return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+        scoring_kwargs = {}
+
+        # add perplexity to tlm.get_trustworthiness_score kwargs if it exists
+        try:
+            perplexity = _extract_perplexity(response)
+        except Exception:
+            perplexity = None
+
+        if perplexity is not None:
+            scoring_kwargs["perplexity"] = perplexity
+
+        return cast(
+            TLMScore,
+            self._tlm.get_trustworthiness_score(prompt_text, response_text, **scoring_kwargs),
+        )
 
     @staticmethod
     def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":
@@ -136,3 +155,13 @@ class TLMChatCompletion(BaseTLM):
         message = self._get_response_message(response)
         if message.content is None and message.tool_calls is None:
             raise ValueError("The OpenAI ChatCompletion object does not contain a message content or tool calls.")
+
+
+def _extract_perplexity(response: "ChatCompletion") -> Optional[float]:
+    response_logprobs = response.choices[0].logprobs
+    if response_logprobs is None or response_logprobs.content is None:
+        return None
+
+    logprobs_list = [completion.logprob for completion in response_logprobs.content]
+    perplexity = np.exp(np.mean(logprobs_list))
+    return float(perplexity)
