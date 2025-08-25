@@ -38,6 +38,7 @@ from cleanlab_tlm.internal.constants import (
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.types import Task
 from cleanlab_tlm.internal.validation import (
+    tlm_explanation_process_response_and_score,
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
     validate_tlm_prompt,
@@ -530,6 +531,91 @@ class TLM(BaseTLM):
             }
 
         return {"trustworthiness_score": response_json["confidence_score"]}
+
+    def get_explanation(
+        self,
+        prompt: Union[str, Sequence[str]],
+        response: Union[str, Sequence[str], TLMResponse, Sequence],
+        score: Optional[Union[TLMScore, Sequence[TLMScore]]] = None,
+    ) -> Union[TLMResponse, list[TLMResponse], TLMScore, list[TLMScore]]:
+        # TODO: validation
+        processed_response, return_dict = tlm_explanation_process_response_and_score(
+            response, score
+        )
+
+        # TODO: post-process output format
+
+        if isinstance(prompt, str) and isinstance(processed_response, dict):
+            return self._event_loop.run_until_complete(
+                self._get_explanation_async(
+                    prompt,
+                    processed_response,
+                    return_dict,
+                    timeout=self._timeout,
+                )
+            )
+
+        assert isinstance(prompt, Sequence)
+        assert isinstance(processed_response, Sequence)
+
+        return self._event_loop.run_until_complete(
+            self._batch_get_explanation(prompt, processed_response, return_dict)
+        )
+
+    async def _batch_get_explanation(
+        self,
+        prompts: Sequence[str],
+        processed_responses: Sequence[dict[str, Any]],
+        return_dicts: Sequence[dict[str, Any]],
+    ) -> Union[list[TLMResponse], list[TLMScore]]:
+        tlm_explanations = await self._batch_async(
+            [
+                self._get_explanation_async(
+                    prompt,
+                    processed_response,
+                    return_dict,
+                )
+                for prompt, processed_response, return_dict in zip(
+                    prompts, processed_responses, return_dicts
+                )
+            ]
+        )
+
+        return tlm_explanations
+
+    async def _get_explanation_async(
+        self,
+        prompt: str,
+        processed_response: dict[str, Any],
+        return_dict: Union[TLMResponse, TLMScore],
+        client_session: Optional[aiohttp.ClientSession] = None,
+        timeout: Optional[float] = None,
+        batch_index: Optional[int] = None,
+    ) -> Union[TLMResponse, TLMScore]:
+        if "log" in return_dict:
+            if "explanation" in return_dict["log"]:
+                return return_dict
+
+        response_json = await asyncio.wait_for(
+            api.tlm_get_explanation(
+                self._api_key,
+                prompt,
+                processed_response,
+                self._options,
+                self._rate_handler,
+                client_session,
+                batch_index=batch_index,
+                retries=_TLM_MAX_RETRIES,
+            ),
+            timeout=timeout,
+        )
+
+        if "log" in return_dict:
+            return_dict["log"]["explanation"] = response_json["explanation"]
+        else:
+            return_dict["log"] = {"explanation": response_json["explanation"]}
+
+        return return_dict
 
 
 class TLMResponse(TypedDict):
