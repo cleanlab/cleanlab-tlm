@@ -87,7 +87,12 @@ def validate_tlm_options(
             "See: https://help.cleanlab.ai/reference/python/tlm/#class-tlmoptions"
         )
 
-    invalid_keys = set(options.keys()) - set(TLMOptions.__annotations__.keys())
+    valid_keys = set(TLMOptions.__annotations__.keys())
+
+    if allow_custom_model:
+        valid_keys.add("model_provider")
+
+    invalid_keys = set(options.keys()) - valid_keys
     if invalid_keys:
         raise ValidationError(
             f"Invalid keys in options dictionary: {invalid_keys}.\n"
@@ -201,11 +206,13 @@ def validate_tlm_options(
 
                 if not isinstance(criteria.get("criteria"), str):
                     raise ValidationError(f"'criteria' in custom_eval_criteria item {i} must be a string.")
+
         elif option == "disable_trustworthiness":
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, disable_trustworthiness must be a boolean")
             if val and support_custom_eval_criteria and not options.get("custom_eval_criteria"):
                 raise ValidationError("disable_trustworthiness is only supported when custom_eval_criteria is provided")
+
         elif option == "disable_persistence":
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, disable_persistence must be a boolean")
