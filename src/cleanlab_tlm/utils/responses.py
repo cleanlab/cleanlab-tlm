@@ -5,6 +5,7 @@ If you are using OpenAI's Responses API, this module allows you to incorporate T
 """
 
 import asyncio
+import json
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
@@ -19,6 +20,7 @@ from cleanlab_tlm.utils.chat import (
     _form_prompt_responses_api,
     form_response_string_responses_api,
 )
+from pydantic.json import pydantic_encoder
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
@@ -112,11 +114,10 @@ class TLMResponses(BaseTLM):
                 ),
             )
 
-        # all other cases
-        tools = openai_kwargs.get("tools", None)
-
         prompt_text = _form_prompt_responses_api(
-            openai_kwargs["input"], tools, response=response
+            json.loads(json.dumps(openai_kwargs["input"], default=pydantic_encoder)),
+            response=response,
+            **openai_kwargs,
         )
         response_text = form_response_string_responses_api(response=response)
 

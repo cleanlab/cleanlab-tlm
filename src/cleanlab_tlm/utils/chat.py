@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
-from trafilatura import fetch_url, extract
 from concurrent.futures import ThreadPoolExecutor
+from requests import get
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion, ChatCompletionMessage, ChatCompletionMessageParam
@@ -611,6 +611,8 @@ def _get_role(message: dict[str, Any]) -> str:
 
 
 def _messages_to_string(messages: list[dict[str, Any]]) -> str:
+    from trafilatura import fetch_url, extract
+
     content_parts = []
 
     adjusted_messages = []
@@ -711,7 +713,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
             if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                 content_parts.append(_ASSISTANT_PREFIX)
             content_parts.append(
-                f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
             )
 
             results_list = [
@@ -731,7 +733,6 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 "output": results_list,
             }
 
-            content_parts.append("")
             content_parts.append(_TOOL_PREFIX)
             content_parts.append(
                 f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_call_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}"
@@ -761,21 +762,32 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 )
 
                 with ThreadPoolExecutor() as executor:
+                    fallback_text = "Response is not shown, but the LLM can still access it. Assume that whatever the LLM references in this URL is true."
 
                     def extract_text(pair):
-                        url = pair[0]
-                        if url in _url_cache:
-                            return _url_cache[url]
-                        response_text = extract(
-                            fetch_url(url), output_format="markdown"
-                        )
-                        if response_text is None:
-                            return "Response is not shown, but the LLM can still access it. Assume that whatever the LLM references in this URL is true."
-                        response = response_text.encode("ascii", "ignore").decode(
-                            "ascii"
-                        )
-                        _url_cache[url] = response
-                        return response
+                        try:
+                            url = pair[0]
+                            if url in _url_cache:
+                                return _url_cache[url]
+
+                            response_text = extract(
+                                get(
+                                    url,
+                                    timeout=5,
+                                    headers={"User-Agent": "Mozilla/5.0"},
+                                ).text,
+                                output_format="markdown",
+                                favor_recall=True,
+                            )
+                            if response_text is None:
+                                return fallback_text
+                            response = response_text.encode("ascii", "ignore").decode(
+                                "ascii"
+                            )[:50_000]
+                            _url_cache[url] = response
+                            return response
+                        except:
+                            return fallback_text
 
                     requests = list(
                         executor.map(
@@ -808,10 +820,9 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                     content_parts.append(_ASSISTANT_PREFIX)
                 content_parts.append(
-                    f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                    f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
                 )
 
-                content_parts.append("")
                 content_parts.append(_TOOL_PREFIX)
                 content_parts.append(
                     f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}"
