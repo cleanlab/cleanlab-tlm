@@ -75,6 +75,7 @@ _TOOL_CALL_SCHEMA_PREFIX = (
 # Set up a URL cache so that we can avoid fetching the same URL multiple times
 _url_cache: dict[str, str] = {}
 
+
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
     """
     Format a list of tool definitions into a system message with tools.
@@ -285,10 +286,7 @@ def _form_prompt_responses_api(
                 next_text_content = next_text_message.content[0]
                 if next_text_content.type != "output_text":
                     continue
-                raw_message["annotations"] = [
-                    annotation.model_dump()
-                    for annotation in next_text_content.annotations
-                ]
+                raw_message["annotations"] = [annotation.model_dump() for annotation in next_text_content.annotations]
             messages.append(raw_message)
 
     output = ""
@@ -564,11 +562,7 @@ def form_response_string_responses_api(response: Response) -> str:
         ImportError: If openai is not installed.
     """
 
-    return (
-        _messages_to_string([response.output[-1].model_dump()])
-        .replace("Assistant:", "", 1)
-        .strip()
-    )
+    return _messages_to_string([response.output[-1].model_dump()]).replace("Assistant:", "", 1).strip()
 
 
 def _response_to_dict(response: Any) -> dict[str, Any]:
@@ -614,9 +608,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
     adjusted_messages = []
     for message in messages:
         if message.get("type", "message") != "message" and message.get("content"):
-            adjusted_messages.append(
-                {"role": _ASSISTANT_ROLE, "content": message["content"]}
-            )
+            adjusted_messages.append({"role": _ASSISTANT_ROLE, "content": message["content"]})
 
         adjusted_messages.append(message)
 
@@ -626,26 +618,16 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 output_content = message["content"]
             else:
                 output_content = "\n".join(
-                    [
-                        content["text"]
-                        for content in message["content"]
-                        if content["type"] == "output_text"
-                    ]
+                    [content["text"] for content in message["content"] if content["type"] == "output_text"]
                 )
 
             if i == 0 or _get_role(message) != _get_role(adjusted_messages[i - 1]):
-                content_parts.append(
-                    _get_prefix(
-                        message, adjusted_messages[i - 1].get("role") if i > 0 else None
-                    )
-                )
+                content_parts.append(_get_prefix(message, adjusted_messages[i - 1].get("role") if i > 0 else None))
             content_parts.append(output_content)
 
         elif message["type"] == _FUNCTION_CALL_TYPE:
             try:
-                arguments = (
-                    json.loads(message["arguments"]) if message["arguments"] else {}
-                )
+                arguments = json.loads(message["arguments"]) if message["arguments"] else {}
                 tool_call = {
                     "name": message["name"],
                     "arguments": arguments,
@@ -654,9 +636,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
 
                 if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                     content_parts.append(_ASSISTANT_PREFIX)
-                content_parts.append(
-                    f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}"
-                )
+                content_parts.append(f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}")
             except (AttributeError, TypeError, json.JSONDecodeError) as e:
                 warnings.warn(
                     f"Error formatting tool call in response: {e}. Skipping this tool call.",
@@ -666,11 +646,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
 
         elif message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
             try:
-                tool_call = next(
-                    m
-                    for m in adjusted_messages[:i]
-                    if m.get("call_id", "") == message["call_id"]
-                )
+                tool_call = next(m for m in adjusted_messages[:i] if m.get("call_id", "") == message["call_id"])
 
                 tool_response = {
                     "name": tool_call["name"],
@@ -681,9 +657,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
 
                 if i == 0 or _get_role(adjusted_messages[i - 1]) != _TOOL_ROLE:
                     content_parts.append(_TOOL_PREFIX)
-                content_parts.append(
-                    f"{_TOOL_RESPONSE_TAG_START}\n{response}\n{_TOOL_RESPONSE_TAG_END}"
-                )
+                content_parts.append(f"{_TOOL_RESPONSE_TAG_START}\n{response}\n{_TOOL_RESPONSE_TAG_END}")
             except (AttributeError, TypeError, json.JSONDecodeError) as e:
                 warnings.warn(
                     f"Error formatting tool call response: {e}. Skipping this tool call.",
@@ -708,9 +682,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
 
             if i == 0 or _get_role(adjusted_messages[i - 1]) != _ASSISTANT_ROLE:
                 content_parts.append(_ASSISTANT_PREFIX)
-            content_parts.append(
-                f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
-            )
+            content_parts.append(f"{_TOOL_CALL_TAG_START}\n{json.dumps(tool_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n")
 
             results_list = [
                 {
@@ -774,17 +746,16 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                                 output_format="markdown",
                                 favor_recall=True,
                             )
+                        except Exception:
+                            return fallback_text
+                        else:
                             if response_text is None:
                                 return fallback_text
 
-                            response = response_text.encode("ascii", "ignore").decode(
-                                "ascii"
-                            )[:50_000]
+                            response = response_text.encode("ascii", "ignore").decode("ascii")[:50_000]
                             _url_cache[url] = response
 
                             return response
-                        except Exception:
-                            return fallback_text
 
                     requests = list(
                         executor.map(
