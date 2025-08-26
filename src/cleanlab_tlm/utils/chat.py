@@ -563,10 +563,6 @@ def form_response_string_responses_api(response: Response) -> str:
     Raises:
         ImportError: If openai is not installed.
     """
-    try:
-        from openai.types.responses.response_output_text import ResponseOutputText
-    except ImportError as e:
-        raise ImportError("OpenAI is a required dependency. Please install it with `pip install openai`.") from e
 
     return (
         _messages_to_string([response.output[-1].model_dump()])
