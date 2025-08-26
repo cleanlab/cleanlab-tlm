@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import warnings
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
@@ -26,7 +26,7 @@ from cleanlab_tlm.internal.constants import (
 from cleanlab_tlm.internal.types import Task
 
 if TYPE_CHECKING:
-    from cleanlab_tlm.tlm import TLMOptions
+    from cleanlab_tlm.tlm import TLMOptions, TLMResponse, TLMScore
     from cleanlab_tlm.utils.rag import Eval
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
@@ -345,79 +345,59 @@ def tlm_score_process_response_and_kwargs(
     return [dict(zip(combined_response_keys, values)) for values in combined_response_values_transposed]
 
 
-def tlm_explanation_process_response_and_score(
-    response: Union[str, Sequence[str], dict, Sequence[dict]],
-    score: Optional[Union[dict, Sequence[dict]]] = None,
-) -> Union[
-    Tuple[dict[str, Any], dict[str, Any]],
-    Tuple[list[dict[str, Any]], list[dict[str, Any]]],
-]:
-    # if score is not provided, then the trustworthiness_score must be specified in response
-    if score is None:
-        if isinstance(response, str):
-            raise ValidationError("score is required when response is a string")
-        if isinstance(response, dict):
-            if "response" not in response:
-                raise ValidationError(
-                    "the 'response' dict must contain a 'response' key"
-                )
-            if "trustworthiness_score" not in response:
-                raise ValidationError(
-                    "trustworthiness_score must be specified either in the 'response' dict or passed in using the 'score' argument"
-                )
-        if isinstance(response, Sequence):
-            if not all(isinstance(r, dict) for r in response):
-                raise ValidationError(
-                    "all items in the response sequence must be dicts"
-                )
-            if not all("response" in r for r in response):
-                raise ValidationError(
-                    "all items in the response sequence must contain a 'response' key"
-                )
-            if not all("trustworthiness_score" in r for r in response):
-                raise ValidationError(
-                    "trustworthiness_score must be specified either in 'response' or passed in using the 'score' argument"
-                )
-        return response, response
+def tlm_explanation_format_tlm_result(
+    tlm_result: Union[TLMResponse, Sequence[TLMResponse], TLMScore, Sequence[TLMScore]],
+    response: Optional[Union[str, Sequence[str]]] = None,
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
+    if isinstance(tlm_result, Sequence):
+        if not all(isinstance(r, dict) for r in tlm_result):
+            raise ValidationError("all items in the tlm_result sequence must be dicts")
 
-    # otherwise, combined response and score into a dict
-    if isinstance(response, str):
-        if not isinstance(score, dict):
-            raise ValidationError("score must be a dict when response is a string")
-        if "trustworthiness_score" not in score:
-            raise ValidationError(
-                "the 'score' dict must contain a 'trustworthiness_score' key"
-            )
-        return {"response": response, **score}, score
+        if not all("trustworthiness_score" in r for r in tlm_result):
+            raise ValidationError("all items in the tlm_result sequence must contain a 'trustworthiness_score' key")
 
-    if isinstance(response, Sequence):
-        if not isinstance(score, Sequence):
-            raise ValidationError(
-                "score must be a sequence when response is a sequence"
-            )
-        if len(response) != len(score):
-            raise ValidationError(
-                "response and score sequences must have the same length"
-            )
-        if not all(isinstance(s, dict) and "trustworthiness_score" in s for s in score):
-            raise ValidationError(
-                "all items in the 'score' sequence must be a dict that contains a 'trustworthiness_score' key"
-            )
-        if not all(isinstance(r, str) for r in response):
-            if any(isinstance(r, dict) for r in response):
-                if not all("response" in r for r in response):
-                    raise ValidationError(
-                        "all items in the response sequence must contain a 'response' key"
-                    )
-                if any("trustworthiness_score" in r for r in response):
-                    raise ValidationError(
-                        "trustworthiness_score must only be specified once, either in the 'response' dict or passed in using the 'score' argument"
-                    )
-                response = [r["response"] for r in response]
+        # for .get_trustworthiness_score() cases, the response is passed in as a separate argument
+        if not all("response" in r for r in tlm_result):
+            if response is None:
+                raise ValidationError(
+                    "'response' is required if not provided in tlm_result, pass it in using the 'response' argument"
+                )
+            if not isinstance(response, Sequence) or isinstance(response, str):
+                raise ValidationError("response must be a sequence when tlm_result is a sequence")
+            if len(response) != len(tlm_result):
+                raise ValidationError("response and score sequences must have the same length")
+            if not all(isinstance(r, str) for r in response):
+                raise ValidationError("all items in the response sequence must be strings")
 
-        combined_responses = [{"response": r, **s} for r, s in zip(response, score)]
-        scores = [s for _, s in zip(response, score)]
-        return combined_responses, scores
+            return [{"response": r, **tlm_result} for r, tlm_result in zip(response, tlm_result)]
+
+        # for .prompt() cases, the response is provided in the tlm_result dict
+        if response is not None:
+            raise ValidationError(
+                "response should only be provided once, either using the 'response' argument or in 'tlm_result'"
+            )
+
+        return cast(list[dict[str, Any]], tlm_result)
+
+    if not isinstance(tlm_result, dict):
+        raise ValidationError("tlm_result must be a dict or a sequence of dicts")
+
+    # the .get_trustworthiness_score() case
+    if "response" not in tlm_result:
+        if response is None:
+            raise ValidationError(
+                "'response' is required if not provided in tlm_result, pass it in using the 'response' argument"
+            )
+        if not isinstance(response, str):
+            raise ValidationError("response must be a string when tlm_result is a dict")
+        return {"response": response, **tlm_result}
+
+    # the .prompt() case
+    if response is not None:
+        raise ValidationError(
+            "response should only be provided once, either using the 'response' argument or in 'tlm_result'"
+        )
+    return cast(dict[str, Any], tlm_result)
 
 
 def validate_tlm_lite_score_options(score_options: Any) -> None:

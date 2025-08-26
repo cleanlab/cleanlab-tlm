@@ -584,7 +584,7 @@ async def tlm_chat_completions_score(
 async def tlm_get_explanation(
     api_key: str,
     prompt: str,
-    processed_response: dict[str, Any],
+    formatted_tlm_result: dict[str, Any],
     options: Optional[JSONDict],
     rate_handler: TlmRateHandler,
     client_session: Optional[aiohttp.ClientSession] = None,
@@ -601,7 +601,7 @@ async def tlm_get_explanation(
                 f"{tlm_explanation_base_url}/get_explanation",
                 json={
                     _TLM_PROMPT_KEY: prompt,
-                    _TLM_RESPONSE_KEY: processed_response,
+                    _TLM_RESPONSE_KEY: formatted_tlm_result,
                     _TLM_OPTIONS_KEY: options or {},
                 },
                 headers=_construct_headers(api_key),

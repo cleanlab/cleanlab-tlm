@@ -38,7 +38,7 @@ from cleanlab_tlm.internal.constants import (
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.types import Task
 from cleanlab_tlm.internal.validation import (
-    tlm_explanation_process_response_and_score,
+    tlm_explanation_format_tlm_result,
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
     validate_tlm_prompt,
@@ -192,15 +192,16 @@ class TLM(BaseTLM):
 
     async def _batch_async(
         self,
-        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, TLMScore]]],
-    ) -> Sequence[Union[TLMResponse, TLMScore]]:
+        tlm_coroutines: Sequence[Coroutine[None, None, Union[TLMResponse, TLMScore, str]]],
+    ) -> Sequence[Union[TLMResponse, TLMScore, str]]:
         """Runs batch of TLM queries.
 
         Args:
-            tlm_coroutines (list[Coroutine[None, None, Union[TLMResponse, TLMScore]]]): list of query coroutines to run, returning [TLMResponse](#class-tlmresponse) or [TLMScore](#class-tlmscore)
+            tlm_coroutines (list[Coroutine[None, None, Union[TLMResponse, TLMScore]]]): list of query coroutines to run, returning [TLMResponse](#class-tlmresponse),
+              [TLMScore](#class-tlmscore), or str (for explanation)
 
         Returns:
-            Sequence[Union[TLMResponse, TLMScore]]: list of coroutine results, with preserved order
+            Sequence[Union[TLMResponse, TLMScore, str]]: list of coroutine results, with preserved order
         """
         tlm_query_tasks = [asyncio.create_task(tlm_coro) for tlm_coro in tlm_coroutines]
 
@@ -535,72 +536,69 @@ class TLM(BaseTLM):
     def get_explanation(
         self,
         prompt: Union[str, Sequence[str]],
-        response: Union[str, Sequence[str], TLMResponse, Sequence],
-        score: Optional[Union[TLMScore, Sequence[TLMScore]]] = None,
-    ) -> Union[TLMResponse, list[TLMResponse], TLMScore, list[TLMScore]]:
-        # TODO: validation
-        processed_response, return_dict = tlm_explanation_process_response_and_score(
-            response, score
-        )
+        *,
+        response: Optional[Union[str, Sequence[str]]] = None,
+        tlm_result: Union[TLMResponse, TLMScore],
+    ) -> Union[str, list[str]]:
+        formatted_tlm_result = tlm_explanation_format_tlm_result(tlm_result, response)
 
-        # TODO: post-process output format
-
-        if isinstance(prompt, str) and isinstance(processed_response, dict):
+        if isinstance(prompt, str) and isinstance(formatted_tlm_result, dict):
             return self._event_loop.run_until_complete(
                 self._get_explanation_async(
                     prompt,
-                    processed_response,
-                    return_dict,
+                    tlm_result,
+                    formatted_tlm_result,
                     timeout=self._timeout,
                 )
             )
 
         assert isinstance(prompt, Sequence)
-        assert isinstance(processed_response, Sequence)
+        assert isinstance(tlm_result, Sequence)
+        assert isinstance(formatted_tlm_result, Sequence)
 
         return self._event_loop.run_until_complete(
-            self._batch_get_explanation(prompt, processed_response, return_dict)
+            self._batch_get_explanation(prompt, tlm_result, formatted_tlm_result)
         )
 
     async def _batch_get_explanation(
         self,
         prompts: Sequence[str],
-        processed_responses: Sequence[dict[str, Any]],
-        return_dicts: Sequence[dict[str, Any]],
-    ) -> Union[list[TLMResponse], list[TLMScore]]:
-        tlm_explanations = await self._batch_async(
-            [
-                self._get_explanation_async(
-                    prompt,
-                    processed_response,
-                    return_dict,
-                )
-                for prompt, processed_response, return_dict in zip(
-                    prompts, processed_responses, return_dicts
-                )
-            ]
+        tlm_results: Sequence[Union[TLMResponse, TLMScore]],
+        formatted_tlm_results: Sequence[dict[str, Any]],
+    ) -> list[str]:
+        tlm_explanations = (
+            await self._batch_async(
+                [
+                    self._get_explanation_async(
+                        prompt,
+                        tlm_result,
+                        formatted_tlm_result,
+                        timeout=self._timeout,
+                    )
+                    for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
+                ]
+            ),
         )
 
-        return tlm_explanations
+        return cast(list[str], tlm_explanations)
 
     async def _get_explanation_async(
         self,
         prompt: str,
-        processed_response: dict[str, Any],
-        return_dict: Union[TLMResponse, TLMScore],
+        tlm_result: Union[TLMResponse, TLMScore],
+        formatted_tlm_result: Union[dict[str, Any], list[dict[str, Any]]],
         client_session: Optional[aiohttp.ClientSession] = None,
         timeout: Optional[float] = None,
         batch_index: Optional[int] = None,
-    ) -> Union[TLMResponse, TLMScore]:
-        if "log" in return_dict:
-            if "explanation" in return_dict["log"]:
-                return return_dict
+    ) -> str:
+        if "log" in tlm_result and "explanation" in tlm_result["log"]:
+            return cast(str, tlm_result["log"]["explanation"])
 
         response_json = await asyncio.wait_for(
             api.tlm_get_explanation(
                 self._api_key,
                 prompt,
-                processed_response,
+                formatted_tlm_result,
                 self._options,
                 self._rate_handler,
                 client_session,
@@ -610,12 +608,12 @@ class TLM(BaseTLM):
             timeout=timeout,
         )
 
-        if "log" in return_dict:
-            return_dict["log"]["explanation"] = response_json["explanation"]
+        if "log" in tlm_result:
+            tlm_result["log"]["explanation"] = response_json["explanation"]
         else:
-            return_dict["log"] = {"explanation": response_json["explanation"]}
+            tlm_result["log"] = {"explanation": response_json["explanation"]}
 
-        return return_dict
+        return cast(str, response_json["explanation"])
 
 
 class TLMResponse(TypedDict):
