@@ -8,6 +8,8 @@ import asyncio
 import json
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from pydantic.json import pydantic_encoder
+
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
@@ -20,7 +22,6 @@ from cleanlab_tlm.utils.chat import (
     _form_prompt_responses_api,
     form_response_string_responses_api,
 )
-from pydantic.json import pydantic_encoder
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion

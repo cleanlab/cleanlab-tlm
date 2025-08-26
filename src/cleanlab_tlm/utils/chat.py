@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
+
 from requests import get
 
 if TYPE_CHECKING:
@@ -72,7 +73,7 @@ _TOOL_CALL_SCHEMA_PREFIX = (
 )
 
 # Set up a URL cache so that we can avoid fetching the same URL multiple times
-_url_cache = {}
+_url_cache: dict[str, str] = {}
 
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
     """
@@ -101,50 +102,50 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
                     "parameters": tool["function"]["parameters"],
                 },
             }
-        else:  # responses format
-            if tool["type"] == "function":
-                tool_dict = {
-                    "type": "function",
-                    "name": tool["name"],
-                    "description": tool["description"],
-                    "parameters": tool["parameters"],
-                    "strict": tool.get("strict", True),
-                }
-            elif tool["type"] == "file_search":
-                tool_dict = {
-                    "type": "function",
-                    "name": "file_search",
-                    "description": "Search user-uploaded documents for relevant passages.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "queries": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "Search queries to run against the document index.",
-                            },
+        # responses format
+        elif tool["type"] == "function":
+            tool_dict = {
+                "type": "function",
+                "name": tool["name"],
+                "description": tool["description"],
+                "parameters": tool["parameters"],
+                "strict": tool.get("strict", True),
+            }
+        elif tool["type"] == "file_search":
+            tool_dict = {
+                "type": "function",
+                "name": "file_search",
+                "description": "Search user-uploaded documents for relevant passages.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "queries": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Search queries to run against the document index.",
                         },
-                        "required": ["queries"],
                     },
-                }
-            elif tool["type"] == "web_search_preview":
-                tool_dict = {
-                    "type": "function",
-                    "name": "web_search_call",
-                    "description": "Search the web for relevant information.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Search the web with a query and return relevant pages.",
-                            },
+                    "required": ["queries"],
+                },
+            }
+        elif tool["type"] == "web_search_preview":
+            tool_dict = {
+                "type": "function",
+                "name": "web_search_call",
+                "description": "Search the web for relevant information.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Search the web with a query and return relevant pages.",
                         },
-                        "required": ["query"],
                     },
-                }
-            else:
-                continue
+                    "required": ["query"],
+                },
+            }
+        else:
+            continue
         tool_strings.append(json.dumps(tool_dict, separators=(",", ":")))
 
     system_message += "\n".join(tool_strings)
@@ -597,21 +598,20 @@ def _response_to_dict(response: Any) -> dict[str, Any]:
 
 def _get_role(message: dict[str, Any]) -> str:
     if message.get("type", "message") == "message":
-        return message.get("role", _USER_ROLE)
-    elif message["type"] == _FUNCTION_CALL_TYPE:
+        return cast(str, message.get("role", _USER_ROLE))
+    if message["type"] == _FUNCTION_CALL_TYPE:
         return _ASSISTANT_ROLE
-    elif message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
+    if message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
         return _TOOL_ROLE
-    elif message["type"] == "file_search_call":
+    if message["type"] == "file_search_call":
         return _TOOL_ROLE
-    elif message["type"] == "web_search_call":
+    if message["type"] == "web_search_call":
         return _TOOL_ROLE
-    else:
-        return _USER_ROLE
+    return _USER_ROLE
 
 
 def _messages_to_string(messages: list[dict[str, Any]]) -> str:
-    from trafilatura import fetch_url, extract
+    from trafilatura import extract
 
     content_parts = []
 
@@ -670,11 +670,11 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
 
         elif message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
             try:
-                tool_call = [
+                tool_call = next(
                     m
                     for m in adjusted_messages[:i]
                     if m.get("call_id", "") == message["call_id"]
-                ][0]
+                )
 
                 tool_response = {
                     "name": tool_call["name"],
@@ -696,9 +696,9 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 )
 
         elif message["type"] == "file_search_call":
-            if message["results"] == None:
+            if message["results"] is None:
                 warnings.warn(
-                    f"File search call returned no results. Please include include=['file_search_call.results'] in your request.",
+                    "File search call returned no results. Please include include=['file_search_call.results'] in your request.",
                     UserWarning,
                     stacklevel=2,
                 )
@@ -752,19 +752,18 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                     annotations = next_text_content["annotations"]
 
                 urls = list(
-                    set(
-                        [
-                            (annotation["url"], annotation["title"])
-                            for annotation in annotations
-                            if annotation["type"] == "url_citation"
-                        ]
-                    )
+                    {
+                        (annotation["url"], annotation["title"])
+                        for annotation in annotations
+                        if annotation["type"] == "url_citation"
+                    }
                 )
 
                 with ThreadPoolExecutor() as executor:
-                    fallback_text = "Response is not shown, but the LLM can still access it. Assume that whatever the LLM references in this URL is true."
 
-                    def extract_text(pair):
+                    def extract_text(pair: tuple[str, str]) -> str:
+                        fallback_text = "Response is not shown, but the LLM can still access it. Assume that whatever the LLM references in this URL is true."
+
                         try:
                             url = pair[0]
                             if url in _url_cache:
@@ -781,12 +780,14 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                             )
                             if response_text is None:
                                 return fallback_text
+
                             response = response_text.encode("ascii", "ignore").decode(
                                 "ascii"
                             )[:50_000]
                             _url_cache[url] = response
+
                             return response
-                        except:
+                        except Exception:
                             return fallback_text
 
                     requests = list(
