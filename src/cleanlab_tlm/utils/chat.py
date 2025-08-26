@@ -6,6 +6,7 @@ OpenAI's chat models.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import warnings
 from concurrent.futures import ThreadPoolExecutor
@@ -130,21 +131,29 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
                 },
             }
         elif tool["type"] == "web_search_preview":
-            tool_dict = {
-                "type": "function",
-                "name": "web_search_call",
-                "description": "Search the web for relevant information.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Search the web with a query and return relevant pages.",
+            if importlib.util.find_spec("trafilatura"):
+                tool_dict = {
+                    "type": "function",
+                    "name": "web_search_call",
+                    "description": "Search the web for relevant information.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search the web with a query and return relevant pages.",
+                            },
                         },
+                        "required": ["query"],
                     },
-                    "required": ["query"],
-                },
-            }
+                }
+            else:
+                warnings.warn(
+                    "You must install trafilatura in order to properly score web search requests.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
         else:
             continue
         tool_strings.append(json.dumps(tool_dict, separators=(",", ":")))
@@ -601,7 +610,12 @@ def _get_role(message: dict[str, Any]) -> str:
 
 
 def _messages_to_string(messages: list[dict[str, Any]]) -> str:
-    from trafilatura import extract
+    try:
+        from trafilatura import extract
+
+        trafilatura_installed = True
+    except Exception:
+        trafilatura_installed = False
 
     content_parts = []
 
@@ -707,6 +721,14 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
             )
 
         elif message["type"] == "web_search_call":
+            if not trafilatura_installed:
+                warnings.warn(
+                    "You must install trafilatura in order to properly score web search requests.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
+
             if message["action"]["type"] == "search":
                 if "annotations" in message:
                     annotations = message["annotations"]
