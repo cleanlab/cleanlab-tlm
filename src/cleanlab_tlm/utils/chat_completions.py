@@ -125,6 +125,21 @@ class TLMChatCompletion(BaseTLM):
         tlm_result: Union[TLMScore, "ChatCompletion"],
         **openai_kwargs: Any,
     ) -> str:
+        """Gets explanations for a given prompt-response pair with a given score.
+
+        This method provides detailed explanations from TLM about why a particular response
+        received its trustworthiness score.
+
+        The `tlm_result` object will be mutated to include the explanation in its log.
+
+        Args:
+            response (ChatCompletion, optional): The OpenAI ChatCompletion response object to evaluate
+            tlm_result (TLMScore | ChatCompletion): The result object from a previous TLM call
+            **openai_kwargs (Any): The original kwargs passed to OpenAI's create() method, must include 'messages'
+
+        Returns:
+            str: Explanation for why TLM assigned the given trustworthiness score to the response.
+        """
         try:
             from openai.types.chat import ChatCompletion
         except ImportError as e:

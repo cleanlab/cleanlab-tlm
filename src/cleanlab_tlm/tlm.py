@@ -540,6 +540,31 @@ class TLM(BaseTLM):
         response: Optional[Union[str, Sequence[str]]] = None,
         tlm_result: Union[TLMResponse, TLMScore],
     ) -> Union[str, list[str]]:
+        """Gets explanations for a given prompt-response pair with a given score.
+
+        This method provides detailed explanations from TLM about why a particular response
+        received its trustworthiness score.
+
+        The `tlm_result` object will be mutated to include the explanation in its log,
+        adding an "explanation" key to the log dictionary.
+
+        Args:
+            prompt (str | Sequence[str]): The original prompt(s) that were used to generate
+                the response(s) or that were evaluated for trustworthiness scoring.
+            response (str | Sequence[str], optional): The response(s) that were evaluated.
+                Required when `tlm_result` contains a `TLMScore` object, but optional when
+                `tlm_result` contains a `TLMResponse` object (since the response is already
+                included in the `TLMResponse`).
+            tlm_result (TLMResponse | TLMScore | Sequence[TLMResponse] | Sequence[TLMScore]):
+                The result object(s) from a previous TLM call (either `prompt()` or
+                `get_trustworthiness_score()`).
+
+        Returns:
+            str | list[str]: Explanation(s) for why TLM assigned the given trustworthiness
+                score(s) to the response(s).
+                If a single prompt/result pair was provided, returns a single explanation string.
+                If a list of prompt/results was provided, returns a list of explanation strings matching the input order.
+        """
         formatted_tlm_result = tlm_explanation_format_tlm_result(tlm_result, response)
 
         if isinstance(prompt, str) and isinstance(formatted_tlm_result, dict):
@@ -570,6 +595,16 @@ class TLM(BaseTLM):
         tlm_results: Sequence[Union[TLMResponse, TLMScore]],
         formatted_tlm_results: Sequence[dict[str, Any]],
     ) -> list[str]:
+        """Generate explanations for formatted prompt-result pairs in batch.
+        Mutates the `tlm_results` object to include the explanation in its log.
+
+        Args:
+            prompts: prompts for the TLM to evaluate
+            tlm_results: results from a previous TLM call (either `prompt()` or `get_trustworthiness_score()`)
+            formatted_tlm_results: formatted results containing "response" and "trustworthiness_score" keys
+        Returns:
+            list[str]: Explanations for why TLM assigned the given trustworthiness scores to the responses
+        """
         tlm_explanations = (
             await self._batch_async(
                 [
@@ -594,6 +629,17 @@ class TLM(BaseTLM):
         timeout: Optional[float] = None,
         batch_index: Optional[int] = None,
     ) -> str:
+        """Private asynchronous method to get explanation for a given prompt-result pair.
+
+        Mutates the `tlm_result` object to include the explanation in its log.
+
+        Args:
+            prompt: prompt for the TLM to evaluate
+            tlm_result: result from a previous TLM call (either `prompt()` or `get_trustworthiness_score()`)
+            formatted_tlm_result: formatted result containing "response" and "trustworthiness_score" keys
+        Returns:
+            str: Explanation for why TLM assigned the given trustworthiness score to the response.
+        """
         if "log" in tlm_result and "explanation" in tlm_result["log"]:
             return cast(str, tlm_result["log"]["explanation"])
 
