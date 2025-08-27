@@ -6,7 +6,7 @@ It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs tha
 """
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
@@ -15,7 +15,7 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
-from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
+from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions
 
 if TYPE_CHECKING:
@@ -117,6 +117,68 @@ class TLMChatCompletion(BaseTLM):
         response_text = form_response_string_chat_completions(response=response)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+
+    def get_explanation(
+        self,
+        *,
+        response: Optional["ChatCompletion"] = None,
+        tlm_result: Union[TLMScore, "ChatCompletion"],
+        **openai_kwargs: Any,
+    ) -> str:
+        try:
+            from openai.types.chat import ChatCompletion
+        except ImportError as e:
+            raise ImportError(
+                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
+            ) from e
+
+        if (messages := openai_kwargs.get("messages")) is None:
+            raise ValueError("messages is a required OpenAI input argument.")
+        tools = openai_kwargs.get("tools", None)
+
+        prompt_text = _form_prompt_chat_completions_api(messages, tools)
+
+        if isinstance(tlm_result, dict):
+            if response is None:
+                raise ValueError("'response' is required when tlm_result is a TLMScore object")
+
+            response_text = form_response_string_chat_completions(response=response)
+            return cast(
+                str,
+                self._tlm.get_explanation(
+                    prompt=prompt_text,
+                    response=response_text,
+                    tlm_result=tlm_result,
+                ),
+            )
+
+        if isinstance(tlm_result, ChatCompletion):
+            if getattr(tlm_result, "tlm_metadata", None) is None:
+                raise ValueError("tlm_result must contain tlm_metadata.")
+
+            response_text = form_response_string_chat_completions(response=tlm_result)
+            tlm_metadata = tlm_result.tlm_metadata  # type: ignore
+            formatted_tlm_result = cast(
+                TLMResponse,
+                {
+                    "response": response_text,
+                    **tlm_metadata,
+                },
+            )
+
+            explanation = self._tlm.get_explanation(
+                prompt=prompt_text,
+                tlm_result=formatted_tlm_result,
+            )
+
+            if "log" in tlm_metadata:
+                tlm_metadata["log"]["explanation"] = explanation
+            else:
+                tlm_metadata["log"] = {"explanation": explanation}
+
+            return cast(str, explanation)
+
+        raise TypeError("tlm_result must be a TLMScore or ChatCompletion object.")
 
     @staticmethod
     def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":

@@ -535,8 +535,8 @@ class TLM(BaseTLM):
 
     def get_explanation(
         self,
-        prompt: Union[str, Sequence[str]],
         *,
+        prompt: Union[str, Sequence[str]],
         response: Optional[Union[str, Sequence[str]]] = None,
         tlm_result: Union[TLMResponse, TLMScore],
     ) -> Union[str, list[str]]:
@@ -557,7 +557,11 @@ class TLM(BaseTLM):
         assert isinstance(formatted_tlm_result, Sequence)
 
         return self._event_loop.run_until_complete(
-            self._batch_get_explanation(prompt, tlm_result, formatted_tlm_result)
+            self._batch_get_explanation(
+                prompts=prompt,
+                tlm_results=tlm_result,
+                formatted_tlm_results=formatted_tlm_result,
+            )
         )
 
     async def _batch_get_explanation(
@@ -570,16 +574,15 @@ class TLM(BaseTLM):
             await self._batch_async(
                 [
                     self._get_explanation_async(
-                        prompt,
-                        tlm_result,
-                        formatted_tlm_result,
+                        prompt=prompt,
+                        tlm_result=tlm_result,
+                        formatted_tlm_result=formatted_tlm_result,
                         timeout=self._timeout,
                     )
                     for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
                 ]
             ),
         )
-
         return cast(list[str], tlm_explanations)
 
     async def _get_explanation_async(

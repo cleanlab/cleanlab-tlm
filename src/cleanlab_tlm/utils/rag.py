@@ -44,6 +44,7 @@ from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.rag import _handle_tool_call_filtering
 from cleanlab_tlm.internal.validation import (
     _validate_trustworthy_rag_options,
+    tlm_explanation_format_trustworthy_rag_result,
     tlm_score_process_response_and_kwargs,
     validate_rag_inputs,
 )
@@ -346,6 +347,118 @@ class TrustworthyRAG(BaseTLM):
             )
         )
 
+    def get_explanation(
+        self,
+        *,
+        response: Optional[Union[str, Sequence[str]]] = None,
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        tlm_result: Union[
+            TrustworthyRAGResponse,
+            Sequence[TrustworthyRAGResponse],
+            TrustworthyRAGScore,
+            Sequence[TrustworthyRAGScore],
+        ],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None,
+    ) -> Union[str, list[str]]:
+        if prompt is None and form_prompt is None:
+            form_prompt = TrustworthyRAG._default_prompt_formatter
+
+        formatted_prompt = validate_rag_inputs(
+            query=query,
+            context=context,
+            response=response,
+            prompt=prompt,
+            form_prompt=form_prompt,
+            evals=self._evals,
+            is_generate=response is None,
+        )
+
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
+
+        if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
+            assert isinstance(tlm_result, (TrustworthyRAGResponse, TrustworthyRAGScore))
+
+            return self._event_loop.run_until_complete(
+                self._get_explanation_async(
+                    prompt=formatted_prompt,
+                    tlm_result=tlm_result,
+                    formatted_tlm_result=formatted_tlm_result,
+                    timeout=self._timeout,
+                )
+            )
+
+        assert isinstance(formatted_prompt, Sequence)
+        assert isinstance(tlm_result, Sequence)
+        assert isinstance(formatted_tlm_result, Sequence)
+
+        return self._event_loop.run_until_complete(
+            self._batch_get_explanation(
+                prompts=formatted_prompt,
+                tlm_results=tlm_result,
+                formatted_tlm_results=formatted_tlm_result,
+            )
+        )
+
+    async def _batch_get_explanation(
+        self,
+        prompts: Sequence[str],
+        tlm_results: Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]],
+        formatted_tlm_results: Sequence[dict[str, Any]],
+    ) -> list[str]:
+        """
+        Private asynchronous method to get an explanation for a batch of TLM results.
+        """
+        tlm_explanations = await self._batch_async(
+            [
+                self._get_explanation_async(
+                    prompt=prompt,
+                    tlm_result=tlm_result,
+                    formatted_tlm_result=formatted_tlm_result,
+                    timeout=self._timeout,
+                )
+                for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
+            ]
+        )
+        return cast(list[str], tlm_explanations)
+
+    async def _get_explanation_async(
+        self,
+        *,
+        prompt: str,
+        tlm_result: Union[TrustworthyRAGResponse, TrustworthyRAGScore],
+        formatted_tlm_result: dict[str, Any],
+        timeout: Optional[float] = None,
+        batch_index: Optional[int] = None,
+    ) -> str:
+        """
+        Private asynchronous method to get an explanation for a TLM result.
+        """
+        trustwortiness_dict = cast(EvalMetric, tlm_result["trustworthiness"])
+        if "log" in trustwortiness_dict and "explanation" in trustwortiness_dict["log"]:
+            return cast(str, trustwortiness_dict["log"]["explanation"])
+
+        response_json = await asyncio.wait_for(
+            api.tlm_get_explanation(
+                self._api_key,
+                prompt,
+                formatted_tlm_result,
+                self._options,
+                self._rate_handler,
+                batch_index=batch_index,
+                retries=_TLM_MAX_RETRIES,
+            ),
+            timeout=timeout,
+        )
+
+        if "log" in trustwortiness_dict:
+            trustwortiness_dict["log"]["explanation"] = response_json["explanation"]
+        else:
+            trustwortiness_dict["log"] = {"explanation": response_json["explanation"]}
+
+        return cast(str, response_json["explanation"])
+
     def get_evals(self) -> list[Eval]:
         """
         Get the list of [Evals](#class-eval) that this TrustworthyRAG instance checks.
@@ -436,8 +549,8 @@ class TrustworthyRAG(BaseTLM):
 
     async def _batch_async(
         self,
-        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore]]],
-    ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]]:
+        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]],
+    ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]:
         """Runs batch of TrustworthyRAG operations.
 
         Args:
