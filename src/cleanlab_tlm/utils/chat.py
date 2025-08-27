@@ -639,6 +639,9 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 content_parts.append(_get_prefix(message, adjusted_messages[i - 1].get("role") if i > 0 else None))
             content_parts.append(output_content)
 
+        elif message["type"] == "reasoning":
+            continue
+
         elif message["type"] == _FUNCTION_CALL_TYPE:
             try:
                 arguments = json.loads(message["arguments"]) if message["arguments"] else {}
