@@ -10,12 +10,17 @@ import importlib.util
 import json
 import warnings
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 from requests import get
 
 if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletion, ChatCompletionMessage, ChatCompletionMessageParam
+    from openai.types.chat import (
+        ChatCompletion,
+        ChatCompletionMessage,
+        ChatCompletionMessageParam,
+    )
     from openai.types.responses import Response
 
 
@@ -48,6 +53,11 @@ _TOOL_CALL_TAG_END = "</tool_call>"
 _TOOL_RESPONSE_TAG_START = "<tool_response>"
 _TOOL_RESPONSE_TAG_END = "</tool_response>"
 
+# Define Unique OpenAI Tool IDs
+
+_WEB_SEARCH_CALL = "web_search_call"
+_FILE_SEARCH_CALL = "file_search_call"
+
 # Define tool-related message prefixes
 _TOOL_DEFINITIONS_PREFIX = (
     "You are an AI Assistant that can call provided tools (a.k.a. functions). "
@@ -75,6 +85,9 @@ _TOOL_CALL_SCHEMA_PREFIX = (
 
 # Set up a URL cache so that we can avoid fetching the same URL multiple times
 _url_cache: dict[str, str] = {}
+
+
+# Responses and Chat Completions
 
 
 def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False) -> str:
@@ -134,7 +147,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
             if importlib.util.find_spec("trafilatura"):
                 tool_dict = {
                     "type": "function",
-                    "name": "web_search_call",
+                    "name": _WEB_SEARCH_CALL,
                     "description": "Search the web for relevant information.",
                     "parameters": {
                         "type": "object",
@@ -163,55 +176,6 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
     system_message += _TOOL_CALL_SCHEMA_PREFIX
 
     return system_message
-
-
-def _uses_responses_api(
-    messages: list[dict[str, Any]],
-    tools: Optional[list[dict[str, Any]]] = None,
-    use_responses: Optional[bool] = None,
-    **responses_api_kwargs: Any,
-) -> bool:
-    """
-    Determine if the messages and parameters indicate Responses API format.
-
-    Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages.
-        tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
-        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
-            Cannot be set to False when Responses API kwargs are provided.
-        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
-            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
-
-    Returns:
-        bool: True if using Responses API format, False if using chat completions API format.
-
-    Raises:
-        ValueError: If Responses API kwargs are provided with use_responses=False.
-    """
-    # First check if explicitly set to False while having Responses API kwargs
-    if use_responses is False and responses_api_kwargs:
-        raise ValueError(
-            "Responses API kwargs are only supported in Responses API format. Cannot use with use_responses=False."
-        )
-
-    # If explicitly set to True or False, respect that (after validation above)
-    if use_responses is not None:
-        return use_responses
-
-    # Check for Responses API kwargs
-    responses_api_keywords = {"instructions"}
-    if any(key in responses_api_kwargs for key in responses_api_keywords):
-        return True
-
-    # Check messages for Responses API format indicators
-    if any(msg.get("type") in [_FUNCTION_CALL_TYPE, _FUNCTION_CALL_OUTPUT_TYPE] for msg in messages):
-        return True
-
-    # Check tools for Responses API format indicators
-    if tools and any("name" in tool and "function" not in tool for tool in tools):
-        return True
-
-    return False
 
 
 def _get_prefix(msg: dict[str, Any], prev_msg_role: Optional[str] = None) -> str:
@@ -262,74 +226,81 @@ def _find_index_after_first_system_block(messages: list[dict[str, Any]]) -> int:
     return last_system_idx
 
 
-def _form_prompt_responses_api(
-    messages: list[dict[str, Any]] | str,
+def form_prompt_string(
+    messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
+    use_responses: Optional[bool] = None,
     response: Optional[Response] = None,
     **responses_api_kwargs: Any,
 ) -> str:
     """
-    Convert messages in [OpenAI Responses API format](https://platform.openai.com/docs/api-reference/responses) into a single prompt string.
+    Convert a list of chat messages into a single string prompt.
+
+    If there is only one message and no tools are provided, returns the content directly.
+    Otherwise, concatenates all messages with appropriate role prefixes and ends with
+    "Assistant:" to indicate the assistant's turn is next.
+
+    If tools are provided, they will be formatted as a system message at the start
+    of the prompt. In this case, even a single message will use role prefixes since
+    there will be at least one system message (the tools section).
+
+    If Responses API kwargs (like instructions) are provided, they will be
+    formatted for the Responses API format. These kwargs are only supported
+    for the Responses API format.
+
+    Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
 
     Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages in Responses API format.
+        messages (List[Dict]): A list of dictionaries representing chat messages.
+            Each dictionary should contain either:
+            For Responses API:
+            - 'role' and 'content' for regular messages
+            - 'type': 'function_call' and function call details for tool calls
+            - 'type': 'function_call_output' and output details for tool results
+            For chat completions API:
+            - 'role': 'user', 'assistant', 'system', or 'tool' and appropriate content
+            - For assistant messages with tool calls: 'tool_calls' containing function calls
+            - For tool messages: 'tool_call_id' and 'content' for tool responses
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
-            This is the same argument as the tools argument for OpenAI's Responses API.
+            This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
             This list of tool definitions will be formatted into a system message.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
+            If None, the format is automatically detected using _uses_responses_api.
+            Cannot be set to False when Responses API kwargs are provided.
+        response (Optional[Response]): The response object from OpenAI's Responses API if you are using the Responses API. This is needed if you want to score things such as web search or file search.
         **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
     Returns:
         str: A formatted string representing the chat history as a single prompt.
+
+    Raises:
+        ValueError: If Responses API kwargs are provided with use_responses=False.
     """
+    is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
 
-    messages = [{"role": "user", "content": messages}] if isinstance(messages, str) else messages.copy()
+    return (
+        _form_prompt_responses_api(messages, tools, response=response, **responses_api_kwargs)
+        if is_responses
+        else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
+    )
 
-    if response:
-        for i, message in enumerate(response.output[:-1]):
-            raw_message = message.model_dump()
-            if message.type == "web_search_call":
-                next_text_message = response.output[i + 1]
-                if next_text_message.type != "message":
-                    continue
-                next_text_content = next_text_message.content[0]
-                if next_text_content.type != "output_text":
-                    continue
-                raw_message["annotations"] = [annotation.model_dump() for annotation in next_text_content.annotations]
-            messages.append(raw_message)
 
-    output = ""
+def _get_role(message: dict[str, Any]) -> str:
+    if message.get("type", "message") == "message":
+        return cast(str, message.get("role", _USER_ROLE))
+    if message["type"] == _FUNCTION_CALL_TYPE:
+        return _ASSISTANT_ROLE
+    if message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
+        return _TOOL_ROLE
+    if message["type"] == _FILE_SEARCH_CALL:
+        return _TOOL_ROLE
+    if message["type"] == _WEB_SEARCH_CALL:
+        return _TOOL_ROLE
+    return _USER_ROLE
 
-    # Find the index after the first consecutive block of system messages
-    last_system_idx = _find_index_after_first_system_block(messages)
 
-    # Insert tool definitions and instructions after system messages if needed
-    if tools is not None and len(tools) > 0:
-        messages.insert(
-            last_system_idx + 1,
-            {
-                "role": _SYSTEM_ROLE,
-                "content": _format_tools_prompt(tools, is_responses=True),
-            },
-        )
-
-    if "instructions" in responses_api_kwargs:
-        messages.insert(0, {"role": _SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
-
-    # Only return content directly if there's a single user message AND no prepended content
-    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and not output:
-        return str(messages[0]["content"])
-
-    # Warn if the last message is a tool call
-    if messages and messages[-1].get("type") == _FUNCTION_CALL_TYPE:
-        warnings.warn(
-            "The last message is a tool call or assistant message. The next message should not be an LLM response. "
-            "This prompt should not be used for trustworthiness scoring.",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    return (_messages_to_string(messages) + "\n\n" + _ASSISTANT_PREFIX).strip()
+# Chat Completions
 
 
 def _form_prompt_chat_completions_api(
@@ -417,64 +388,6 @@ def _form_prompt_chat_completions_api(
     return output.strip()
 
 
-def form_prompt_string(
-    messages: list[dict[str, Any]],
-    tools: Optional[list[dict[str, Any]]] = None,
-    use_responses: Optional[bool] = None,
-    **responses_api_kwargs: Any,
-) -> str:
-    """
-    Convert a list of chat messages into a single string prompt.
-
-    If there is only one message and no tools are provided, returns the content directly.
-    Otherwise, concatenates all messages with appropriate role prefixes and ends with
-    "Assistant:" to indicate the assistant's turn is next.
-
-    If tools are provided, they will be formatted as a system message at the start
-    of the prompt. In this case, even a single message will use role prefixes since
-    there will be at least one system message (the tools section).
-
-    If Responses API kwargs (like instructions) are provided, they will be
-    formatted for the Responses API format. These kwargs are only supported
-    for the Responses API format.
-
-    Handles messages in either OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) or [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) formats.
-
-    Args:
-        messages (List[Dict]): A list of dictionaries representing chat messages.
-            Each dictionary should contain either:
-            For Responses API:
-            - 'role' and 'content' for regular messages
-            - 'type': 'function_call' and function call details for tool calls
-            - 'type': 'function_call_output' and output details for tool results
-            For chat completions API:
-            - 'role': 'user', 'assistant', 'system', or 'tool' and appropriate content
-            - For assistant messages with tool calls: 'tool_calls' containing function calls
-            - For tool messages: 'tool_call_id' and 'content' for tool responses
-        tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
-            This is the same argument as the tools argument for OpenAI's Responses API or Chat Completions API.
-            This list of tool definitions will be formatted into a system message.
-        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
-            If None, the format is automatically detected using _uses_responses_api.
-            Cannot be set to False when Responses API kwargs are provided.
-        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
-            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
-
-    Returns:
-        str: A formatted string representing the chat history as a single prompt.
-
-    Raises:
-        ValueError: If Responses API kwargs are provided with use_responses=False.
-    """
-    is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
-
-    return (
-        _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
-        if is_responses
-        else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
-    )
-
-
 def form_response_string_chat_completions(response: ChatCompletion) -> str:
     """Form a single string representing the response, out of the raw response object returned by OpenAI's Chat Completions API.
 
@@ -530,7 +443,7 @@ def form_response_string_chat_completions_api(
     Raises:
         TypeError: If response is not a dictionary or ChatCompletionMessage object.
     """
-    response_dict = _response_to_dict(response)
+    response_dict = _chat_completion_message_to_dict(response)
     content = response_dict.get("content") or ""
     tool_calls = response_dict.get("tool_calls")
     if tool_calls is not None:
@@ -549,6 +462,150 @@ def form_response_string_chat_completions_api(
             )
 
     return str(content)
+
+
+def _chat_completion_message_to_dict(response: Any) -> dict[str, Any]:
+    # `response` should be a Union[dict[str, Any], ChatCompletionMessage], but last isinstance check wouldn't be reachable
+    if isinstance(response, dict):
+        # Start with this isinstance check first to import `openai` lazily
+        return response
+
+    try:
+        from openai.types.chat import ChatCompletionMessage
+    except ImportError as e:
+        raise ImportError(
+            "OpenAI is required to handle ChatCompletionMessage objects directly. Please install it with `pip install openai`."
+        ) from e
+
+    if not isinstance(response, ChatCompletionMessage):
+        raise TypeError(
+            f"Expected response to be a dict or ChatCompletionMessage object, got {type(response).__name__}"
+        )
+
+    return response.model_dump()
+
+
+# Responses
+
+
+def _uses_responses_api(
+    messages: list[dict[str, Any]],
+    tools: Optional[list[dict[str, Any]]] = None,
+    use_responses: Optional[bool] = None,
+    **responses_api_kwargs: Any,
+) -> bool:
+    """
+    Determine if the messages and parameters indicate Responses API format.
+
+    Args:
+        messages (List[Dict]): A list of dictionaries representing chat messages.
+        tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM.
+        use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
+            Cannot be set to False when Responses API kwargs are provided.
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
+
+    Returns:
+        bool: True if using Responses API format, False if using chat completions API format.
+
+    Raises:
+        ValueError: If Responses API kwargs are provided with use_responses=False.
+    """
+    # First check if explicitly set to False while having Responses API kwargs
+    if use_responses is False and responses_api_kwargs:
+        raise ValueError(
+            "Responses API kwargs are only supported in Responses API format. Cannot use with use_responses=False."
+        )
+
+    # If explicitly set to True or False, respect that (after validation above)
+    if use_responses is not None:
+        return use_responses
+
+    # Check for Responses API kwargs
+    responses_api_keywords = {"instructions"}
+    if any(key in responses_api_kwargs for key in responses_api_keywords):
+        return True
+
+    # Check messages for Responses API format indicators
+    if any(msg.get("type") in [_FUNCTION_CALL_TYPE, _FUNCTION_CALL_OUTPUT_TYPE] for msg in messages):
+        return True
+
+    # Check tools for Responses API format indicators
+    if tools and any("name" in tool and "function" not in tool for tool in tools):
+        return True
+
+    return False
+
+
+def _form_prompt_responses_api(
+    messages: list[dict[str, Any]] | str,
+    tools: Optional[list[dict[str, Any]]] = None,
+    response: Optional[Response] = None,
+    **responses_api_kwargs: Any,
+) -> str:
+    """
+    Convert messages in [OpenAI Responses API format](https://platform.openai.com/docs/api-reference/responses) into a single prompt string.
+
+    Args:
+        messages (List[Dict]): A list of dictionaries representing chat messages in Responses API format.
+        tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
+            This is the same argument as the tools argument for OpenAI's Responses API.
+            This list of tool definitions will be formatted into a system message.
+        response (Optional[Response]): The OpenAI Response object that gets outputted.
+        **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
+            - instructions (str): Developer instructions to prepend to the prompt with highest priority.
+
+    Returns:
+        str: A formatted string representing the chat history as a single prompt.
+    """
+
+    messages = [{"role": "user", "content": messages}] if isinstance(messages, str) else deepcopy(messages)
+
+    if response:
+        for i, message in enumerate(response.output[:-1]):
+            raw_message = message.model_dump()
+            if message.type == _WEB_SEARCH_CALL:
+                next_text_message = response.output[i + 1]
+                if next_text_message.type != "message":
+                    continue
+                next_text_content = next_text_message.content[0]
+                if next_text_content.type != "output_text":
+                    continue
+                raw_message["annotations"] = [annotation.model_dump() for annotation in next_text_content.annotations]
+            messages.append(raw_message)
+
+    output = ""
+
+    # Find the index after the first consecutive block of system messages
+    last_system_idx = _find_index_after_first_system_block(messages)
+
+    # Insert tool definitions and instructions after system messages if needed
+    if tools is not None and len(tools) > 0:
+        messages.insert(
+            last_system_idx + 1,
+            {
+                "role": _SYSTEM_ROLE,
+                "content": _format_tools_prompt(tools, is_responses=True),
+            },
+        )
+
+    if "instructions" in responses_api_kwargs:
+        messages.insert(0, {"role": _SYSTEM_ROLE, "content": responses_api_kwargs["instructions"]})
+
+    # Only return content directly if there's a single user message AND no prepended content
+    if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and not output:
+        return str(messages[0]["content"])
+
+    # Warn if the last message is a tool call
+    if messages and messages[-1].get("type") == _FUNCTION_CALL_TYPE:
+        warnings.warn(
+            "The last message is a tool call or assistant message. The next message should not be an LLM response. "
+            "This prompt should not be used for trustworthiness scoring.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    return (_responses_messages_to_string(messages) + "\n\n" + _ASSISTANT_PREFIX).strip()
 
 
 def form_response_string_responses_api(response: Response) -> str:
@@ -571,52 +628,10 @@ def form_response_string_responses_api(response: Response) -> str:
         ImportError: If openai is not installed.
     """
 
-    return _messages_to_string([response.output[-1].model_dump()]).replace("Assistant:", "", 1).strip()
+    return _responses_messages_to_string([response.output[-1].model_dump()]).replace("Assistant:", "", 1).strip()
 
 
-def _response_to_dict(response: Any) -> dict[str, Any]:
-    # `response` should be a Union[dict[str, Any], ChatCompletionMessage], but last isinstance check wouldn't be reachable
-    if isinstance(response, dict):
-        # Start with this isinstance check first to import `openai` lazily
-        return response
-
-    try:
-        from openai.types.chat import ChatCompletionMessage
-    except ImportError as e:
-        raise ImportError(
-            "OpenAI is required to handle ChatCompletionMessage objects directly. Please install it with `pip install openai`."
-        ) from e
-
-    if not isinstance(response, ChatCompletionMessage):
-        raise TypeError(
-            f"Expected response to be a dict or ChatCompletionMessage object, got {type(response).__name__}"
-        )
-
-    return response.model_dump()
-
-
-def _get_role(message: dict[str, Any]) -> str:
-    if message.get("type", "message") == "message":
-        return cast(str, message.get("role", _USER_ROLE))
-    if message["type"] == _FUNCTION_CALL_TYPE:
-        return _ASSISTANT_ROLE
-    if message["type"] == _FUNCTION_CALL_OUTPUT_TYPE:
-        return _TOOL_ROLE
-    if message["type"] == "file_search_call":
-        return _TOOL_ROLE
-    if message["type"] == "web_search_call":
-        return _TOOL_ROLE
-    return _USER_ROLE
-
-
-def _messages_to_string(messages: list[dict[str, Any]]) -> str:
-    try:
-        from trafilatura import extract
-
-        trafilatura_installed = True
-    except Exception:
-        trafilatura_installed = False
-
+def _responses_messages_to_string(messages: list[dict[str, Any]]) -> str:
     content_parts = []
 
     adjusted_messages = []
@@ -682,7 +697,7 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                     stacklevel=2,
                 )
 
-        elif message["type"] == "file_search_call":
+        elif message["type"] == _FILE_SEARCH_CALL:
             if message["results"] is None:
                 warnings.warn(
                     "File search call returned no results. Please include include=['file_search_call.results'] in your request.",
@@ -723,14 +738,13 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 f"{_TOOL_RESPONSE_TAG_START}\n{json.dumps(tool_call_response, indent=2)}\n{_TOOL_RESPONSE_TAG_END}"
             )
 
-        elif message["type"] == "web_search_call":
-            if not trafilatura_installed:
-                warnings.warn(
-                    "You must install trafilatura in order to properly score web search requests.",
-                    UserWarning,
-                    stacklevel=2,
+        elif message["type"] == _WEB_SEARCH_CALL:
+            try:
+                from trafilatura import extract
+            except Exception:
+                raise ImportError(
+                    "The trafilatura package is required to score responses involving web search. Please install it: `pip install trafilatura`"
                 )
-                continue
 
             if message["action"]["type"] == "search":
                 if "annotations" in message:
@@ -799,13 +813,13 @@ def _messages_to_string(messages: list[dict[str, Any]]) -> str:
                 ]
 
                 tool_call = {
-                    "name": "web_search_call",
+                    "name": _WEB_SEARCH_CALL,
                     "arguments": {"query": message["action"]["query"]},
                     "call_id": message["id"],
                 }
 
                 tool_response = {
-                    "name": "web_search_call",
+                    "name": _WEB_SEARCH_CALL,
                     "call_id": message["id"],
                     "output": websites,
                 }
