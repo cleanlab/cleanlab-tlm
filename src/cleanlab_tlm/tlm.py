@@ -538,15 +538,14 @@ class TLM(BaseTLM):
         *,
         prompt: Union[str, Sequence[str]],
         response: Optional[Union[str, Sequence[str]]] = None,
-        tlm_result: Union[TLMResponse, TLMScore],
+        tlm_result: Union[TLMResponse, TLMScore, Sequence[TLMResponse], Sequence[TLMScore]],
     ) -> Union[str, list[str]]:
         """Gets explanations for a given prompt-response pair with a given score.
 
         This method provides detailed explanations from TLM about why a particular response
         received its trustworthiness score.
 
-        The `tlm_result` object will be mutated to include the explanation in its log,
-        adding an "explanation" key to the log dictionary.
+        The `tlm_result` object will be mutated to include the explanation in its log.
 
         Args:
             prompt (str | Sequence[str]): The original prompt(s) that were used to generate
@@ -567,7 +566,7 @@ class TLM(BaseTLM):
         """
         formatted_tlm_result = tlm_explanation_format_tlm_result(tlm_result, response)
 
-        if isinstance(prompt, str) and isinstance(formatted_tlm_result, dict):
+        if isinstance(prompt, str) and isinstance(tlm_result, dict) and isinstance(formatted_tlm_result, dict):
             return self._event_loop.run_until_complete(
                 self._get_explanation_async(
                     prompt,
@@ -605,19 +604,18 @@ class TLM(BaseTLM):
         Returns:
             list[str]: Explanations for why TLM assigned the given trustworthiness scores to the responses
         """
-        tlm_explanations = (
-            await self._batch_async(
-                [
-                    self._get_explanation_async(
-                        prompt=prompt,
-                        tlm_result=tlm_result,
-                        formatted_tlm_result=formatted_tlm_result,
-                        timeout=self._timeout,
-                    )
-                    for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
-                ]
-            ),
+        tlm_explanations = await self._batch_async(
+            [
+                self._get_explanation_async(
+                    prompt=prompt,
+                    tlm_result=tlm_result,
+                    formatted_tlm_result=formatted_tlm_result,
+                    timeout=self._timeout,
+                )
+                for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
+            ]
         )
+
         return cast(list[str], tlm_explanations)
 
     async def _get_explanation_async(
