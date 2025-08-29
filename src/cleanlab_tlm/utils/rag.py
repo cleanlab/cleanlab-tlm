@@ -407,7 +407,7 @@ class TrustworthyRAG(BaseTLM):
         formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
 
         if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
-            assert isinstance(tlm_result, (TrustworthyRAGResponse, TrustworthyRAGScore))
+            assert isinstance(tlm_result, dict)
 
             return self._event_loop.run_until_complete(
                 self._get_explanation_async(
