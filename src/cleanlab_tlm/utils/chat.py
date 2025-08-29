@@ -844,7 +844,7 @@ def _responses_messages_to_string(messages: list[dict[str, Any]]) -> str:
 
         else:
             warnings.warn(
-                f"Unexpected output type: {message["type"]}. Skipping this output.",
+               f"Unexpected output type: {message['type']}. Skipping this output.",
                 UserWarning,
                 stacklevel=2,
             )
