@@ -522,7 +522,7 @@ def _uses_responses_api(
         return use_responses
 
     # Check for Responses API kwargs
-    responses_api_keywords = {"instructions"}
+    responses_api_keywords = {"instructions", "input"}
     if any(key in responses_api_kwargs for key in responses_api_keywords):
         return True
 
