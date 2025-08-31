@@ -336,7 +336,7 @@ def _form_prompt_chat_completions_api(
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and (tools is None or len(tools) == 0):
-        return output + str(messages[0]["content"])
+        return output + str(messages[0]["content"])  # type: ignore
 
     # Warn if the last message is an assistant message with tool calls
     if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
@@ -356,17 +356,17 @@ def _form_prompt_chat_completions_api(
             output += _ASSISTANT_PREFIX
             # Handle content if present
             if msg.get("content"):
-                output += f"{msg['content']}\n\n"
+                output += f"{msg['content']}\n\n"  # type: ignore
             # Handle tool calls if present
             if "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
                     call_id = tool_call["id"]
-                    function_names[call_id] = tool_call["function"]["name"]
+                    function_names[call_id] = tool_call["function"]["name"]  # type: ignore
                     # Format function call as JSON within XML tags, now including call_id
                     function_call = {
-                        "name": tool_call["function"]["name"],
-                        "arguments": json.loads(tool_call["function"]["arguments"])
-                        if tool_call["function"]["arguments"]
+                        "name": tool_call["function"]["name"],  # type: ignore
+                        "arguments": json.loads(tool_call["function"]["arguments"])  # type: ignore
+                        if tool_call["function"]["arguments"]  # type: ignore
                         else {},
                         "call_id": call_id,
                     }
