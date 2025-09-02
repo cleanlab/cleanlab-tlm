@@ -62,6 +62,7 @@ extra-dependencies = [
   "pytest-asyncio",
   "tiktoken",
   "openai",
+  "trafilatura>=1.5.0",
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]
