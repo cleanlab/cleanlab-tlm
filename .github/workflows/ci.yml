@@ -84,6 +84,10 @@ jobs:
         if: steps.skip-check.outputs.skip_tests == 'true'
         run: echo "Skipping tests for skip tests commit tag"
       
+      - name: Install Trafilatura for Web Search
+        if: steps.filter.outputs.code-changes == 'true' && steps.skip-check.outputs.skip_tests == 'false'
+        run: pip3 install trafilatura
+
       - name: Run tests with coverage
         if: steps.filter.outputs.code-changes == 'true' && steps.skip-check.outputs.skip_tests == 'false'
         run: hatch test -v --cover --include python=${{ matrix.python }}
