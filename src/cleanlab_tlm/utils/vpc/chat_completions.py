@@ -8,6 +8,8 @@ This module is specifically for VPC users of TLM, the BASE_URL environment varia
 If you are not using VPC, use the `cleanlab_tlm.utils.chat_completions` module instead.
 """
 
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -15,11 +17,12 @@ import requests
 
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS
-from cleanlab_tlm.internal.types import JSONDict
-from cleanlab_tlm.tlm import TLMOptions
+from cleanlab_tlm.utils.vpc.tlm import VPCTLMOptions
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletion
+
+    from cleanlab_tlm.internal.types import JSONDict
 
 
 class TLMChatCompletion(BaseTLM):
@@ -46,7 +49,7 @@ class TLMChatCompletion(BaseTLM):
         self,
         quality_preset: str = "medium",
         *,
-        options: Optional[TLMOptions] = None,
+        options: Optional[VPCTLMOptions] = None,
         timeout: Optional[float] = None,
         request_headers: Optional[dict[str, str]] = None,
     ):
@@ -62,13 +65,14 @@ class TLMChatCompletion(BaseTLM):
             timeout=timeout,
             verbose=False,
             allow_custom_model=True,
+            valid_options_keys=set(VPCTLMOptions.__annotations__.keys()),
         )
         self._request_headers = request_headers or {}
 
     def score(
         self,
         *,
-        response: "ChatCompletion",
+        response: ChatCompletion,
         **openai_kwargs: Any,
     ) -> JSONDict:
         """Score the trustworthiness of an OpenAI ChatCompletion response.

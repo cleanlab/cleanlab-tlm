@@ -75,9 +75,8 @@ def validate_tlm_options(
     options: Any,
     support_custom_eval_criteria: bool = True,
     allow_custom_model: bool = False,
+    valid_keys: Optional[set[str]] = None,
 ) -> None:
-    from cleanlab_tlm.tlm import TLMOptions
-
     if SKIP_VALIDATE_TLM_OPTIONS:
         return
 
@@ -87,10 +86,11 @@ def validate_tlm_options(
             "See: https://help.cleanlab.ai/reference/python/tlm/#class-tlmoptions"
         )
 
-    valid_keys = set(TLMOptions.__annotations__.keys())
+    if valid_keys is None:
+        # fallback to original behavior if no valid_keys provided
+        from cleanlab_tlm.tlm import TLMOptions
 
-    if allow_custom_model:
-        valid_keys.add("model_provider")
+        valid_keys = set(TLMOptions.__annotations__.keys())
 
     invalid_keys = set(options.keys()) - valid_keys
     if invalid_keys:
@@ -216,6 +216,20 @@ def validate_tlm_options(
         elif option == "disable_persistence":
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, disable_persistence must be a boolean")
+
+        elif option == "model_provider":
+            if not isinstance(val, dict):
+                raise ValidationError(f"Invalid type {type(val)}, model_provider must be a dictionary")
+
+            from cleanlab_tlm.utils.vpc.tlm import ModelProvider
+
+            supported_model_provider_keys = set(ModelProvider.__annotations__.keys())
+
+            invalid_keys = set(val.keys()) - supported_model_provider_keys
+            if invalid_keys:
+                raise ValidationError(
+                    f"Invalid keys in model_provider: {invalid_keys}. Valid keys include: {supported_model_provider_keys}"
+                )
 
 
 def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized_evals: list[Eval]) -> None:
