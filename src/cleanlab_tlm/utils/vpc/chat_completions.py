@@ -98,6 +98,14 @@ class TLMChatCompletion(BaseTLM):
             headers=self._request_headers,
         )
 
+        if not res.ok:
+            try:
+                res.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                raise requests.exceptions.HTTPError(
+                    f"TLM score API error: {e.response.status_code} {e.response.reason} - {e}"
+                ) from e
+
         res_json = res.json()
         tlm_result = {"trustworthiness_score": res_json["tlm_metadata"]["trustworthiness_score"]}
         if explanation := res_json["tlm_metadata"].get("log", {}).get("explanation"):
