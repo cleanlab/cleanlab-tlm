@@ -653,3 +653,13 @@ class TLMOptions(TypedDict):
     custom_eval_criteria: NotRequired[list[dict[str, Any]]]
     disable_trustworthiness: NotRequired[bool]
     disable_persistence: NotRequired[bool]
+    model_provider: NotRequired[ModelProvider]
+
+
+class ModelProvider(TypedDict):
+    """Typed dict of model provider options for the Trustworthy Language Model."""
+
+    api_base: NotRequired[str]
+    api_key: NotRequired[str]
+    api_version: NotRequired[str]
+    provider: NotRequired[str]
