@@ -87,7 +87,7 @@ def validate_tlm_options(
         )
 
     if valid_keys is None:
-        # fallback to original behavior if no valid_keys provided
+        # fallback to default TLM behavior if no valid_keys provided
         from cleanlab_tlm.tlm import TLMOptions
 
         valid_keys = set(TLMOptions.__annotations__.keys())
