@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Improve exception handling of HTTP errors for VPC ChatCompletion module
+- Add custom VPCTLMOptions class that defines model provider option
 
 ## [1.1.28] - 2025-08-25
 
