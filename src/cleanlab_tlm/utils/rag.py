@@ -624,7 +624,7 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
-    
+
     Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
         (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
         `TrustworthyRAG._configure_tool_call_eval_overrides()`.
