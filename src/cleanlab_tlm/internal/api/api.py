@@ -55,6 +55,7 @@ base_url = os.environ.get("CLEANLAB_API_BASE_URL", "https://api.cleanlab.ai/api"
 tlm_base_url = f"{base_url}/v0/trustworthy_llm"
 tlm_rag_base_url = f"{base_url}/v1/rag_trustworthy_llm"
 tlm_openai_base_url = f"{base_url}/v1/openai_trustworthy_llm"
+tlm_explanation_base_url = f"{base_url}/v1/tlm_explanation"
 
 
 def _construct_headers(api_key: Optional[str], content_type: Optional[str] = "application/json") -> JSONDict:
@@ -571,6 +572,48 @@ async def tlm_chat_completions_score(
         handle_rate_limit_error_from_resp(res)
         await handle_tlm_client_error_from_resp(res)
         await handle_tlm_api_error_from_resp(res)
+
+    finally:
+        if local_scoped_client:
+            await client_session.close()
+
+    return cast(JSONDict, res_json)
+
+
+@tlm_retry
+async def tlm_get_explanation(
+    api_key: str,
+    prompt: str,
+    formatted_tlm_result: dict[str, Any],
+    options: Optional[JSONDict],
+    rate_handler: TlmRateHandler,
+    client_session: Optional[aiohttp.ClientSession] = None,
+    batch_index: Optional[int] = None,
+) -> JSONDict:
+    local_scoped_client = False
+    if not client_session:
+        client_session = aiohttp.ClientSession()
+        local_scoped_client = True
+
+    try:
+        async with rate_handler:
+            res = await client_session.post(
+                f"{tlm_explanation_base_url}/get_explanation",
+                json={
+                    _TLM_PROMPT_KEY: prompt,
+                    _TLM_RESPONSE_KEY: formatted_tlm_result,
+                    _TLM_OPTIONS_KEY: options or {},
+                },
+                headers=_construct_headers(api_key),
+            )
+
+            res_json = await res.json()
+
+            await handle_api_key_error_from_resp(res)
+            await handle_http_bad_request_error_from_resp(res)
+            handle_rate_limit_error_from_resp(res)
+            await handle_tlm_client_error_from_resp(res, batch_index)
+            await handle_tlm_api_error_from_resp(res, batch_index)
 
     finally:
         if local_scoped_client:

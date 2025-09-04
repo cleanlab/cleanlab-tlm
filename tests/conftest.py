@@ -20,6 +20,8 @@ from cleanlab_tlm.internal.constants import (
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
 from cleanlab_tlm.tlm import TLM, TLMOptions
+from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
+from cleanlab_tlm.utils.rag import TrustworthyRAG
 
 load_dotenv()
 
@@ -41,6 +43,24 @@ def tlm(tlm_api_key: str) -> TLM:
     except Exception as e:
         environment = os.environ.get("CLEANLAB_API_BASE_URL")
         pytest.skip(f"Failed to create TLM: {e}. Check your API key and environment: ({environment}).")
+
+
+@pytest.fixture(scope="module")
+def trustworthy_rag(tlm_api_key: str) -> TrustworthyRAG:
+    try:
+        return TrustworthyRAG(api_key=tlm_api_key)
+    except Exception as e:
+        environment = os.environ.get("CLEANLAB_API_BASE_URL")
+        pytest.skip(f"Failed to create TrustworthyRAG: {e}. Check your API key and environment: ({environment}).")
+
+
+@pytest.fixture(scope="module")
+def tlm_chat_completion(tlm_api_key: str) -> TLMChatCompletion:
+    try:
+        return TLMChatCompletion(api_key=tlm_api_key)
+    except Exception as e:
+        environment = os.environ.get("CLEANLAB_API_BASE_URL")
+        pytest.skip(f"Failed to create TrustworthyRAG: {e}. Check your API key and environment: ({environment}).")
 
 
 @pytest.fixture(scope="module")

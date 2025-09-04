@@ -30,6 +30,20 @@ TEST_QUERY = "What is the capital of France?"
 TEST_CONTEXT = "France is a country in Western Europe. Its capital is Paris, which is known for the Eiffel Tower."
 TEST_RESPONSE = "The capital of France is Paris."
 
+TEST_QUERY_BATCH = ["What is the capital of France?", "What is the capital of Germany?"]
+TEST_CONTEXT_BATCH = [
+    "France is a country in Western Europe. Its capital is Paris, which is known for the Eiffel Tower.",
+    "Germany is a country in Central Europe. Its capital is Berlin, known for the Brandenburg Gate.",
+]
+TEST_RESPONSE_BATCH = [
+    "The capital of France is Paris.",
+    "The capital of Germany is Berlin.",
+]
+TEST_PROMPT_BATCH = [
+    "Using the context information, answer the following question: What is the capital of France?",
+    "Using the context information, answer the following question: What is the capital of Germany?",
+]
+
 # Make unique test data to avoid caching issues
 test_query = make_text_unique(TEST_QUERY)
 test_context = make_text_unique(TEST_CONTEXT)
@@ -37,24 +51,10 @@ test_response = make_text_unique(TEST_RESPONSE)
 test_prompt = make_text_unique(TEST_PROMPT)
 
 # Create test batches
-test_query_batch = [
-    make_text_unique("What is the capital of France?"),
-    make_text_unique("What is the capital of Germany?"),
-]
-test_context_batch = [
-    make_text_unique(
-        "France is a country in Western Europe. Its capital is Paris, which is known for the Eiffel Tower."
-    ),
-    make_text_unique("Germany is a country in Central Europe. Its capital is Berlin, known for the Brandenburg Gate."),
-]
-test_response_batch = [
-    make_text_unique("The capital of France is Paris."),
-    make_text_unique("The capital of Germany is Berlin."),
-]
-test_prompt_batch = [
-    make_text_unique("Using the context information, answer the following question: What is the capital of France?"),
-    make_text_unique("Using the context information, answer the following question: What is the capital of Germany?"),
-]
+test_query_batch = [make_text_unique(query) for query in TEST_QUERY_BATCH]
+test_context_batch = [make_text_unique(context) for context in TEST_CONTEXT_BATCH]
+test_response_batch = [make_text_unique(response) for response in TEST_RESPONSE_BATCH]
+test_prompt_batch = [make_text_unique(prompt) for prompt in TEST_PROMPT_BATCH]
 
 
 @pytest.fixture(scope="module")
