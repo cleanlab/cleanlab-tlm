@@ -83,7 +83,7 @@ jobs:
       - name: Skip tests for skip-tests tag
         if: steps.skip-check.outputs.skip_tests == 'true'
         run: echo "Skipping tests for skip tests commit tag"
-      
+
       - name: Run tests with coverage
         if: steps.filter.outputs.code-changes == 'true' && steps.skip-check.outputs.skip_tests == 'false'
         run: hatch test -v --cover --include python=${{ matrix.python }}

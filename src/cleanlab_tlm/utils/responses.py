@@ -5,7 +5,10 @@ If you are using OpenAI's Responses API, this module allows you to incorporate T
 """
 
 import asyncio
+import json
 from typing import TYPE_CHECKING, Any, Optional, cast
+
+from pydantic.json import pydantic_encoder
 
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
@@ -112,10 +115,11 @@ class TLMResponses(BaseTLM):
                 ),
             )
 
-        # all other cases
-        tools = openai_kwargs.get("tools", None)
-
-        prompt_text = _form_prompt_responses_api(openai_kwargs["input"], tools)
+        prompt_text = _form_prompt_responses_api(
+            json.loads(json.dumps(openai_kwargs["input"], default=pydantic_encoder)),
+            response=response,
+            **openai_kwargs,
+        )
         response_text = form_response_string_responses_api(response=response)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
