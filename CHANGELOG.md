@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.30] - 2025-09-09
+
+### Added
+
+- Add `get_explanation()` API for TLM, TrustworthyRAG and TLMChatCompletions
+
 ## [1.1.29] - 2025-09-03
 
 ### Added
@@ -341,7 +347,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.29...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.30...HEAD
+[1.1.30]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.29...v1.1.30
 [1.1.29]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.28...v1.1.29
 [1.1.28]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.27...v1.1.28
 [1.1.27]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.26...v1.1.27
