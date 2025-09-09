@@ -41,6 +41,7 @@ class BaseTLM:
         timeout: Optional[float] = None,
         verbose: Optional[bool] = None,
         allow_custom_model: bool = False,
+        valid_options_keys: Optional[set[str]] = None,
     ) -> None:
         """
         Initialize base TLM functionality.
@@ -64,7 +65,12 @@ class BaseTLM:
         self._return_log = False
 
         options_dict = options or {}
-        validate_tlm_options(options_dict, support_custom_eval_criteria, allow_custom_model)
+        validate_tlm_options(
+            options_dict,
+            support_custom_eval_criteria,
+            allow_custom_model,
+            valid_options_keys,
+        )
         if "log" in options_dict and len(options_dict["log"]) > 0:
             self._return_log = True
 

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.29] - 2025-09-03
+
+### Added
+
+- Improve exception handling of HTTP errors for VPC ChatCompletion module
+- Add custom VPCTLMOptions class that defines model provider option
+
+## [1.1.28] - 2025-08-25
+
+### Added
+
+- Support `model_provider` in `TLMOptions` for VPC ChatCompletion module
+
 ## [1.1.27] - 2025-08-21
 
 ### Added
@@ -328,7 +341,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release of the Cleanlab TLM Python client.
 
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.27...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.29...HEAD
+[1.1.29]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.28...v1.1.29
+[1.1.28]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.27...v1.1.28
 [1.1.27]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.26...v1.1.27
 [1.1.26]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.25...v1.1.26
 [1.1.25]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.24...v1.1.25

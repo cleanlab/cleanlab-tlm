@@ -78,7 +78,7 @@ class TrustworthyRAG(BaseTLM):
 
         options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
-            The "disable_trustworthiness" key is only supported for `TrustworthyRAG` when it's set to run `Evals`. See the `evals` argument description below for how evaluations are determined.
+            See the `evals` argument description below for how evaluations are determined.
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
 
@@ -89,10 +89,6 @@ class TrustworthyRAG(BaseTLM):
             To come up with your custom `evals`, we recommend you first run [get_default_evals()](#function-get_default_evals) and then add/remove/modify the returned list.
             Each [Eval](#class-eval) in this list provides real-time detection of specific issues in your RAG application based on the user query, retrieved context (documents), and/or LLM-generated response.
             Set this to an empty list to only score response trustworthiness without additional evaluations.
-
-        Tool call handling: by default, when a tool call response is detected, evaluations that analyze the response content
-        (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
-        `_configure_tool_call_eval_overrides()`.
     """
 
     def __init__(
@@ -788,6 +784,10 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
+
+    Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
+        (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
+        `TrustworthyRAG._configure_tool_call_eval_overrides()`.
     """
 
     def __init__(
