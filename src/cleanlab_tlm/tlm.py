@@ -551,9 +551,9 @@ class TLM(BaseTLM):
             prompt (str | Sequence[str]): The original prompt(s) that were used to generate
                 the response(s) or that were evaluated for trustworthiness scoring.
             response (str | Sequence[str], optional): The response(s) that were evaluated.
-                Required when `tlm_result` contains a `TLMScore` object, but optional when
-                `tlm_result` contains a `TLMResponse` object (since the response is already
-                included in the `TLMResponse`).
+                Required when `tlm_result` contains a `TLMScore` object, as the response text is
+                not included there. Should not be provided when `tlm_result` contains a `TLMResponse`
+                object, as the response text is already included there.
             tlm_result (TLMResponse | TLMScore | Sequence[TLMResponse] | Sequence[TLMScore]):
                 The result object(s) from a previous TLM call (either `prompt()` or
                 `get_trustworthiness_score()`).

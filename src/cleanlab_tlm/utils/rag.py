@@ -372,9 +372,9 @@ class TrustworthyRAG(BaseTLM):
 
         Args:
             response (str | Sequence[str], optional): The response(s) that were evaluated.
-                Required when `tlm_result` contains a `TrustworthyRAGScore` object, but optional when
-                `tlm_result` contains a `TrustworthyRAGResponse` object (since the response is already
-                included in the `TrustworthyRAGResponse`).
+                Required when `tlm_result` contains a `TrustworthyRAGScore` object, as the response text is
+                not included there. Should not be provided when `tlm_result` contains a `TrustworthyRAGResponse`
+                object, as the response text is already included there.
             query (str | Sequence[str]): The user query (or list of multiple queries) that was used to generate the response.
             context (str | Sequence[str]): The context (or list of multiple contexts) that was retrieved from the RAG Knowledge Base and used to generate the response.
             tlm_result (TrustworthyRAGResponse | Sequence[TrustworthyRAGResponse] | TrustworthyRAGScore | Sequence[TrustworthyRAGScore]): The result object(s) from a previous TrustworthyRAG call (either `generate()` or `score()`).
