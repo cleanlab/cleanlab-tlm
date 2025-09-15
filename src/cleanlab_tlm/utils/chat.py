@@ -143,7 +143,7 @@ def _format_tools_prompt(tools: list[dict[str, Any]], is_responses: bool = False
                     "required": ["queries"],
                 },
             }
-        elif tool["type"] == "web_search_preview":
+        elif tool["type"] == "web_search":
             if importlib.util.find_spec("trafilatura"):
                 tool_dict = {
                     "type": "function",

@@ -92,14 +92,10 @@ class TLMResponses(BaseTLM):
         """
 
         if "previous_response_id" in openai_kwargs:
-            raise NotImplementedError(
-                "previous_response_id is not supported in TLMResponses.score()"
-            )
+            raise NotImplementedError("previous_response_id is not supported in TLMResponses.score()")
 
         if "conversation" in openai_kwargs:
-            raise NotImplementedError(
-                "conversation is not supported in TLMResponses.score()"
-            )
+            raise NotImplementedError("conversation is not supported in TLMResponses.score()")
 
         # handle structured outputs differently
         if "text" in openai_kwargs or "text_format" in openai_kwargs:

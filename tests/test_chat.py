@@ -2007,8 +2007,8 @@ This pricing information is from the OpenAI pricing document you provided."""
 def test_form_prompt_string_responses_web_search() -> None:
     """Test form prompt string in OpenAI Responses with File Search."""
     openai_kwargs = {
-        "tools": [{"type": "web_search_preview"}],
-        "tool_choice": {"type": "web_search_preview"},
+        "tools": [{"type": "web_search"}],
+        "tool_choice": {"type": "web_search"},
         "model": "gpt-4.1-mini",
         "input": "Give me a positive news story from today",
     }
@@ -2067,7 +2067,7 @@ def test_form_prompt_string_responses_web_search() -> None:
         tool_choice=ToolChoiceTypes(type="web_search_preview"),
         tools=[
             WebSearchTool(
-                type="web_search_preview",
+                type="web_search",
                 search_context_size="medium",
                 user_location=UserLocation(
                     type="approximate",
@@ -2211,7 +2211,7 @@ def test_form_response_string_responses_web_search() -> None:
         tool_choice=ToolChoiceTypes(type="web_search_preview"),
         tools=[
             WebSearchTool(
-                type="web_search_preview",
+                type="web_search",
                 search_context_size="medium",
                 user_location=UserLocation(
                     type="approximate",
