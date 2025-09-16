@@ -89,7 +89,12 @@ class TLMResponses(BaseTLM):
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
 
-        from pydantic.json import pydantic_encoder
+        try:
+            from pydantic.json import pydantic_encoder
+        except ImportError as e:
+            raise ImportError(
+                "pydantic is required to use the TLMResponses class. Please install it with `pip install pydantic`."
+            ) from e
 
         if "previous_response_id" in openai_kwargs:
             raise NotImplementedError("previous_response_id is not supported in TLMResponses.score()")
