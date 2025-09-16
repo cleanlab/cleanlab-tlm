@@ -97,10 +97,14 @@ class TLMResponses(BaseTLM):
             ) from e
 
         if "previous_response_id" in openai_kwargs:
-            raise NotImplementedError("The `previous_response_id` argument is not yet supported in TLMResponses.score().  Email support@cleanlab.ai.")
+            raise NotImplementedError(
+                "The `previous_response_id` argument is not yet supported in TLMResponses.score().  Email support@cleanlab.ai."
+            )
 
         if "conversation" in openai_kwargs:
-            raise NotImplementedError("The `conversation` argument is not yet supported in TLMResponses.score(). Email support@cleanlab.ai.")
+            raise NotImplementedError(
+                "The `conversation` argument is not yet supported in TLMResponses.score(). Email support@cleanlab.ai."
+            )
 
         # handle structured outputs differently
         if "text" in openai_kwargs or "text_format" in openai_kwargs:
