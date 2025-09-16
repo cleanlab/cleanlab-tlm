@@ -8,8 +8,6 @@ import asyncio
 import json
 from typing import TYPE_CHECKING, Any, Optional, cast
 
-from pydantic.json import pydantic_encoder
-
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
@@ -90,6 +88,8 @@ class TLMResponses(BaseTLM):
         Returns:
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
+
+        from pydantic.json import pydantic_encoder
 
         if "previous_response_id" in openai_kwargs:
             raise NotImplementedError("previous_response_id is not supported in TLMResponses.score()")
