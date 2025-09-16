@@ -97,7 +97,7 @@ class TLMResponses(BaseTLM):
             ) from e
 
         if "previous_response_id" in openai_kwargs:
-            raise NotImplementedError("previous_response_id is not supported in TLMResponses.score()")
+            raise NotImplementedError("The `previous_response_id` argument is not yet supported in TLMResponses.score().  Email support@cleanlab.ai.")
 
         if "conversation" in openai_kwargs:
             raise NotImplementedError("conversation is not supported in TLMResponses.score()")
