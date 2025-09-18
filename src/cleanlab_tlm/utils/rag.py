@@ -6,8 +6,6 @@ This module combines Cleanlab's trustworthiness scores for each RAG response wit
 You can also customize Evals for your use-case. Each Eval provides real-time detection of quality issues in your RAG application based on the: user query, retrieved context (documents), and/or LLM-generated response.
 
 For RAG use-cases, we recommend using this module's `TrustworthyRAG` object in place of the basic `TLM` object.
-
-This feature is in Beta, contact us if you encounter issues.
 """
 
 from __future__ import annotations
