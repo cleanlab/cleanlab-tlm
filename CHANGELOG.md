@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.31] - 2025-09-18
+
+### Added
+
+- Add `get_explanation_async()` API for TLM and TrustworthyRAG
+
 ## [1.1.30] - 2025-09-09
 
 ### Added
@@ -60,8 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated `TLMOptions` to support `disable_trustworthiness` parameter
-    - Skips trustworthiness scoring when `disable_trustworthiness` is True, assuming either custom evaluation criteria (TLM) or RAG Evals (TrustworthyRAG) are provided
-
+  - Skips trustworthiness scoring when `disable_trustworthiness` is True, assuming either custom evaluation criteria (TLM) or RAG Evals (TrustworthyRAG) are provided
 
 ## [1.1.22] - 2025-07-29
 
@@ -87,13 +92,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `get_model_name()` method to `TrustworthyRAG`, `TLMChatCompletion`
 
-
 ## [1.1.18] - 2025-07-25
 
 ### Fixed
 
 - Properly pass quality preset in `TLMChatCompletion`
-
 
 ## [1.1.17] - 2025-07-18
 
@@ -101,20 +104,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Enabled `TLMChatCompletion.score()`to evaluate structured outputs in `ChatCompletion` objects
 
-
 ## [1.1.16] - 2025-07-15
 
 ### Changed
 
 - Add internal setting to bypass model validation check (for custom/VPC models)
 
-
 ## [1.1.15] - 2025-07-14
 
 ### Changed
 
 - Enabled `TLMChatCompletion.score()`to evaluate tool calls in `ChatCompletion` objects
-
 
 ## [1.1.14] - 2025-07-08
 
@@ -123,18 +123,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New TLMOption `num_self_reflections`
 - Support for `best` and `high` preset in `TrustworthyRAG`
 
-### Changed 
+### Changed
 
 - Deprecate `use_self_reflection`
 - Documentation updates for new default configurations
-
 
 ## [1.1.13] - 2025-06-26
 
 ### Added
 
 - Added `form_response_string_chat_completions_api` in `chat.py`
-
 
 ## [1.1.12] - 2025-06-23
 
@@ -152,7 +150,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bug fix in `chat.py` for empty tool list still using tools prompt
 - Bug fix in `chat.py` for handling empty strings args
-
 
 ## [1.1.10] - 2025-06-20
 
@@ -346,8 +343,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.30...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.31...HEAD
+[1.1.31]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.30...v1.1.31
 [1.1.30]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.29...v1.1.30
 [1.1.29]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.28...v1.1.29
 [1.1.28]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.27...v1.1.28
