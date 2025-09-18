@@ -1,2 +1,2 @@
 # SPDX-License-Identifier: MIT
-__version__ = "1.1.30"
+__version__ = "1.1.31"
