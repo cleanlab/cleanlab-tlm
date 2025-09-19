@@ -123,6 +123,7 @@ class TrustworthyRAG(BaseTLM):
                     query_identifier=eval_config.get(_TLM_EVAL_QUERY_IDENTIFIER_KEY),
                     context_identifier=eval_config.get(_TLM_EVAL_CONTEXT_IDENTIFIER_KEY),
                     response_identifier=eval_config.get(_TLM_EVAL_RESPONSE_IDENTIFIER_KEY),
+                    mode=eval_config.get("mode") or "numeric",  # Default to numeric if not specified
                 )
                 for eval_config in _DEFAULT_EVALS
             ]
@@ -861,6 +862,11 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
+        mode (str, optional): The evaluation mode, either "numeric" (default) or "binary".
+            - "numeric": For evaluations that naturally have a continuous score range (e.g., helpfulness, coherence).
+            - "binary": For yes/no evaluations (e.g., does response mention a company, is query appropriate).
+            Both modes return numeric scores in the 0-1 range. For binary evaluations detecting issues,
+            low scores typically correspond to "Yes" (issue detected) and high scores to "No" (issue not detected).
 
     Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
         (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
@@ -874,6 +880,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
+        mode: str = "numeric",
     ):
         """
         lazydocs: ignore
@@ -884,11 +891,16 @@ class Eval:
                 "At least one of query_identifier, context_identifier, or response_identifier must be specified."
             )
 
+        # Validate mode parameter
+        if mode not in ["numeric", "binary"]:
+            raise ValueError("mode must be 'numeric' or 'binary'")
+
         self.name = name
         self.criteria = criteria
         self.query_identifier = query_identifier
         self.context_identifier = context_identifier
         self.response_identifier = response_identifier
+        self.mode = mode
 
     def __repr__(self) -> str:
         """
@@ -903,7 +915,8 @@ class Eval:
             f"    'criteria': '{self.criteria}',\n"
             f"    'query_identifier': {self.query_identifier!r},\n"
             f"    'context_identifier': {self.context_identifier!r},\n"
-            f"    'response_identifier': {self.response_identifier!r}\n"
+            f"    'response_identifier': {self.response_identifier!r},\n"
+            f"    'mode': '{self.mode}'\n"
             f"}}"
         )
 
@@ -915,6 +928,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
+        "mode": "numeric",
     },
     {
         "name": "response_groundedness",
@@ -922,6 +936,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Query",
         "context_identifier": "Context",
         "response_identifier": "Response",
+        "mode": "numeric",
     },
     {
         "name": "response_helpfulness",
@@ -931,6 +946,7 @@ A Response is considered not helpful if it avoids answering the question. For ex
         "query_identifier": "User Query",
         "context_identifier": None,
         "response_identifier": "AI Assistant Response",
+        "mode": "numeric",
     },
     {
         "name": "query_ease",
@@ -942,6 +958,7 @@ Should an AI Assistant be able to properly answer the User Request, it is consid
         "query_identifier": "User Request",
         "context_identifier": None,
         "response_identifier": None,
+        "mode": "numeric",
     },
 ]
 
@@ -974,6 +991,7 @@ def get_default_evals() -> list[Eval]:
             query_identifier=eval_config.get("query_identifier"),
             context_identifier=eval_config.get("context_identifier"),
             response_identifier=eval_config.get("response_identifier"),
+            mode=eval_config.get("mode") or "numeric",
         )
         for eval_config in _DEFAULT_EVALS
     ]
