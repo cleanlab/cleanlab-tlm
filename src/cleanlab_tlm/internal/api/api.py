@@ -41,6 +41,7 @@ from cleanlab_tlm.internal.constants import (
     _TLM_TRUSTWORTHINESS_KEY,
     _TLM_USER_ID_KEY,
 )
+from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.types import JSONDict
 
 if TYPE_CHECKING:
@@ -533,6 +534,7 @@ async def tlm_rag_score(
 
 
 @tlm_retry
+@handle_tlm_exceptions(response_type="TLMScore")
 async def tlm_chat_completions_score(
     api_key: str,
     response: ChatCompletion,
@@ -577,7 +579,14 @@ async def tlm_chat_completions_score(
         if local_scoped_client:
             await client_session.close()
 
-    return cast(JSONDict, res_json)
+    tlm_result = {
+        "trustworthiness_score": res_json["trustworthiness_score"],
+    }
+
+    if "log" in input_kwargs:
+        tlm_result["log"] = res_json["log"]
+
+    return tlm_result
 
 
 @tlm_retry
