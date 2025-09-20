@@ -139,7 +139,7 @@ class TLMChatCompletion(BaseTLM):
 
         return cast(TLMScore, tlm_result)
 
-    def get_per_field_score_breakdown(
+    def get_untrustworthy_fields(
         self,
         *,
         response: Optional[ChatCompletion] = None,
@@ -200,7 +200,7 @@ class TLMChatCompletion(BaseTLM):
             else:
                 print(f"Untrustworthy fields: {untrustworthy_fields}\n")
                 for item in per_score_details:
-                    print(next(iter(item.keys())))
+                    print(f"Field: {next(iter(item.keys()))}")
                     details = next(iter(item.values()))
                     print(f"Response: {details['response']}")
                     print(f"Score: {details['score']}")
