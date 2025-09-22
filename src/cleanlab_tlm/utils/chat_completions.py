@@ -212,7 +212,8 @@ class TLMChatCompletion(BaseTLM):
         threshold: float = 0.8,
         display_details: bool = True,
     ) -> list[str]:
-        """Gets the fields of the response that are considered untrustworthy by TLM.
+        """Gets the fields of a structured output response that are considered untrustworthy by TLM.
+        Only works for responses that are valid JSON objects (uses `response_format` to specify the output format).
         Prints detailed information about the untrustworthy fields if `display_details` is True.
 
         Args:
