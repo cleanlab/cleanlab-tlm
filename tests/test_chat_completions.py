@@ -279,6 +279,10 @@ def test_tlm_chat_completion_structured_output_per_field_scoring() -> None:
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
+
+    # test per_field_score
+    assert len(score["log"]["per_field_score"]) == 2  # noqa: PLR2004
+    assert {"steps", "final_answer"} == set(score["log"]["per_field_score"].keys())
     assert tlm_chat.get_untrustworthy_fields(response=response, tlm_result=score) == ["final_answer"]
 
 
@@ -324,8 +328,14 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
 @pytest.mark.parametrize(
     "arguments, condition",  # noqa: PT006
     [
-        (json.dumps({"query": "Capital of Germany"}), lambda score: score["trustworthiness_score"] < 0.5),  # noqa: PLR2004
-        (json.dumps({"query": "Capital of France"}), lambda score: score["trustworthiness_score"] >= 0.8),  # noqa: PLR2004
+        (
+            json.dumps({"query": "Capital of Germany"}),
+            lambda score: score["trustworthiness_score"] < 0.5,  # noqa: PLR2004
+        ),
+        (
+            json.dumps({"query": "Capital of France"}),
+            lambda score: score["trustworthiness_score"] >= 0.8,  # noqa: PLR2004
+        ),
     ],
     ids=["bad_arguments", "good_arguments"],
 )

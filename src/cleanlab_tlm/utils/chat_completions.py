@@ -104,6 +104,12 @@ class TLMChatCompletion(BaseTLM):
 
         # handle structured outputs differently
         if combined_kwargs.get("response_format"):
+            if "log" in combined_kwargs and "explanation" in combined_kwargs["log"]:
+                raise ValueError(
+                    "`explanation` is not supported when `response_format` is specified, "
+                    "use `per_field_score` instead to get detailed explanations for each field"
+                )
+
             combined_kwargs["response_format"] = type_to_response_format_param(combined_kwargs["response_format"])
             return cast(
                 TLMScore,
