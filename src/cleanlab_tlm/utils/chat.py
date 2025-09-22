@@ -16,11 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 from requests import get
 
 if TYPE_CHECKING:
-    from openai.types.chat import (
-        ChatCompletion,
-        ChatCompletionMessage,
-        ChatCompletionMessageParam,
-    )
+    from openai.types.chat import ChatCompletion, ChatCompletionMessage, ChatCompletionMessageParam
     from openai.types.responses import Response
 
 
@@ -230,7 +226,6 @@ def form_prompt_string(
     messages: list[dict[str, Any]],
     tools: Optional[list[dict[str, Any]]] = None,
     use_responses: Optional[bool] = None,
-    response: Optional[Response] = None,
     **responses_api_kwargs: Any,
 ) -> str:
     """
@@ -267,7 +262,6 @@ def form_prompt_string(
         use_responses (Optional[bool]): If provided, explicitly specifies whether to use Responses API format.
             If None, the format is automatically detected using _uses_responses_api.
             Cannot be set to False when Responses API kwargs are provided.
-        response (Optional[Response]): The response object from OpenAI's Responses API if you are using the Responses API. This is needed if you want to score things such as web search or file search.
         **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
@@ -280,7 +274,7 @@ def form_prompt_string(
     is_responses = _uses_responses_api(messages, tools, use_responses, **responses_api_kwargs)
 
     return (
-        _form_prompt_responses_api(messages, tools, response=response, **responses_api_kwargs)
+        _form_prompt_responses_api(messages, tools, **responses_api_kwargs)
         if is_responses
         else _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools)
     )
@@ -336,7 +330,8 @@ def _form_prompt_chat_completions_api(
 
     # Only return content directly if there's a single user message AND no tools
     if len(messages) == 1 and messages[0].get("role") == _USER_ROLE and (tools is None or len(tools) == 0):
-        return output + str(messages[0]["content"])
+        first_msg = cast(dict[str, Any], messages[0])
+        return output + str(first_msg["content"])
 
     # Warn if the last message is an assistant message with tool calls
     if messages and (messages[-1].get("role") == _ASSISTANT_ROLE or "tool_calls" in messages[-1]):
@@ -355,22 +350,26 @@ def _form_prompt_chat_completions_api(
         if msg["role"] == _ASSISTANT_ROLE:
             output += _ASSISTANT_PREFIX
             # Handle content if present
-            if msg.get("content"):
-                output += f"{msg['content']}\n\n"
+            content_value = cast(Optional[str], msg.get("content"))
+            if content_value:
+                output += f"{content_value}\n\n"
             # Handle tool calls if present
             if "tool_calls" in msg:
                 for tool_call in msg["tool_calls"]:
-                    call_id = tool_call["id"]
-                    function_names[call_id] = tool_call["function"]["name"]  # type: ignore
-                    # Format function call as JSON within XML tags, now including call_id
-                    function_call = {
-                        "name": tool_call["function"]["name"],  # type: ignore
-                        "arguments": json.loads(tool_call["function"]["arguments"])  # type: ignore
-                        if tool_call["function"]["arguments"]  # type: ignore
-                        else {},
-                        "call_id": call_id,
-                    }
-                    output += f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+                    if tool_call["type"] == "function":
+                        call_id = tool_call["id"]
+                        function_names[call_id] = tool_call["function"]["name"]
+                        # Format function call as JSON within XML tags, now including call_id
+                        function_call = {
+                            "name": tool_call["function"]["name"],
+                            "arguments": json.loads(tool_call["function"]["arguments"])
+                            if tool_call["function"]["arguments"]
+                            else {},
+                            "call_id": call_id,
+                        }
+                        output += (
+                            f"{_TOOL_CALL_TAG_START}\n{json.dumps(function_call, indent=2)}\n{_TOOL_CALL_TAG_END}\n\n"
+                        )
         elif msg["role"] == _TOOL_ROLE:
             # Handle tool responses
             output += _TOOL_PREFIX
@@ -445,13 +444,19 @@ def form_response_string_chat_completions_api(
     """
     response_dict = _chat_completion_message_to_dict(response)
     content = response_dict.get("content") or ""
-    tool_calls = response_dict.get("tool_calls")
+    tool_calls = cast(Optional[list[dict[str, Any]]], response_dict.get("tool_calls"))
     if tool_calls is not None:
         try:
-            tool_calls_str = "\n".join(
-                f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': call['function']['name'], 'arguments': json.loads(call['function']['arguments']) if call['function']['arguments'] else {}}, indent=2)}\n{_TOOL_CALL_TAG_END}"
-                for call in tool_calls
-            )
+            rendered_calls: list[str] = []
+            for call in tool_calls:
+                function_dict = call["function"]
+                name = cast(str, function_dict["name"])
+                args_str = cast(Optional[str], function_dict.get("arguments"))
+                args_obj = json.loads(args_str) if args_str else {}
+                rendered_calls.append(
+                    f"{_TOOL_CALL_TAG_START}\n{json.dumps({'name': name, 'arguments': args_obj}, indent=2)}\n{_TOOL_CALL_TAG_END}"
+                )
+            tool_calls_str = "\n".join(rendered_calls)
             return f"{content}\n{tool_calls_str}".strip() if content else tool_calls_str
         except (KeyError, TypeError, json.JSONDecodeError) as e:
             # Log the error but continue with just the content

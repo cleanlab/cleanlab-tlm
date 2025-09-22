@@ -130,6 +130,7 @@ class TLMResponses(BaseTLM):
                 ),
             )
 
+        # all other cases
         prompt_text = _form_prompt_responses_api(
             json.loads(json.dumps(openai_kwargs["input"], default=pydantic_encoder)),
             response=response,
