@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.32] - 2025-09-22
+
+### Added
+
+- Add per-field scoring functionality for structured outputs responses in `TLMChatCompletion`
+
 ## [1.1.31] - 2025-09-18
 
 ### Added
@@ -343,7 +349,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.31...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.32...HEAD
+[1.1.32]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.31...v1.1.32
 [1.1.31]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.30...v1.1.31
 [1.1.30]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.29...v1.1.30
 [1.1.29]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.28...v1.1.29

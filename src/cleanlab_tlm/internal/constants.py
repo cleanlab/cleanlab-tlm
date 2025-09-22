@@ -66,7 +66,7 @@ TLM_SIMILARITY_MEASURES: set[str] = {
     "discrepancy",
 }
 TLM_REASONING_EFFORT_VALUES: set[str] = {"none", "low", "medium", "high"}
-TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation"}
+TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation", "per_field_score"}
 TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: set[str] = {
     "perplexity",
     _TLM_CONSTRAIN_OUTPUTS_KEY,
