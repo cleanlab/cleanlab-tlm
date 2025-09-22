@@ -64,9 +64,7 @@ _TOOL_CALL_SCHEMA_PREFIX = (
     f"{_TOOL_CALL_TAG_START}\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
     f"{_TOOL_CALL_TAG_END}\n\n"
-    "Note: Your past messages will include a call_id in the "
-    f"{_TOOL_CALL_TAG_START} XML tags. "
-    "However, do not generate your own call_id when making a function call."
+    "Function calls may optionally include a call_id, which should be ignored."
 )
 
 
