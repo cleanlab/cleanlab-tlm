@@ -50,8 +50,8 @@ _TOOL_DEFINITIONS_PREFIX = (
     "The set of available tools is provided to you as function signatures within "
     f"{_TOOLS_TAG_START} {_TOOLS_TAG_END} XML tags. "
     "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
-    "then just respond in natural conversational language. Don't make assumptions about what values to plug "
-    "into functions. After you choose to call a function, you will be provided with the function's results within "
+    "then just respond in natural conversational language. "
+    "After you choose to call a function, you will be provided with the function's results within "
     f"{_TOOL_RESPONSE_TAG_START} {_TOOL_RESPONSE_TAG_END} XML tags.\n\n"
     f"{_TOOLS_TAG_START}\n"
 )
