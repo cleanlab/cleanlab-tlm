@@ -103,7 +103,7 @@ def test_form_prompt_string_with_tools_chat_completions() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
@@ -163,7 +163,7 @@ def test_form_prompt_string_with_tools_responses() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
@@ -399,7 +399,7 @@ def test_form_prompt_string_with_tools_and_system_chat_completions() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What's the latest news about AI?\n\n"
         "Assistant:"
     )
@@ -449,7 +449,7 @@ def test_form_prompt_string_with_tools_and_system_responses() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What's the latest news about AI?\n\n"
         "Assistant:"
     )
@@ -564,7 +564,7 @@ def test_form_prompt_string_warns_on_tool_call_last_responses() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
@@ -714,7 +714,7 @@ def test_form_prompt_string_with_instructions_and_tools_responses() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
@@ -839,7 +839,7 @@ def test_form_prompt_string_with_developer_role_and_tools() -> None:
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
@@ -887,7 +887,7 @@ def test_form_prompt_string_with_instructions_developer_role_and_tools() -> None
         "<tool_call>\n"
         "{'name': <function-name>, 'arguments': <args-dict>}\n"
         "</tool_call>\n"
-        "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+        "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
         "User: What can you do?\n\n"
         "Assistant:"
     )
@@ -1051,7 +1051,7 @@ def test_form_prompt_string_with_tools_after_first_system_block(use_responses: b
             "<tool_call>\n"
             "{'name': <function-name>, 'arguments': <args-dict>}\n"
             "</tool_call>\n"
-            "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+            "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
             "User: What can you do?\n\n"
             "Assistant: I can help you.\n\n"
             "System: Third system message later.\n\n"
@@ -1095,7 +1095,7 @@ def test_form_prompt_string_with_tools_after_first_system_block(use_responses: b
             "<tool_call>\n"
             "{'name': <function-name>, 'arguments': <args-dict>}\n"
             "</tool_call>\n"
-            "Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
+            "Note: Function calls and their results may optionally include a call_id, which should be ignored.\n\n"
             "User: What can you do?\n\n"
             "Assistant: I can help you.\n\n"
             "System: Third system message later.\n\n"
