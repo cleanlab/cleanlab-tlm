@@ -64,7 +64,7 @@ _TOOL_CALL_SCHEMA_PREFIX = (
     f"{_TOOL_CALL_TAG_START}\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
     f"{_TOOL_CALL_TAG_END}\n"
-    "Function calls and their results may optionally include a call_id, which should be ignored."
+    "Note: Function calls and their results may optionally include a call_id, which should be ignored."
 )
 
 
