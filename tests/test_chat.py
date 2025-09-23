@@ -2168,7 +2168,7 @@ def test_form_prompt_string_responses_web_search() -> None:
         tool_choice=ToolChoiceTypes(type="web_search_preview"),
         tools=[
             WebSearchTool(
-                type="web_search_preview",  # type: ignore
+                type="web_search",
                 search_context_size="medium",
                 user_location=UserLocation(
                     type="approximate",
@@ -2312,7 +2312,7 @@ def test_form_response_string_responses_web_search() -> None:
         tool_choice=ToolChoiceTypes(type="web_search_preview"),
         tools=[
             WebSearchTool(
-                type="web_search_preview",  # type: ignore
+                type="web_search",
                 search_context_size="medium",
                 user_location=UserLocation(
                     type="approximate",
