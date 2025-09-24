@@ -7,6 +7,10 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
+    _HIDDEN_REASONING_MODELS,
+    _QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING,
+    _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES,
+    _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING,
     _TLM_CONSTRAIN_OUTPUTS_KEY,
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
@@ -169,9 +173,6 @@ def validate_tlm_options(
                 raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
-
-            model = options.get("model", _TLM_DEFAULT_MODEL)
-
             if invalid_log_options:
                 raise ValidationError(
                     f"Invalid options for log: {invalid_log_options}. Valid options include: {TLM_VALID_LOG_OPTIONS}"
@@ -246,6 +247,61 @@ def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized
             "When disable_trustworthiness=True in TrustworthyRAG, at least one evaluation must be provided. "
             "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
         )
+
+
+def validate_logging(options: Optional[TLMOptions], quality_preset: str, subclass: str):
+    """If user asks to log explanation, then either:
+    ensure the specified TLM configuration supports this (return early), or otherwise raise informative error.
+
+    subclass: str
+        Either "TLM" or "TrustworthyRAG".
+        Indicates which type of TLM subclass object we are validating, different types have different quality_preset -> base options mappings.
+    """
+    if not options:
+        return
+    if "log" not in options:
+        return
+    if "explanation" not in options["log"]:
+        return
+
+    # Otherwise ensure we're using TLM configuration that supports logging explanations:
+    unsupported_error = ValueError(
+        "Your TLM configuration does not support logged explanations.  "
+        "Please remove 'explanation' from your specified `log`, and instead use the `get_explanation()` method after computing trust scores."
+    )
+
+    disable_trustworthiness = options.get("disable_trustworthiness", False)
+    if disable_trustworthiness:
+        raise unsupported_error
+
+    model = options.get("model")
+    num_consistency_samples = options.get("num_consistency_samples")
+    reasoning_effort = options.get("reasoning_effort")
+
+    if (num_consistency_samples is not None) and (num_consistency_samples > 0):
+        return
+    if (reasoning_effort is not None) and (reasoning_effort not in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING):
+        return
+    if (num_consistency_samples == 0) and (reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING):
+        raise unsupported_error
+
+    if model in _HIDDEN_REASONING_MODELS:
+        raise unsupported_error
+
+    # Otherwise we can assume relevant TLMOptions were left unspecified by user
+    if subclass == "TLM":
+        if quality_preset in _QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING:
+            raise unsupported_error
+        if (quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES) and (
+            reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING
+        ):
+            raise unsupported_error
+
+    if subclass == "TrustworthyRAG":
+        if quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES:
+            raise unsupported_error
+        if num_consistency_samples == 0:
+            raise unsupported_error
 
 
 def process_and_validate_kwargs_constrain_outputs(
