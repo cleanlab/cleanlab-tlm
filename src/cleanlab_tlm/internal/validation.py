@@ -169,13 +169,31 @@ def validate_tlm_options(
                 raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
-
             model = options.get("model", _TLM_DEFAULT_MODEL)
 
             if invalid_log_options:
                 raise ValidationError(
                     f"Invalid options for log: {invalid_log_options}. Valid options include: {TLM_VALID_LOG_OPTIONS}"
                 )
+            if "explanation" in val:  # ensure we're using TLM configuration that supports precomputed explanations 
+                # TODO: ensure this is right for both TrustworthyRAG() init and TLM() init
+                logging_explanations_supported = True
+                REASONING_EFFORTS_UNSUPPORTED_EXPLANATION_LOGGING = ["none", "minimal"]  # TODO: define in constants location
+                num_consistency_samples = options.get("num_consistency_samples", 0)
+                if disable_trustworthiness:
+                    logging_explanations_supported = False
+                if num_consistency_samples == 0:
+                    if "reasoning_effort" in REASONING_EFFORTS_UNSUPPORTED_EXPLANATION_LOGGING:
+                        logging_explanations_supported = False
+                    if "model" in REASONING_MODELS_UNSUPPORTED_EXPLANATION_LOGGING:  
+                        # TODO: import the reasoning models that dont support explanation-logging from constants file. This may be redundant if the reasoning_effort case above already covers this.
+                        logging_explanations_supported = False
+
+                if not logging_explanations_supported:
+                    raise ValueError(
+                        "Your TLM initialization configuration does not support pre-computed explanations."
+                        "Please remove 'explanation' from the `log` you specified, and instead use the `get_explanation()` method after computing trust scores."
+                    )
 
         elif option == "custom_eval_criteria":
             if not support_custom_eval_criteria:
