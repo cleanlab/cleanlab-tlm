@@ -1,5 +1,6 @@
+import asyncio
 import json
-from typing import Callable
+from typing import Callable, Any
 
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -23,6 +24,19 @@ test_prompt = make_text_unique(TEST_PROMPT)
 test_response = make_text_unique(TEST_RESPONSE)
 
 
+def _run_score_sync_or_async(
+    tlm_chat: TLMChatCompletion,
+    response: ChatCompletion,
+    is_async: bool,
+    **openai_kwargs: Any,
+) -> TLMScore:
+    """Runs either sync or async score method based on is_async parameter."""
+    if is_async:
+        return asyncio.run(tlm_chat.score_async(response=response, **openai_kwargs))
+    else:
+        return tlm_chat.score(response=response, **openai_kwargs)
+
+
 def test_get_model_name() -> None:
     tlm = TLMChatCompletion()
     model_name = tlm.get_model_name()
@@ -35,7 +49,8 @@ def test_get_model_name() -> None:
     "quality_preset",
     ["base", "low", "medium", "high", "best"],
 )
-def test_tlm_chat_completion_score(quality_preset: TLMQualityPreset) -> None:
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_tlm_chat_completion_score(quality_preset: TLMQualityPreset, is_async: bool) -> None:
     tlm_chat = TLMChatCompletion(quality_preset=quality_preset)
     openai_kwargs = {
         "model": "gpt-4.1-mini",
@@ -55,13 +70,14 @@ def test_tlm_chat_completion_score(quality_preset: TLMQualityPreset) -> None:
         object="chat.completion",
     )
 
-    score = tlm_chat.score(response=response, **openai_kwargs)
+    score = _run_score_sync_or_async(tlm_chat, response, is_async, **openai_kwargs)
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
 
 
-def test_tlm_chat_completion_score_with_options() -> None:
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_tlm_chat_completion_score_with_options(is_async: bool) -> None:
     tlm_chat = TLMChatCompletion(options={"log": ["explanation", "perplexity"]})
     openai_kwargs = {
         "model": "gpt-4.1-mini",
@@ -81,13 +97,14 @@ def test_tlm_chat_completion_score_with_options() -> None:
         object="chat.completion",
     )
 
-    score = tlm_chat.score(response=response, **openai_kwargs)
+    score = _run_score_sync_or_async(tlm_chat, response, is_async, **openai_kwargs)
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
 
 
-def test_tlm_chat_completion_score_with_tools() -> None:
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_tlm_chat_completion_score_with_tools(is_async: bool) -> None:
     tlm_chat = TLMChatCompletion()
     openai_kwargs = {
         "model": "gpt-4.1-mini",
@@ -126,13 +143,14 @@ def test_tlm_chat_completion_score_with_tools() -> None:
         object="chat.completion",
     )
 
-    score = tlm_chat.score(response=response, **openai_kwargs)
+    score = _run_score_sync_or_async(tlm_chat, response, is_async, **openai_kwargs)
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
 
 
-def test_tlm_chat_completion_score_with_structured_output() -> None:
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_tlm_chat_completion_score_with_structured_output(is_async: bool) -> None:
     tlm_chat = TLMChatCompletion()
     openai_kwargs = {
         "model": "gpt-4.1-mini",
@@ -200,13 +218,14 @@ def test_tlm_chat_completion_score_with_structured_output() -> None:
         object="chat.completion",
     )
 
-    score = tlm_chat.score(response=response, **openai_kwargs)
+    score = _run_score_sync_or_async(tlm_chat, response, is_async, **openai_kwargs)
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
 
 
-def test_tlm_chat_completion_structured_output_per_field_scoring() -> None:
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_tlm_chat_completion_structured_output_per_field_scoring(is_async: bool) -> None:
     tlm_chat = TLMChatCompletion(options={"log": ["per_field_score"]})
 
     openai_kwargs = {
@@ -275,7 +294,7 @@ def test_tlm_chat_completion_structured_output_per_field_scoring() -> None:
         object="chat.completion",
     )
 
-    score = tlm_chat.score(response=response, **openai_kwargs)
+    score = _run_score_sync_or_async(tlm_chat, response, is_async, **openai_kwargs)
 
     assert score is not None
     assert is_trustworthiness_score_json_format(score)
@@ -339,7 +358,8 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
     ],
     ids=["bad_arguments", "good_arguments"],
 )
-def test_tlm_chat_completion_score_tool_calls(arguments: str, condition: Callable[[TLMScore], bool]) -> None:
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_tlm_chat_completion_score_tool_calls(arguments: str, condition: Callable[[TLMScore], bool], is_async: bool) -> None:
     tlm_chat = TLMChatCompletion()
 
     openai_kwargs = {
@@ -390,7 +410,7 @@ def test_tlm_chat_completion_score_tool_calls(arguments: str, condition: Callabl
         object="chat.completion",
     )
 
-    score = tlm_chat.score(response=response, **openai_kwargs)
+    score = _run_score_sync_or_async(tlm_chat, response, is_async, **openai_kwargs)
 
     assert score is not None
     assert condition(score)
