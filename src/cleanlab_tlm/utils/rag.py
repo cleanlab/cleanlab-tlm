@@ -44,6 +44,7 @@ from cleanlab_tlm.internal.validation import (
     _validate_trustworthy_rag_options,
     tlm_explanation_format_trustworthy_rag_result,
     tlm_score_process_response_and_kwargs,
+    validate_logging,
     validate_rag_inputs,
 )
 
@@ -134,6 +135,7 @@ class TrustworthyRAG(BaseTLM):
             self._evals = evals
 
         _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
+        validate_logging(options=options, quality_preset=quality_preset, subclass="TrustworthyRAG")
 
         # Optional per-eval tool call overrides
         # These are name-based include/exclude sets used only in the _handle_tool_call_filtering decorator

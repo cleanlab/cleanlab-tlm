@@ -19,6 +19,7 @@ from cleanlab_tlm.internal.constants import (
     TLM_SIMILARITY_MEASURES,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
+from cleanlab_tlm.internal.validation import validate_logging
 from cleanlab_tlm.tlm import TLM, TLMOptions
 from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
 from cleanlab_tlm.utils.rag import TrustworthyRAG
@@ -83,6 +84,16 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
             tlm_dict[quality_preset][model] = {}
             task = random.choice(list(_VALID_TLM_TASKS))
             options = _get_options_dictionary(model)
+            try:  # ensure valid options/preset/model configuration for logging
+                validate_logging(options=options, quality_preset=quality_preset, subclass="TLM")
+            except ValueError as e:
+                if "does not support logged explanations" in str(e):
+                    options["log"].remove("explanation")
+                    if len(options["log"]) == 0:
+                        del options["log"]  # log cannot be empty list
+                else:
+                    raise ValueError(e)
+
             tlm_dict[quality_preset][model]["tlm"] = TLM(
                 quality_preset=quality_preset,
                 task=task,

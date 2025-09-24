@@ -41,6 +41,7 @@ from cleanlab_tlm.internal.validation import (
     tlm_explanation_format_tlm_result,
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
+    validate_logging,
     validate_tlm_prompt,
     validate_tlm_prompt_response,
 )
@@ -117,6 +118,7 @@ class TLM(BaseTLM):
         )
 
         # TLM-specific initialization
+        validate_logging(options=options, quality_preset=quality_preset, subclass="TLM")
         if task not in _VALID_TLM_TASKS:
             raise ValidationError(f"Invalid task {task} -- must be one of {_VALID_TLM_TASKS}")
 
