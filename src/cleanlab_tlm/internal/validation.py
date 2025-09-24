@@ -249,7 +249,7 @@ def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized
         )
 
 
-def validate_logging(options: Optional[TLMOptions], quality_preset: str, subclass: str):
+def validate_logging(options: Optional[TLMOptions], quality_preset: str, subclass: str) -> None:
     """If user asks to log explanation, then either:
     ensure the specified TLM configuration supports this (return early), or otherwise raise informative error.
 
