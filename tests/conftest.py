@@ -80,10 +80,10 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
     for quality_preset in TLMQualityPreset.__args__:  # type: ignore
         tlm_dict[quality_preset] = {}
         for model in _VALID_TLM_MODELS:
-            tlm_dict[quality_preset][model] = {}
-            task = random.choice(list(_VALID_TLM_TASKS))
-            options = _get_options_dictionary(model)
             try:
+                tlm_dict[quality_preset][model] = {}
+                task = random.choice(list(_VALID_TLM_TASKS))
+                options = _get_options_dictionary(model)
                 tlm_dict[quality_preset][model]["tlm"] = TLM(
                     quality_preset=quality_preset,
                     task=task,
