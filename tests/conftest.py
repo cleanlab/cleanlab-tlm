@@ -89,6 +89,8 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
             except ValueError as e:
                 if "does not support logged explanations" in str(e):
                     options["log"].remove("explanation")
+                    if len(options["log"]) == 0:
+                        del options["log"]  # log cannot be empty list
                 else:
                     raise ValueError(e)
 
