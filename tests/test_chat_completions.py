@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Callable, Any
+from typing import Any, Callable
 
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -33,8 +33,7 @@ def _run_score_sync_or_async(
     """Runs either sync or async score method based on is_async parameter."""
     if is_async:
         return asyncio.run(tlm_chat.score_async(response=response, **openai_kwargs))
-    else:
-        return tlm_chat.score(response=response, **openai_kwargs)
+    return tlm_chat.score(response=response, **openai_kwargs)
 
 
 def test_get_model_name() -> None:
@@ -359,7 +358,9 @@ def test_tlm_chat_completion_score_missing_messages() -> None:
     ids=["bad_arguments", "good_arguments"],
 )
 @pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
-def test_tlm_chat_completion_score_tool_calls(arguments: str, condition: Callable[[TLMScore], bool], is_async: bool) -> None:
+def test_tlm_chat_completion_score_tool_calls(
+    arguments: str, condition: Callable[[TLMScore], bool], is_async: bool
+) -> None:
     tlm_chat = TLMChatCompletion()
 
     openai_kwargs = {

@@ -85,18 +85,15 @@ class TLMChatCompletion(BaseTLM):
         Returns:
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
-        return self._event_loop.run_until_complete(
-            self.score_async(response=response, **openai_kwargs)
-        )
+        return self._event_loop.run_until_complete(self.score_async(response=response, **openai_kwargs))
 
     async def score_async(
         self,
         *,
         response: "ChatCompletion",
         **openai_kwargs: Any,
-) -> TLMScore:
+    ) -> TLMScore:
         """Asynchronously score the trustworthiness of an OpenAI ChatCompletion response.
-        
         This method is similar to the [`score()`](#method-score) method but operates asynchronously,
         allowing for non-blocking concurrent operations.
 
