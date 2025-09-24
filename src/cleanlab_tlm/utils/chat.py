@@ -60,8 +60,8 @@ _TOOL_DEFINITIONS_PREFIX = (
     "The set of available tools is provided to you as function signatures within "
     f"{_TOOLS_TAG_START} {_TOOLS_TAG_END} XML tags. "
     "You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, "
-    "then just respond in natural conversational language. Don't make assumptions about what values to plug "
-    "into functions. After you choose to call a function, you will be provided with the function's results within "
+    "then just respond in natural conversational language. "
+    "After you choose to call a function, you will be provided with the function's results within "
     f"{_TOOL_RESPONSE_TAG_START} {_TOOL_RESPONSE_TAG_END} XML tags.\n\n"
     f"{_TOOLS_TAG_START}\n"
 )
@@ -73,10 +73,8 @@ _TOOL_CALL_SCHEMA_PREFIX = (
     "Example:\n"
     f"{_TOOL_CALL_TAG_START}\n"
     "{'name': <function-name>, 'arguments': <args-dict>}\n"
-    f"{_TOOL_CALL_TAG_END}\n\n"
-    "Note: Your past messages will include a call_id in the "
-    f"{_TOOL_CALL_TAG_START} XML tags. "
-    "However, do not generate your own call_id when making a function call."
+    f"{_TOOL_CALL_TAG_END}\n"
+    "Note: Function calls and their results may optionally include a call_id, which should be ignored."
 )
 
 # Set up a URL cache so that we can avoid fetching the same URL multiple times

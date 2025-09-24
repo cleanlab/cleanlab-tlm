@@ -6,7 +6,8 @@ It works for any OpenAI LLM model, as well as the many other non-OpenAI LLMs tha
 """
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Optional, cast
+import json
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
 from cleanlab_tlm.internal.base import BaseTLM
@@ -15,7 +16,7 @@ from cleanlab_tlm.internal.constants import (
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
-from cleanlab_tlm.tlm import TLM, TLMOptions, TLMScore
+from cleanlab_tlm.tlm import TLM, TLMOptions, TLMResponse, TLMScore
 from cleanlab_tlm.utils.chat import _form_prompt_chat_completions_api, form_response_string_chat_completions
 
 if TYPE_CHECKING:
@@ -84,6 +85,13 @@ class TLMChatCompletion(BaseTLM):
         Returns:
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
+        try:
+            from openai.lib._parsing._completions import type_to_response_format_param
+        except ImportError as e:
+            raise ImportError(
+                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
+            ) from e
+
         self._validate_chat_completion(response)
         if (messages := openai_kwargs.get("messages")) is None:
             raise ValueError("messages is a required OpenAI input argument.")
@@ -95,7 +103,14 @@ class TLMChatCompletion(BaseTLM):
         }
 
         # handle structured outputs differently
-        if openai_kwargs.get("response_format"):
+        if combined_kwargs.get("response_format"):
+            if "log" in combined_kwargs and "explanation" in combined_kwargs["log"]:
+                raise ValueError(
+                    "`explanation` is not supported when `response_format` is specified, "
+                    "use `per_field_score` instead to get detailed explanations for each field"
+                )
+
+            combined_kwargs["response_format"] = type_to_response_format_param(combined_kwargs["response_format"])
             return cast(
                 TLMScore,
                 self._event_loop.run_until_complete(
@@ -111,12 +126,180 @@ class TLMChatCompletion(BaseTLM):
             )
 
         # all other cases
-        tools = openai_kwargs.get("tools", None)
+        tools = combined_kwargs.get("tools")
 
         prompt_text = _form_prompt_chat_completions_api(messages, tools)
         response_text = form_response_string_chat_completions(response=response)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+
+    def get_explanation(
+        self,
+        *,
+        response: Optional["ChatCompletion"] = None,
+        tlm_result: Union[TLMScore, "ChatCompletion"],
+        **openai_kwargs: Any,
+    ) -> str:
+        """Gets explanations for a given prompt-response pair with a given score.
+
+        This method provides detailed explanations from TLM about why a particular response
+        received its trustworthiness score.
+
+        The `tlm_result` object will be mutated to include the explanation in its log.
+
+        Args:
+            response (ChatCompletion, optional): The OpenAI ChatCompletion response object to evaluate
+            tlm_result (TLMScore | ChatCompletion): The result object from a previous TLM call
+            **openai_kwargs (Any): The original kwargs passed to OpenAI's create() method, must include 'messages'
+
+        Returns:
+            str: Explanation for why TLM assigned the given trustworthiness score to the response.
+        """
+        try:
+            from openai.types.chat import ChatCompletion
+        except ImportError as e:
+            raise ImportError(
+                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
+            ) from e
+
+        if (messages := openai_kwargs.get("messages")) is None:
+            raise ValueError("messages is a required OpenAI input argument.")
+        tools = openai_kwargs.get("tools", None)
+
+        prompt_text = _form_prompt_chat_completions_api(messages, tools)
+
+        if isinstance(tlm_result, dict):
+            if response is None:
+                raise ValueError("'response' is required when tlm_result is a TLMScore object")
+
+            response_text = form_response_string_chat_completions(response=response)
+            return cast(
+                str,
+                self._tlm.get_explanation(
+                    prompt=prompt_text,
+                    response=response_text,
+                    tlm_result=tlm_result,
+                ),
+            )
+
+        if isinstance(tlm_result, ChatCompletion):
+            if getattr(tlm_result, "tlm_metadata", None) is None:
+                raise ValueError("tlm_result must contain tlm_metadata.")
+
+            response_text = form_response_string_chat_completions(response=tlm_result)
+            tlm_metadata = tlm_result.tlm_metadata  # type: ignore
+            formatted_tlm_result = cast(
+                TLMResponse,
+                {
+                    "response": response_text,
+                    **tlm_metadata,
+                },
+            )
+
+            explanation = self._tlm.get_explanation(
+                prompt=prompt_text,
+                tlm_result=formatted_tlm_result,
+            )
+
+            if "log" in tlm_metadata:
+                tlm_metadata["log"]["explanation"] = explanation
+            else:
+                tlm_metadata["log"] = {"explanation": explanation}
+
+            return cast(str, explanation)
+
+        raise TypeError("tlm_result must be a TLMScore or ChatCompletion object.")
+
+    def get_untrustworthy_fields(
+        self,
+        *,
+        response: Optional["ChatCompletion"] = None,
+        tlm_result: Union[TLMScore, "ChatCompletion"],
+        threshold: float = 0.8,
+        display_details: bool = True,
+    ) -> list[str]:
+        """Gets the fields of a structured output response that are considered untrustworthy by TLM.
+        Only works for responses that are valid JSON objects (uses `response_format` to specify the output format).
+        Prints detailed information about the untrustworthy fields if `display_details` is True.
+
+        Args:
+            response (ChatCompletion): The OpenAI ChatCompletion response object to evaluate
+            tlm_result (TLMScore | ChatCompletion): The result object from a previous TLM call
+            threshold (float): The threshold for considering a field untrustworthy
+            display_details (bool): Whether to display detailed information about the untrustworthy fields
+
+        Returns:
+            list[str]: The fields of the response that are considered untrustworthy by TLM
+        """
+        try:
+            from openai.types.chat import ChatCompletion
+        except ImportError as e:
+            raise ImportError(
+                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
+            ) from e
+
+        if isinstance(tlm_result, dict):
+            if response is None:
+                raise ValueError("'response' is required when tlm_result is a TLMScore object")
+
+            tlm_metadata = tlm_result
+            response_text = response.choices[0].message.content or "{}"
+
+        elif isinstance(tlm_result, ChatCompletion):
+            if getattr(tlm_result, "tlm_metadata", None) is None:
+                raise ValueError("tlm_result must contain tlm_metadata.")
+
+            tlm_metadata = tlm_result.tlm_metadata  # type: ignore
+            response_text = tlm_result.choices[0].message.content or "{}"
+
+        else:
+            raise TypeError("tlm_result must be a TLMScore or ChatCompletion object.")
+
+        if "per_field_score" not in tlm_metadata.get("log", {}):
+            raise ValueError(
+                "`per_field_score` is not present in the log.\n"
+                "`get_untrustworthy_fields()` can only be called scoring structured outputs responses and specifying "
+                "`per_field_score` in the `log` option for TLM."
+            )
+
+        try:
+            so_response = json.loads(response_text)
+        except Exception:
+            raise ValueError(
+                "The LLM response must be a valid JSON output (use `response_format` to specify the output format)"
+            )
+
+        per_field_score = tlm_metadata["log"]["per_field_score"]
+        per_score_details = []
+
+        for key, value in per_field_score.items():
+            score = value["score"]
+            if float(score) < threshold:
+                key_details = {
+                    "response": so_response[key],
+                    "score": score,
+                    "explanation": value["explanation"],
+                }
+                per_score_details.append({key: key_details})
+
+        per_score_details.sort(key=lambda x: next(iter(x.values()))["score"])
+        untrustworthy_fields = [next(iter(item.keys())) for item in per_score_details]
+
+        if display_details:
+            if len(untrustworthy_fields) == 0:
+                print("No untrustworthy fields found")
+
+            else:
+                print(f"Untrustworthy fields: {untrustworthy_fields}\n")
+                for item in per_score_details:
+                    print(f"Field: {next(iter(item.keys()))}")
+                    details = next(iter(item.values()))
+                    print(f"Response: {details['response']}")
+                    print(f"Score: {details['score']}")
+                    print(f"Explanation: {details['explanation']}")
+                    print()
+
+        return untrustworthy_fields
 
     @staticmethod
     def _get_response_message(response: "ChatCompletion") -> "ChatCompletionMessage":

@@ -6,8 +6,6 @@ This module combines Cleanlab's trustworthiness scores for each RAG response wit
 You can also customize Evals for your use-case. Each Eval provides real-time detection of quality issues in your RAG application based on the: user query, retrieved context (documents), and/or LLM-generated response.
 
 For RAG use-cases, we recommend using this module's `TrustworthyRAG` object in place of the basic `TLM` object.
-
-This feature is in Beta, contact us if you encounter issues.
 """
 
 from __future__ import annotations
@@ -44,7 +42,9 @@ from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.rag import _handle_tool_call_filtering
 from cleanlab_tlm.internal.validation import (
     _validate_trustworthy_rag_options,
+    tlm_explanation_format_trustworthy_rag_result,
     tlm_score_process_response_and_kwargs,
+    validate_logging,
     validate_rag_inputs,
 )
 
@@ -77,7 +77,7 @@ class TrustworthyRAG(BaseTLM):
 
         options ([TLMOptions](../tlm/#class-tlmoptions), optional): a typed dict of advanced configurations you can optionally specify.
             The "custom_eval_criteria" key for [TLM](../tlm/#class-tlm) is not supported for `TrustworthyRAG`, you can instead specify `evals`.
-            The "disable_trustworthiness" key is only supported for `TrustworthyRAG` when it's set to run `Evals`. See the `evals` argument description below for how evaluations are determined.
+            See the `evals` argument description below for how evaluations are determined.
 
         timeout (float, optional): timeout (in seconds) to apply to each request.
 
@@ -88,10 +88,6 @@ class TrustworthyRAG(BaseTLM):
             To come up with your custom `evals`, we recommend you first run [get_default_evals()](#function-get_default_evals) and then add/remove/modify the returned list.
             Each [Eval](#class-eval) in this list provides real-time detection of specific issues in your RAG application based on the user query, retrieved context (documents), and/or LLM-generated response.
             Set this to an empty list to only score response trustworthiness without additional evaluations.
-
-        Tool call handling: by default, when a tool call response is detected, evaluations that analyze the response content
-        (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
-        `_configure_tool_call_eval_overrides()`.
     """
 
     def __init__(
@@ -139,6 +135,7 @@ class TrustworthyRAG(BaseTLM):
             self._evals = evals
 
         _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
+        validate_logging(options=options, quality_preset=quality_preset, subclass="TrustworthyRAG")
 
         # Optional per-eval tool call overrides
         # These are name-based include/exclude sets used only in the _handle_tool_call_filtering decorator
@@ -346,6 +343,244 @@ class TrustworthyRAG(BaseTLM):
             )
         )
 
+    def get_explanation(
+        self,
+        *,
+        response: Optional[Union[str, Sequence[str]]] = None,
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        tlm_result: Union[
+            TrustworthyRAGResponse,
+            Sequence[TrustworthyRAGResponse],
+            TrustworthyRAGScore,
+            Sequence[TrustworthyRAGScore],
+        ],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None,
+    ) -> Union[str, list[str]]:
+        """Gets explanations for a response with a given trustworthiness score.
+
+        This method provides detailed explanations from TrustworthyRAG about why a particular response
+        received its trustworthiness score.
+
+        The `tlm_result` object will be mutated to include the explanation in its log,
+        adding an "explanation" key to the log dictionary.
+
+        Args:
+            response (str | Sequence[str], optional): The response(s) that were evaluated.
+                Required when `tlm_result` contains a `TrustworthyRAGScore` object, as the response text is
+                not included there. Should not be provided when `tlm_result` contains a `TrustworthyRAGResponse`
+                object, as the response text is already included there.
+            query (str | Sequence[str]): The user query (or list of multiple queries) that was used to generate the response.
+            context (str | Sequence[str]): The context (or list of multiple contexts) that was retrieved from the RAG Knowledge Base and used to generate the response.
+            tlm_result (TrustworthyRAGResponse | Sequence[TrustworthyRAGResponse] | TrustworthyRAGScore | Sequence[TrustworthyRAGScore]): The result object(s) from a previous TrustworthyRAG call (either `generate()` or `score()`).
+            prompt (str | Sequence[str], optional): Optional prompt (or list of multiple prompts) representing the actual inputs (combining query, context, and system instructions into one string) to the LLM that generated the response.
+            form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt based on query and context. Cannot be provided together with prompt, provide one or the other.
+                    This function should take query and context as parameters and return a formatted prompt string.
+                    If not provided, a default prompt formatter will be used.
+                    To include a system prompt or any other special instructions for your LLM,
+                    incorporate them directly in your custom `form_prompt()` function definition.
+
+        Returns:
+            str | list[str]: Explanation(s) for why TrustworthyRAG assigned the given trustworthiness score to the response(s).
+                If a single prompt/result pair was provided, returns a single explanation string.
+                If a list of prompt/results was provided, returns a list of explanation strings matching the input order.
+
+        """
+        if prompt is None and form_prompt is None:
+            form_prompt = TrustworthyRAG._default_prompt_formatter
+
+        formatted_prompt = validate_rag_inputs(
+            query=query,
+            context=context,
+            response=response,
+            prompt=prompt,
+            form_prompt=form_prompt,
+            evals=self._evals,
+            is_generate=response is None,
+        )
+
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
+
+        if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
+            assert isinstance(tlm_result, dict)
+
+            return self._event_loop.run_until_complete(
+                self._get_explanation_async(
+                    prompt=formatted_prompt,
+                    tlm_result=tlm_result,
+                    formatted_tlm_result=formatted_tlm_result,
+                    timeout=self._timeout,
+                )
+            )
+
+        assert isinstance(formatted_prompt, Sequence)
+        assert isinstance(tlm_result, Sequence)
+        assert isinstance(formatted_tlm_result, Sequence)
+
+        return self._event_loop.run_until_complete(
+            self._batch_get_explanation(
+                prompts=formatted_prompt,
+                tlm_results=tlm_result,
+                formatted_tlm_results=formatted_tlm_result,
+            )
+        )
+
+    async def get_explanation_async(
+        self,
+        *,
+        response: Optional[Union[str, Sequence[str]]] = None,
+        query: Union[str, Sequence[str]],
+        context: Union[str, Sequence[str]],
+        tlm_result: Union[
+            TrustworthyRAGResponse,
+            Sequence[TrustworthyRAGResponse],
+            TrustworthyRAGScore,
+            Sequence[TrustworthyRAGScore],
+        ],
+        prompt: Optional[Union[str, Sequence[str]]] = None,
+        form_prompt: Optional[Callable[[str, str], str]] = None,
+    ) -> Union[str, list[str]]:
+        """Asynchronously gets explanations for a response with a given trustworthiness score.
+
+        This method provides detailed explanations from TrustworthyRAG about why a particular response
+        received its trustworthiness score.
+
+        The `tlm_result` object will be mutated to include the explanation in its log,
+        adding an "explanation" key to the log dictionary.
+
+        Args:
+            response (str | Sequence[str], optional): The response(s) that were evaluated.
+                Required when `tlm_result` contains a `TrustworthyRAGScore` object, as the response text is
+                not included there. Should not be provided when `tlm_result` contains a `TrustworthyRAGResponse`
+                object, as the response text is already included there.
+            query (str | Sequence[str]): The user query (or list of multiple queries) that was used to generate the response.
+            context (str | Sequence[str]): The context (or list of multiple contexts) that was retrieved from the RAG Knowledge Base and used to generate the response.
+            tlm_result (TrustworthyRAGResponse | Sequence[TrustworthyRAGResponse] | TrustworthyRAGScore | Sequence[TrustworthyRAGScore]): The result object(s) from a previous TrustworthyRAG call (either `generate()` or `score()`).
+            prompt (str | Sequence[str], optional): Optional prompt (or list of multiple prompts) representing the actual inputs (combining query, context, and system instructions into one string) to the LLM that generated the response.
+            form_prompt (Callable[[str, str], str], optional): Optional function to format the prompt based on query and context. Cannot be provided together with prompt, provide one or the other.
+                    This function should take query and context as parameters and return a formatted prompt string.
+                    If not provided, a default prompt formatter will be used.
+                    To include a system prompt or any other special instructions for your LLM,
+                    incorporate them directly in your custom `form_prompt()` function definition.
+
+        Returns:
+            str | list[str]: Explanation(s) for why TrustworthyRAG assigned the given trustworthiness score to the response(s).
+                If a single prompt/result pair was provided, returns a single explanation string.
+                If a list of prompt/results was provided, returns a list of explanation strings matching the input order.
+
+        """
+        if prompt is None and form_prompt is None:
+            form_prompt = TrustworthyRAG._default_prompt_formatter
+
+        formatted_prompt = validate_rag_inputs(
+            query=query,
+            context=context,
+            response=response,
+            prompt=prompt,
+            form_prompt=form_prompt,
+            evals=self._evals,
+            is_generate=response is None,
+        )
+
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
+
+        if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
+            assert isinstance(tlm_result, dict)
+
+            return await self._get_explanation_async(
+                prompt=formatted_prompt,
+                tlm_result=tlm_result,
+                formatted_tlm_result=formatted_tlm_result,
+                timeout=self._timeout,
+            )
+
+        assert isinstance(formatted_prompt, Sequence)
+        assert isinstance(tlm_result, Sequence)
+        assert isinstance(formatted_tlm_result, Sequence)
+
+        return await self._batch_get_explanation(
+            prompts=formatted_prompt,
+            tlm_results=tlm_result,
+            formatted_tlm_results=formatted_tlm_result,
+        )
+
+    async def _batch_get_explanation(
+        self,
+        prompts: Sequence[str],
+        tlm_results: Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]],
+        formatted_tlm_results: Sequence[dict[str, Any]],
+    ) -> list[str]:
+        """Generate explanations for formatted prompt-result pairs in batch.
+        Mutates the `tlm_results` object to include the explanation in its log.
+
+        Args:
+            prompts: prompts for the TLM to evaluate
+            tlm_results: results from a previous TrustworthyRAG call (either `generate()` or `score()`)
+            formatted_tlm_results: formatted results containing "response" and "trustworthiness_score" keys
+
+        Returns:
+            list[str]: Explanations for why TLM assigned the given trustworthiness scores to the responses.
+        """
+        tlm_explanations = await self._batch_async(
+            [
+                self._get_explanation_async(
+                    prompt=prompt,
+                    tlm_result=tlm_result,
+                    formatted_tlm_result=formatted_tlm_result,
+                    timeout=self._timeout,
+                )
+                for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
+            ]
+        )
+        return cast(list[str], tlm_explanations)
+
+    async def _get_explanation_async(
+        self,
+        *,
+        prompt: str,
+        tlm_result: Union[TrustworthyRAGResponse, TrustworthyRAGScore],
+        formatted_tlm_result: dict[str, Any],
+        timeout: Optional[float] = None,
+        batch_index: Optional[int] = None,
+    ) -> str:
+        """
+        Private asynchronous method to get an explanation for a TrustworthyRAG result.
+
+        Args:
+            prompt: prompt for the TLM to evaluate
+            tlm_result: result from a previous TrustworthyRAG call (either `generate()` or `score()`)
+            formatted_tlm_result: formatted result containing "response" and "trustworthiness_score" keys
+            timeout: timeout for the API call
+            batch_index: index in the batch for error reporting
+
+        Returns:
+            str: Explanation for why TrustworthyRAG assigned the given trustworthiness score to the response.
+        """
+        trustwortiness_dict = cast(EvalMetric, tlm_result["trustworthiness"])
+        if "log" in trustwortiness_dict and "explanation" in trustwortiness_dict["log"]:
+            return cast(str, trustwortiness_dict["log"]["explanation"])
+
+        response_json = await asyncio.wait_for(
+            api.tlm_get_explanation(
+                self._api_key,
+                prompt,
+                formatted_tlm_result,
+                self._options,
+                self._rate_handler,
+                batch_index=batch_index,
+                retries=_TLM_MAX_RETRIES,
+            ),
+            timeout=timeout,
+        )
+
+        if "log" in trustwortiness_dict:
+            trustwortiness_dict["log"]["explanation"] = response_json["explanation"]
+        else:
+            trustwortiness_dict["log"] = {"explanation": response_json["explanation"]}
+
+        return cast(str, response_json["explanation"])
+
     def get_evals(self) -> list[Eval]:
         """
         Get the list of [Evals](#class-eval) that this TrustworthyRAG instance checks.
@@ -436,8 +671,8 @@ class TrustworthyRAG(BaseTLM):
 
     async def _batch_async(
         self,
-        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore]]],
-    ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore]]:
+        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]],
+    ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]:
         """Runs batch of TrustworthyRAG operations.
 
         Args:
@@ -628,6 +863,10 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
+
+    Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
+        (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
+        `TrustworthyRAG._configure_tool_call_eval_overrides()`.
     """
 
     def __init__(

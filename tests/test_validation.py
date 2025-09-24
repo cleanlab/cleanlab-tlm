@@ -704,6 +704,44 @@ def test_validate_tlm_options_support_custom_eval_criteria() -> None:
         )
 
 
+def test_validate_tlm_options_disable_persistence_success() -> None:
+    """Tests that validate_tlm_options accepts valid disable_persistence boolean values."""
+    from cleanlab_tlm.internal.validation import validate_tlm_options
+
+    # Valid boolean values should pass validation
+    validate_tlm_options({"disable_persistence": True})
+    validate_tlm_options({"disable_persistence": False})
+
+    # Should work with other options
+    validate_tlm_options({"disable_persistence": True, "max_tokens": 100, "model": "gpt-4.1-mini"})
+
+
+def test_validate_tlm_options_disable_persistence_failure() -> None:
+    """Tests that validate_tlm_options rejects invalid disable_persistence values."""
+    from cleanlab_tlm.internal.validation import validate_tlm_options
+
+    # Invalid: not a boolean
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type <class 'str'>, disable_persistence must be a boolean$",
+    ):
+        validate_tlm_options({"disable_persistence": "not a boolean"})
+
+    # Invalid: not a boolean
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type <class 'int'>, disable_persistence must be a boolean$",
+    ):
+        validate_tlm_options({"disable_persistence": 1})
+
+    # Invalid: not a boolean
+    with pytest.raises(
+        ValidationError,
+        match="^Invalid type <class 'list'>, disable_persistence must be a boolean$",
+    ):
+        validate_tlm_options({"disable_persistence": [True, False]})
+
+
 def test_validate_rag_inputs_mixed_string_and_sequence() -> None:
     """Tests that validate_rag_inputs rejects mixed inputs where some are strings and others are sequences."""
     from cleanlab_tlm.internal.validation import validate_rag_inputs
@@ -837,14 +875,114 @@ def test_disable_trustworthiness_with_custom_criteria_works(tlm_api_key: str) ->
 
 def test_disable_trustworthiness_without_custom_criteria_raises_error_rag(tlm_api_key: str) -> None:
     """Test that disable_trustworthiness=True without custom_eval_criteria raises ValueError for TrustworthyRAG."""
-    from cleanlab_tlm.utils.rag import TrustworthyRAG
-
     with pytest.raises(ValidationError, match="^When disable_trustworthiness=True in TrustworthyRAG"):
         TrustworthyRAG(evals=[], api_key=tlm_api_key, options={"disable_trustworthiness": True})
 
 
 def test_disable_trustworthiness_with_custom_criteria_works_rag(tlm_api_key: str) -> None:
     """Test that disable_trustworthiness=True with custom_eval_criteria works normally for TrustworthyRAG."""
-    from cleanlab_tlm.utils.rag import TrustworthyRAG
-
     TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
+
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_validate_logging(tlm_api_key: str) -> None:
+    """Test validate_logging() method errors at the right times."""
+    # Settings that should not raise error:
+    TLM(api_key=tlm_api_key)
+    TLM(api_key=tlm_api_key, options={"log": ["explanation"]})
+    TLM(api_key=tlm_api_key, quality_preset="best", options={"log": ["explanation"], "reasoning_effort": "none"})
+    TLM(api_key=tlm_api_key, quality_preset="high", options={"log": ["explanation"], "reasoning_effort": "none"})
+    TLM(api_key=tlm_api_key, quality_preset="base", options={"log": ["explanation"], "num_consistency_samples": 8})
+    TLM(
+        api_key=tlm_api_key,
+        quality_preset="best",
+        options={"log": ["explanation"], "num_self_reflections": 0},
+    )
+    TLM(
+        api_key=tlm_api_key,
+        quality_preset="low",
+        options={
+            "log": ["explanation"],
+            "num_self_reflections": 0,
+            "num_consistency_samples": 4,
+        },
+    )
+    TLM(api_key=tlm_api_key, options={"model": "gpt-5-mini"})
+
+    # Settings that should error:
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(api_key=tlm_api_key, quality_preset="low", options={"log": ["explanation"]})
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(api_key=tlm_api_key, quality_preset="base", options={"log": ["explanation"]})
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            quality_preset="best",
+            options={"log": ["explanation"], "reasoning_effort": "none", "num_consistency_samples": 0},
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            options={"log": ["explanation"], "num_self_reflections": 0},
+        )
+
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            options={"log": ["explanation"], "use_self_reflection": False},
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            quality_preset="best",
+            options={
+                "log": ["explanation"],
+                "num_self_reflections": 0,
+                "num_consistency_samples": 0,
+            },
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            options={
+                "log": ["explanation"],
+                "reasoning_effort": "high",
+                "num_self_reflections": 0,
+            },
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(api_key=tlm_api_key, options={"log": ["explanation"], "model": "gpt-5-mini"})
+
+    # Settings that should not raise error:
+    TrustworthyRAG(api_key=tlm_api_key)
+    TrustworthyRAG(api_key=tlm_api_key, options={"log": ["explanation"], "num_consistency_samples": 5})
+    TrustworthyRAG(api_key=tlm_api_key, options={"log": ["explanation"], "reasoning_effort": "high"})
+    TrustworthyRAG(api_key=tlm_api_key, quality_preset="best", options={"log": ["explanation"]})
+
+    # Settings that should error:
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TrustworthyRAG(api_key=tlm_api_key, options={"log": ["explanation"]})
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TrustworthyRAG(
+            api_key=tlm_api_key, quality_preset="best", options={"log": ["explanation"], "num_consistency_samples": 0}
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TrustworthyRAG(
+            api_key=tlm_api_key,
+            options={
+                "log": ["explanation"],
+                "reasoning_effort": "high",
+                "num_self_reflections": 0,
+            },
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TrustworthyRAG(
+            api_key=tlm_api_key,
+            quality_preset="best",
+            options={
+                "log": ["explanation"],
+                "reasoning_effort": "high",
+                "num_self_reflections": 0,
+                "num_consistency_samples": 0,
+            },
+        )

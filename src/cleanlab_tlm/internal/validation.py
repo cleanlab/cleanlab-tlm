@@ -3,10 +3,14 @@ from __future__ import annotations
 import os
 import warnings
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.constants import (
+    _HIDDEN_REASONING_MODELS,
+    _QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING,
+    _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES,
+    _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING,
     _TLM_CONSTRAIN_OUTPUTS_KEY,
     _TLM_DEFAULT_MODEL,
     _TLM_MAX_TOKEN_RANGE,
@@ -26,8 +30,8 @@ from cleanlab_tlm.internal.constants import (
 from cleanlab_tlm.internal.types import Task
 
 if TYPE_CHECKING:
-    from cleanlab_tlm.tlm import TLMOptions
-    from cleanlab_tlm.utils.rag import Eval
+    from cleanlab_tlm.tlm import TLMOptions, TLMResponse, TLMScore
+    from cleanlab_tlm.utils.rag import Eval, TrustworthyRAGResponse, TrustworthyRAGScore
 
 SKIP_VALIDATE_TLM_OPTIONS: bool = os.environ.get("CLEANLAB_TLM_SKIP_VALIDATE_TLM_OPTIONS", "false").lower() == "true"
 
@@ -75,9 +79,8 @@ def validate_tlm_options(
     options: Any,
     support_custom_eval_criteria: bool = True,
     allow_custom_model: bool = False,
+    valid_keys: Optional[set[str]] = None,
 ) -> None:
-    from cleanlab_tlm.tlm import TLMOptions
-
     if SKIP_VALIDATE_TLM_OPTIONS:
         return
 
@@ -87,7 +90,13 @@ def validate_tlm_options(
             "See: https://help.cleanlab.ai/reference/python/tlm/#class-tlmoptions"
         )
 
-    invalid_keys = set(options.keys()) - set(TLMOptions.__annotations__.keys())
+    if valid_keys is None:
+        # fallback to default TLM behavior if no valid_keys provided
+        from cleanlab_tlm.tlm import TLMOptions
+
+        valid_keys = set(TLMOptions.__annotations__.keys())
+
+    invalid_keys = set(options.keys()) - valid_keys
     if invalid_keys:
         raise ValidationError(
             f"Invalid keys in options dictionary: {invalid_keys}.\n"
@@ -138,6 +147,12 @@ def validate_tlm_options(
                 )
 
         elif option == "use_self_reflection":
+            if "num_self_reflections" in options:
+                raise ValidationError(
+                    "`use_self_reflection` and `num_self_reflections` cannot be specified together. "
+                    "`use_self_reflection` is deprecated. Use `num_self_reflections` instead."
+                )
+
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, use_self_reflection must be a boolean")
 
@@ -164,9 +179,6 @@ def validate_tlm_options(
                 raise ValidationError(f"Invalid type {type(val)}, log must be a list of strings.")
 
             invalid_log_options = set(val) - TLM_VALID_LOG_OPTIONS
-
-            model = options.get("model", _TLM_DEFAULT_MODEL)
-
             if invalid_log_options:
                 raise ValidationError(
                     f"Invalid options for log: {invalid_log_options}. Valid options include: {TLM_VALID_LOG_OPTIONS}"
@@ -201,11 +213,30 @@ def validate_tlm_options(
 
                 if not isinstance(criteria.get("criteria"), str):
                     raise ValidationError(f"'criteria' in custom_eval_criteria item {i} must be a string.")
+
         elif option == "disable_trustworthiness":
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, disable_trustworthiness must be a boolean")
             if val and support_custom_eval_criteria and not options.get("custom_eval_criteria"):
                 raise ValidationError("disable_trustworthiness is only supported when custom_eval_criteria is provided")
+
+        elif option == "disable_persistence":
+            if not isinstance(val, bool):
+                raise ValidationError(f"Invalid type {type(val)}, disable_persistence must be a boolean")
+
+        elif option == "model_provider":
+            if not isinstance(val, dict):
+                raise ValidationError(f"Invalid type {type(val)}, model_provider must be a dictionary")
+
+            from cleanlab_tlm.utils.vpc.tlm import ModelProvider
+
+            supported_model_provider_keys = set(ModelProvider.__annotations__.keys())
+
+            invalid_keys = set(val.keys()) - supported_model_provider_keys
+            if invalid_keys:
+                raise ValidationError(
+                    f"Invalid keys in model_provider: {invalid_keys}. Valid keys include: {supported_model_provider_keys}"
+                )
 
 
 def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized_evals: list[Eval]) -> None:
@@ -222,6 +253,75 @@ def _validate_trustworthy_rag_options(options: Optional[TLMOptions], initialized
             "When disable_trustworthiness=True in TrustworthyRAG, at least one evaluation must be provided. "
             "Either provide evaluations via the 'evals' parameter or set disable_trustworthiness=False."
         )
+
+
+def validate_logging(options: Optional[TLMOptions], quality_preset: str, subclass: str) -> None:
+    """If user asks to log explanation, then either:
+    ensure the specified TLM configuration supports this (return early), or otherwise raise informative error.
+
+    subclass: str
+        Either "TLM" or "TrustworthyRAG".
+        Indicates which type of TLM subclass object we are validating, different types have different quality_preset -> base options mappings.
+    """
+    if not options:
+        return
+    if "log" not in options:
+        return
+    if "explanation" not in options["log"]:
+        return
+
+    # Otherwise ensure we're using TLM configuration that supports logging explanations:
+    unsupported_error = ValueError(
+        "Your TLM configuration does not support logged explanations.  "
+        "Please remove 'explanation' from your specified `log`, and instead use the `get_explanation()` method after computing trust scores."
+    )
+
+    disable_trustworthiness = options.get("disable_trustworthiness", False)
+    if disable_trustworthiness:
+        raise unsupported_error
+
+    model = options.get("model")
+    num_consistency_samples = options.get("num_consistency_samples")
+    reasoning_effort = options.get("reasoning_effort")
+
+    num_self_reflections = options.get("num_self_reflections")
+    use_self_reflection = options.get("use_self_reflection")
+    if use_self_reflection is False:
+        # use_self_reflection is deprecated, consolidating to one parameter
+        num_self_reflections = 0
+
+    if num_consistency_samples == 0 and num_self_reflections == 0:
+        raise unsupported_error
+
+    if (num_consistency_samples is not None) and (num_consistency_samples > 0):
+        return
+    if (
+        (reasoning_effort is not None)
+        and (reasoning_effort not in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING)
+        and (num_self_reflections is None or num_self_reflections > 0)
+    ):
+        return
+    if (num_consistency_samples == 0) and (reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING):
+        raise unsupported_error
+
+    if model in _HIDDEN_REASONING_MODELS:
+        raise unsupported_error
+
+    # Otherwise we can assume relevant TLMOptions were left unspecified by user
+    if subclass == "TLM":
+        if quality_preset in _QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING:
+            raise unsupported_error
+        if quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES:
+            if reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING:
+                raise unsupported_error
+            if num_self_reflections == 0 and num_consistency_samples is None:
+                raise unsupported_error
+
+    if subclass == "TrustworthyRAG":
+        if quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES:
+            raise unsupported_error
+        if num_consistency_samples == 0:
+            raise unsupported_error
 
 
 def process_and_validate_kwargs_constrain_outputs(
@@ -340,6 +440,164 @@ def tlm_score_process_response_and_kwargs(
     combined_response_keys = combined_response.keys()
     combined_response_values_transposed = zip(*combined_response.values())
     return [dict(zip(combined_response_keys, values)) for values in combined_response_values_transposed]
+
+
+def tlm_explanation_format_tlm_result(
+    tlm_result: Union[TLMResponse, Sequence[TLMResponse], TLMScore, Sequence[TLMScore]],
+    response: Optional[Union[str, Sequence[str]]] = None,
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
+    if isinstance(tlm_result, Sequence):
+        if not all(isinstance(r, dict) for r in tlm_result):
+            raise ValidationError("all items in the tlm_result sequence must be dicts")
+
+        if not all("trustworthiness_score" in r for r in tlm_result):
+            raise ValidationError("all items in the tlm_result sequence must contain a 'trustworthiness_score' key")
+
+        # for .get_trustworthiness_score() cases, the response is passed in as a separate argument
+        if not all("response" in r for r in tlm_result):
+            if response is None:
+                raise ValidationError(
+                    "'response' is required if not provided in tlm_result, pass it in using the 'response' argument"
+                )
+            if not isinstance(response, Sequence) or isinstance(response, str):
+                raise ValidationError("response must be a sequence when tlm_result is a sequence")
+            if len(response) != len(tlm_result):
+                raise ValidationError("response and score sequences must have the same length")
+            if not all(isinstance(r, str) for r in response):
+                raise ValidationError("all items in the response sequence must be strings")
+
+            return [{"response": r, **tlm_result} for r, tlm_result in zip(response, tlm_result)]
+
+        # for .prompt() cases, the response is provided in the tlm_result dict
+        if response is not None:
+            raise ValidationError(
+                "response should only be provided once, either using the 'response' argument or in 'tlm_result'"
+            )
+
+        return cast(list[dict[str, Any]], tlm_result)
+
+    if not isinstance(tlm_result, dict):
+        raise ValidationError("tlm_result must be a dict or a sequence of dicts")
+
+    if "trustworthiness_score" not in tlm_result:
+        raise ValidationError("tlm_result must contain a 'trustworthiness' key")
+
+    # the .get_trustworthiness_score() case
+    if "response" not in tlm_result:
+        if response is None:
+            raise ValidationError(
+                "'response' is required if not provided in tlm_result, pass it in using the 'response' argument"
+            )
+        if not isinstance(response, str):
+            raise ValidationError("response must be a string when tlm_result is a dict")
+        return {"response": response, **tlm_result}
+
+    # the .prompt() case
+    if response is not None:
+        raise ValidationError(
+            "response should only be provided once, either using the 'response' argument or in 'tlm_result'"
+        )
+    return cast(dict[str, Any], tlm_result)
+
+
+def tlm_explanation_format_trustworthy_rag_result(
+    tlm_result: Union[
+        TrustworthyRAGResponse,
+        Sequence[TrustworthyRAGResponse],
+        TrustworthyRAGScore,
+        Sequence[TrustworthyRAGScore],
+    ],
+    response: Optional[Union[str, Sequence[str]]] = None,
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
+    if isinstance(tlm_result, Sequence):
+        if not all(isinstance(r, dict) for r in tlm_result):
+            raise ValidationError("all items in the tlm_result sequence must be dicts")
+
+        if not all(
+            "trustworthiness" in r
+            and isinstance(r["trustworthiness"], dict)
+            and "score" in r["trustworthiness"]
+            and r["trustworthiness"]["score"] is not None
+            for r in tlm_result
+        ):
+            raise ValidationError(
+                "all items in the tlm_result sequence must contain a 'trustworthiness' dict with a non-None 'score' key"
+            )
+
+        # for .score() cases, the response is passed in as a separate argument
+        if not all("response" in r for r in tlm_result):
+            if response is None:
+                raise ValidationError(
+                    "'response' is required if not provided in tlm_result, pass it in using the 'response' argument"
+                )
+            if not isinstance(response, Sequence) or isinstance(response, str):
+                raise ValidationError("response must be a sequence when tlm_result is a sequence")
+            if len(response) != len(tlm_result):
+                raise ValidationError("response and score sequences must have the same length")
+            if not all(isinstance(r, str) for r in response):
+                raise ValidationError("all items in the response sequence must be strings")
+
+            return [
+                {
+                    "response": resp,
+                    "trustworthiness_score": res["trustworthiness"]["score"],  # type: ignore
+                    **{k: v for k, v in res["trustworthiness"].items() if k != "score"},  # type: ignore
+                }
+                for resp, res in zip(response, tlm_result)
+            ]
+
+        # for .generate() cases, the response is provided in the tlm_result dict
+        if response is not None:
+            raise ValidationError(
+                "response should only be provided once, either using the 'response' argument or in 'tlm_result'"
+            )
+
+        return [
+            {
+                "response": res["response"],
+                "trustworthiness_score": res["trustworthiness"]["score"],  # type: ignore
+                **{k: v for k, v in res["trustworthiness"].items() if k != "score"},  # type: ignore
+            }
+            for res in tlm_result
+        ]
+
+    if not isinstance(tlm_result, dict):
+        raise ValidationError("tlm_result must be a dict or a sequence of dicts")
+
+    if (
+        "trustworthiness" not in tlm_result
+        or not isinstance(tlm_result["trustworthiness"], dict)
+        or "score" not in tlm_result["trustworthiness"]
+        or tlm_result["trustworthiness"]["score"] is None
+    ):
+        raise ValidationError("tlm_result must contain a 'trustworthiness' dict with a non-None 'score' key")
+
+    # the .score() case
+    if "response" not in tlm_result:
+        if response is None:
+            raise ValidationError(
+                "'response' is required if not provided in tlm_result, pass it in using the 'response' argument"
+            )
+        if not isinstance(response, str):
+            raise ValidationError("response must be a string when tlm_result is a dict")
+
+        return {
+            "response": response,
+            "trustworthiness_score": tlm_result["trustworthiness"]["score"],
+            **{k: v for k, v in tlm_result["trustworthiness"].items() if k != "score"},
+        }
+
+    # the .generate() case
+    if response is not None:
+        raise ValidationError(
+            "response should only be provided once, either using the 'response' argument or in 'tlm_result'"
+        )
+
+    return {
+        "response": tlm_result["response"],
+        "trustworthiness_score": tlm_result["trustworthiness"]["score"],
+        **{k: v for k, v in tlm_result["trustworthiness"].items() if k != "score"},
+    }
 
 
 def validate_tlm_lite_score_options(score_options: Any) -> None:

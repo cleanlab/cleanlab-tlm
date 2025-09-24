@@ -5,6 +5,7 @@ from cleanlab_tlm.internal.types import Task, TLMQualityPreset
 _VALID_TLM_QUALITY_PRESETS: list[str] = ["best", "high", "medium", "low", "base"]
 _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS: list[str] = ["medium", "low", "base"]
 _DEFAULT_TLM_QUALITY_PRESET: TLMQualityPreset = "medium"
+_QUALITY_PRESETS_W_CONSISTENCY_SAMPLES: set[str] = {"best", "high"}  # Must also apply to TrustworthyRAG
 _DEFAULT_TLM_MAX_TOKENS: int = 512
 _VALID_TLM_MODELS: list[str] = [
     "gpt-3.5-turbo-16k",
@@ -38,6 +39,17 @@ _VALID_TLM_MODELS: list[str] = [
     "nova-pro",
 ]
 _TLM_DEFAULT_MODEL: str = "gpt-4.1-mini"
+_HIDDEN_REASONING_MODELS: set[str] = {
+    "o1-preview",
+    "o1",
+    "o1-mini",
+    "o3",
+    "o3-mini",
+    "o4-mini",
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
+}
 _TLM_DEFAULT_CONTEXT_LIMIT: int = 70000
 _VALID_TLM_TASKS: set[str] = {task.value for task in Task}
 TLM_TASK_SUPPORTING_CONSTRAIN_OUTPUTS: set[Task] = {
@@ -66,7 +78,7 @@ TLM_SIMILARITY_MEASURES: set[str] = {
     "discrepancy",
 }
 TLM_REASONING_EFFORT_VALUES: set[str] = {"none", "low", "medium", "high"}
-TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation"}
+TLM_VALID_LOG_OPTIONS: set[str] = {"perplexity", "explanation", "per_field_score"}
 TLM_VALID_GET_TRUSTWORTHINESS_SCORE_KWARGS: set[str] = {
     "perplexity",
     _TLM_CONSTRAIN_OUTPUTS_KEY,
@@ -95,3 +107,7 @@ _TLM_EVAL_CRITERIA_KEY: str = "criteria"
 _TLM_EVAL_QUERY_IDENTIFIER_KEY: str = "query_identifier"
 _TLM_EVAL_CONTEXT_IDENTIFIER_KEY: str = "context_identifier"
 _TLM_EVAL_RESPONSE_IDENTIFIER_KEY: str = "response_identifier"
+
+# Values that wont support logging explanation by default
+_REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING: set[str] = {"none", "minimal"}
+_QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING: set[str] = {"low", "base"}  # For regular TLM not TrustworthyRAG
