@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.34] - 2025-09-24
+
+### Added
+
+- Validate when explanations logging is supported or not
+
 ## [1.1.33] - 2025-09-23
 
 ### Fixed
@@ -355,7 +361,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.33...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.34...HEAD
+[1.1.34]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.33...v1.1.34
 [1.1.33]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.32...v1.1.33
 [1.1.32]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.31...v1.1.32
 [1.1.31]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.30...v1.1.31
