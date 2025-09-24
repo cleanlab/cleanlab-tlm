@@ -1177,7 +1177,7 @@ def test_form_prompt_string_with_empty_arguments(use_responses: bool) -> None:
     assert form_prompt_string(messages, use_responses=use_responses) == expected
 
 
-############### FORM_PROMPT_STRING (Responses API kwargs) ###############
+########### FORM_PROMPT_STRING (Responses API kwargs) ###################
 # Tests for the form_prompt_string function using Responses API kwargs.
 #########################################################################
 
@@ -1697,7 +1697,6 @@ def test_form_prompt_chat_completions_api_warns_when_last_has_tool_calls() -> No
         _form_prompt_chat_completions_api(messages)
 
 
-
 ####################### _FORM_PROMPT_RESPONSES_API ######################
 # Tests for the _form_prompt_responses_api function.
 #########################################################################
@@ -1849,6 +1848,104 @@ def test_form_response_string_chat_completions_api_multiple_tool_calls() -> None
     assert result == expected
 
 
+def test_form_response_string_chat_completions_api_empty_tool_calls_returns_content_only() -> None:
+    response = {
+        "content": "No actions needed.",
+        "tool_calls": [],
+    }
+    # With empty tool_calls, it should just return the content
+    assert form_response_string_chat_completions_api(response) == "No actions needed."
+
+
+def test_form_response_string_chat_completions_api_none_content_with_tool_calls() -> None:
+    response = {
+        "content": None,
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "sum",
+                    "arguments": '{"a": 1, "b": 2}',
+                }
+            }
+        ],
+    }
+    expected = (
+        "<tool_call>\n"
+        "{\n"
+        '  "name": "sum",\n'
+        '  "arguments": {\n'
+        '    "a": 1,\n'
+        '    "b": 2\n'
+        "  }\n"
+        "}\n"
+        "</tool_call>"
+    )
+    assert form_response_string_chat_completions_api(response) == expected
+
+
+@pytest.mark.filterwarnings("always:Error formatting tool_calls in response")
+def test_form_response_string_chat_completions_api_arguments_is_dict_warns_and_returns_content() -> None:
+    response = {
+        "content": "Fallback to content",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "do_it",
+                    # Incorrect type: should be a JSON string
+                    "arguments": {"x": 1},
+                }
+            }
+        ],
+    }
+    with pytest.warns(UserWarning, match="Error formatting tool_calls in response.*Returning content only"):
+        assert form_response_string_chat_completions_api(response) == "Fallback to content"
+
+
+@pytest.mark.filterwarnings("always:Error formatting tool_calls in response")
+def test_form_response_string_chat_completions_api_tool_calls_not_list_warns_and_returns_content() -> None:
+    response = {
+        "content": "Only content",
+        # Incorrect container type for tool_calls
+        "tool_calls": {"function": {"name": "x", "arguments": "{}"}},
+    }
+    with pytest.warns(UserWarning, match="Error formatting tool_calls in response.*Returning content only"):
+        assert form_response_string_chat_completions_api(response) == "Only content"
+
+
+@pytest.mark.filterwarnings("always:Error formatting tool_calls in response")
+def test_form_response_string_chat_completions_api_missing_function_fields_warns_and_returns_content() -> None:
+    response = {
+        "content": "Text",
+        "tool_calls": [
+            {
+                # function key present but missing name field
+                "function": {
+                    "arguments": "{}",
+                }
+            }
+        ],
+    }
+    with pytest.warns(UserWarning, match="Error formatting tool_calls in response: 'name'.*Returning content only"):
+        assert form_response_string_chat_completions_api(response) == "Text"
+
+
+@pytest.mark.filterwarnings("always:Error formatting tool_calls in response")
+def test_form_response_string_chat_completions_api_whitespace_arguments_warns_and_returns_content() -> None:
+    response = {
+        "content": "Try again",
+        "tool_calls": [
+            {
+                "function": {
+                    "name": "noop",
+                    "arguments": "  \n  ",
+                }
+            }
+        ],
+    }
+    with pytest.warns(UserWarning, match="Error formatting tool_calls in response.*Returning content only"):
+        assert form_response_string_chat_completions_api(response) == "Try again"
+
+
 def test_form_response_string_chat_completions_api_empty_content() -> None:
     """Test form_response_string_chat_completions_api with empty content."""
     response = {"content": ""}
@@ -1904,6 +2001,7 @@ def test_form_response_string_chat_completions_api_invalid_input() -> None:
         form_response_string_chat_completions_api(None)  # type: ignore[arg-type]
 
 
+@pytest.mark.filterwarnings("always:Error formatting tool_calls in response")
 def test_form_response_string_chat_completions_api_malformed_tool_calls() -> None:
     """Test form_response_string_chat_completions_api handles malformed tool calls gracefully."""
     # Test with missing function key - this should trigger a warning
@@ -2202,7 +2300,7 @@ def test_form_response_string_chat_completions_uses_api_function() -> None:
         assert result == "Mocked response"
 
 
-########## FORM_RESPONSE_STRING_RESPONSES_API ####################
+############ FORM_RESPONSE_STRING_RESPONSES_API ##########################
 # Tests for the form_response_string_responses_api function.
 #########################################################################
 
