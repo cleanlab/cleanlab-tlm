@@ -84,10 +84,13 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
             tlm_dict[quality_preset][model] = {}
             task = random.choice(list(_VALID_TLM_TASKS))
             options = _get_options_dictionary(model)
-            try:  # ensure valid options/preset/model configuration
+            try:  # ensure valid options/preset/model configuration for logging
                 validate_logging(options=options, quality_preset=quality_preset, subclass="TLM")
-            except ValueError:
-                options["log"].remove("explanation")
+            except ValueError as e:
+                if "does not support logged explanations" in str(e):
+                    options["log"].remove("explanation")
+                else:
+                    raise ValueError(e)
 
             tlm_dict[quality_preset][model]["tlm"] = TLM(
                 quality_preset=quality_preset,
