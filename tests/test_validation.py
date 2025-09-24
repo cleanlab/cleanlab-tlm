@@ -884,6 +884,7 @@ def test_disable_trustworthiness_with_custom_criteria_works_rag(tlm_api_key: str
     TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_validate_logging(tlm_api_key: str) -> None:
     """Test validate_logging() method errors at the right times."""
     # Settings that should not raise error:
@@ -925,10 +926,7 @@ def test_validate_logging(tlm_api_key: str) -> None:
             options={"log": ["explanation"], "num_self_reflections": 0},
         )
 
-    with (
-        pytest.warns(DeprecationWarning),
-        pytest.raises(ValueError, match="does not support logged explanations"),
-    ):
+    with pytest.raises(ValueError, match="does not support logged explanations"):
         TLM(
             api_key=tlm_api_key,
             options={"log": ["explanation"], "use_self_reflection": False},

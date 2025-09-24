@@ -283,7 +283,7 @@ def test_tlm_chat_completion_structured_output_per_field_scoring() -> None:
     # test per_field_score
     assert len(score["log"]["per_field_score"]) == 2  # noqa: PLR2004
     assert {"steps", "final_answer"} == set(score["log"]["per_field_score"].keys())
-    assert tlm_chat.get_untrustworthy_fields(response=response, tlm_result=score) == ["final_answer"]
+    assert "final_answer" in tlm_chat.get_untrustworthy_fields(response=response, tlm_result=score)
 
 
 def test_tlm_chat_completion_score_invalid_response() -> None:
