@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam
 
 ####################### FORM_PROMPT_STRING ##############################
-# Tests for the form_prompt_string function which uses either Responses 
+# Tests for the form_prompt_string function which uses either Responses
 # API or Chat Completions API.
 #########################################################################
 
@@ -1181,6 +1181,7 @@ def test_form_prompt_string_with_empty_arguments(use_responses: bool) -> None:
 # Tests for the form_prompt_string function using Responses API kwargs.
 #########################################################################
 
+
 def test_form_prompt_string_responses_file_search() -> None:
     """Test form prompt string in OpenAI Responses with File Search."""
     openai_kwargs = {
@@ -1523,7 +1524,7 @@ def test_form_prompt_chat_completions_api_single_user_no_tools_returns_content()
         {"role": "user", "content": "Say hi"},
     ]
 
-    result = _form_prompt_chat_completions_api(messages, tools=None)
+    result = _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools=None)
     assert result == "Say hi"
 
 
@@ -1545,7 +1546,7 @@ def test_form_prompt_chat_completions_api_inserts_tools_after_system_block() -> 
         }
     ]
 
-    prompt = _form_prompt_chat_completions_api(messages, tools=tools)
+    prompt = _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools=tools)
 
     # Ensure order: System S1 -> System S2 -> tools prompt (contains <tools> and function name) -> User
     idx_s1 = prompt.find("System: S1\n\n")
@@ -1562,7 +1563,7 @@ def test_form_prompt_chat_completions_api_empty_tools_no_insertion() -> None:
     messages = [
         {"role": "user", "content": "Hello"},
     ]
-    prompt = _form_prompt_chat_completions_api(messages, tools=[])
+    prompt = _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages), tools=[])
     assert prompt == "Hello"
 
 
@@ -1646,7 +1647,7 @@ def test_form_prompt_chat_completions_api_formats_tool_call_and_response() -> No
         '  "name": "get_weather",\n'
         '  "arguments": {\n'
         '    "location": "Paris"\n'
-        '  },\n'
+        "  },\n"
         '  "call_id": "call_1"\n'
         "}\n"
         "</tool_call>\n\n"
@@ -1655,10 +1656,10 @@ def test_form_prompt_chat_completions_api_formats_tool_call_and_response() -> No
         '  "name": "get_weather",\n'
         '  "call_id": "call_1",\n'
         '  "output": [\n'
-        '    {\n'
+        "    {\n"
         '      "temperature_c": 18\n'
-        '    }\n'
-        '  ]\n'
+        "    }\n"
+        "  ]\n"
         "}\n"
         "</tool_response>\n\n"
         "Assistant:"
@@ -1675,7 +1676,7 @@ def test_form_prompt_chat_completions_api_warns_when_last_is_assistant() -> None
         {"role": "assistant", "content": "Thinking..."},
     ]
     with pytest.warns(UserWarning, match="The last message is a tool call or assistant message"):
-        _form_prompt_chat_completions_api(messages)
+        _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages))
 
 
 @pytest.mark.filterwarnings("ignore:The last message is a tool call or assistant message")
@@ -1694,7 +1695,7 @@ def test_form_prompt_chat_completions_api_warns_when_last_has_tool_calls() -> No
         },
     ]
     with pytest.warns(UserWarning, match="The last message is a tool call or assistant message"):
-        _form_prompt_chat_completions_api(messages)
+        _form_prompt_chat_completions_api(cast(list["ChatCompletionMessageParam"], messages))
 
 
 ####################### _FORM_PROMPT_RESPONSES_API ######################
