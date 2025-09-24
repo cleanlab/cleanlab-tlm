@@ -147,6 +147,12 @@ def validate_tlm_options(
                 )
 
         elif option == "use_self_reflection":
+            if "num_self_reflections" in options:
+                raise ValidationError(
+                    "`use_self_reflection` and `num_self_reflections` cannot be specified together. "
+                    "`use_self_reflection` is deprecated. Use `num_self_reflections` instead."
+                )
+
             if not isinstance(val, bool):
                 raise ValidationError(f"Invalid type {type(val)}, use_self_reflection must be a boolean")
 
@@ -278,9 +284,22 @@ def validate_logging(options: Optional[TLMOptions], quality_preset: str, subclas
     num_consistency_samples = options.get("num_consistency_samples")
     reasoning_effort = options.get("reasoning_effort")
 
+    num_self_reflections = options.get("num_self_reflections")
+    use_self_reflection = options.get("use_self_reflection")
+    if use_self_reflection is False:
+        # use_self_reflection is deprecated, consolidating to one parameter
+        num_self_reflections = 0
+
+    if num_consistency_samples == 0 and num_self_reflections == 0:
+        raise unsupported_error
+
     if (num_consistency_samples is not None) and (num_consistency_samples > 0):
         return
-    if (reasoning_effort is not None) and (reasoning_effort not in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING):
+    if (
+        (reasoning_effort is not None)
+        and (reasoning_effort not in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING)
+        and (num_self_reflections is None or num_self_reflections > 0)
+    ):
         return
     if (num_consistency_samples == 0) and (reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING):
         raise unsupported_error
@@ -292,10 +311,11 @@ def validate_logging(options: Optional[TLMOptions], quality_preset: str, subclas
     if subclass == "TLM":
         if quality_preset in _QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING:
             raise unsupported_error
-        if (quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES) and (
-            reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING
-        ):
-            raise unsupported_error
+        if quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES:
+            if reasoning_effort in _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING:
+                raise unsupported_error
+            if num_self_reflections == 0 and num_consistency_samples is None:
+                raise unsupported_error
 
     if subclass == "TrustworthyRAG":
         if quality_preset not in _QUALITY_PRESETS_W_CONSISTENCY_SAMPLES:

@@ -892,6 +892,20 @@ def test_validate_logging(tlm_api_key: str) -> None:
     TLM(api_key=tlm_api_key, quality_preset="best", options={"log": ["explanation"], "reasoning_effort": "none"})
     TLM(api_key=tlm_api_key, quality_preset="high", options={"log": ["explanation"], "reasoning_effort": "none"})
     TLM(api_key=tlm_api_key, quality_preset="base", options={"log": ["explanation"], "num_consistency_samples": 8})
+    TLM(
+        api_key=tlm_api_key,
+        quality_preset="best",
+        options={"log": ["explanation"], "num_self_reflections": 0},
+    )
+    TLM(
+        api_key=tlm_api_key,
+        quality_preset="low",
+        options={
+            "log": ["explanation"],
+            "num_self_reflections": 0,
+            "num_consistency_samples": 4,
+        },
+    )
     TLM(api_key=tlm_api_key, options={"model": "gpt-5-mini"})
 
     # Settings that should error:
@@ -904,6 +918,39 @@ def test_validate_logging(tlm_api_key: str) -> None:
             api_key=tlm_api_key,
             quality_preset="best",
             options={"log": ["explanation"], "reasoning_effort": "none", "num_consistency_samples": 0},
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            options={"log": ["explanation"], "num_self_reflections": 0},
+        )
+
+    with (
+        pytest.warns(DeprecationWarning),
+        pytest.raises(ValueError, match="does not support logged explanations"),
+    ):
+        TLM(
+            api_key=tlm_api_key,
+            options={"log": ["explanation"], "use_self_reflection": False},
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            quality_preset="best",
+            options={
+                "log": ["explanation"],
+                "num_self_reflections": 0,
+                "num_consistency_samples": 0,
+            },
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TLM(
+            api_key=tlm_api_key,
+            options={
+                "log": ["explanation"],
+                "reasoning_effort": "high",
+                "num_self_reflections": 0,
+            },
         )
     with pytest.raises(ValueError, match="does not support logged explanations"):
         TLM(api_key=tlm_api_key, options={"log": ["explanation"], "model": "gpt-5-mini"})
@@ -920,4 +967,24 @@ def test_validate_logging(tlm_api_key: str) -> None:
     with pytest.raises(ValueError, match="does not support logged explanations"):
         TrustworthyRAG(
             api_key=tlm_api_key, quality_preset="best", options={"log": ["explanation"], "num_consistency_samples": 0}
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TrustworthyRAG(
+            api_key=tlm_api_key,
+            options={
+                "log": ["explanation"],
+                "reasoning_effort": "high",
+                "num_self_reflections": 0,
+            },
+        )
+    with pytest.raises(ValueError, match="does not support logged explanations"):
+        TrustworthyRAG(
+            api_key=tlm_api_key,
+            quality_preset="best",
+            options={
+                "log": ["explanation"],
+                "reasoning_effort": "high",
+                "num_self_reflections": 0,
+                "num_consistency_samples": 0,
+            },
         )
