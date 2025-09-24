@@ -90,16 +90,21 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
                     api_key=tlm_api_key,
                     options=options,
                 )
+                tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
+                    quality_preset=quality_preset,
+                    task=task,
+                    api_key=tlm_api_key,
+                )
+                tlm_dict[quality_preset][model]["options"] = options
             except ValueError as e:
-                if "does not support logged explanations" not in str(e):
+                if (  # only acceptable case of error is if log=['explanation'] with unsupported configurations
+                    ("does not support logged explanations" not in str(e))
+                    or (options is None)
+                    or ("log" not in options)
+                    or ("explanation" not in options.get("log", []))
+                ):
                     raise ValueError(str(e))
 
-            tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
-                quality_preset=quality_preset,
-                task=task,
-                api_key=tlm_api_key,
-            )
-            tlm_dict[quality_preset][model]["options"] = options
     return tlm_dict
 
 
