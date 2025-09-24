@@ -19,6 +19,7 @@ from cleanlab_tlm.internal.constants import (
     TLM_SIMILARITY_MEASURES,
 )
 from cleanlab_tlm.internal.types import TLMQualityPreset
+from cleanlab_tlm.internal.validation import validate_logging
 from cleanlab_tlm.tlm import TLM, TLMOptions
 from cleanlab_tlm.utils.chat_completions import TLMChatCompletion
 from cleanlab_tlm.utils.rag import TrustworthyRAG
@@ -80,31 +81,26 @@ def tlm_dict(tlm_api_key: str) -> dict[str, Any]:
     for quality_preset in TLMQualityPreset.__args__:  # type: ignore
         tlm_dict[quality_preset] = {}
         for model in _VALID_TLM_MODELS:
-            try:
-                tlm_dict[quality_preset][model] = {}
-                task = random.choice(list(_VALID_TLM_TASKS))
-                options = _get_options_dictionary(model)
-                tlm_dict[quality_preset][model]["tlm"] = TLM(
-                    quality_preset=quality_preset,
-                    task=task,
-                    api_key=tlm_api_key,
-                    options=options,
-                )
-                tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
-                    quality_preset=quality_preset,
-                    task=task,
-                    api_key=tlm_api_key,
-                )
-                tlm_dict[quality_preset][model]["options"] = options
-            except ValueError as e:
-                if (  # only acceptable case of error is if log=['explanation'] with unsupported configurations
-                    ("does not support logged explanations" not in str(e))
-                    or (options is None)
-                    or ("log" not in options)
-                    or ("explanation" not in options.get("log", []))
-                ):
-                    raise ValueError(str(e))
+            tlm_dict[quality_preset][model] = {}
+            task = random.choice(list(_VALID_TLM_TASKS))
+            options = _get_options_dictionary(model)
+            try:  # ensure valid options/preset/model configuration
+                validate_logging(options=options, quality_preset=quality_preset, subclass="TLM")
+            except ValueError:
+                options["log"].remove("explanation")
 
+            tlm_dict[quality_preset][model]["tlm"] = TLM(
+                quality_preset=quality_preset,
+                task=task,
+                api_key=tlm_api_key,
+                options=options,
+            )
+            tlm_dict[quality_preset][model]["tlm_no_options"] = TLM(
+                quality_preset=quality_preset,
+                task=task,
+                api_key=tlm_api_key,
+            )
+            tlm_dict[quality_preset][model]["options"] = options
     return tlm_dict
 
 
