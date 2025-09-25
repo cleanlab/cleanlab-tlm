@@ -85,6 +85,28 @@ class TLMChatCompletion(BaseTLM):
         Returns:
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
+        return self._event_loop.run_until_complete(self.score_async(response=response, **openai_kwargs))
+
+    async def score_async(
+        self,
+        *,
+        response: "ChatCompletion",
+        **openai_kwargs: Any,
+    ) -> TLMScore:
+        """Asynchronously score the trustworthiness of an OpenAI ChatCompletion response.
+        This method is similar to the [`score()`](#method-score) method but operates asynchronously,
+        allowing for non-blocking concurrent operations.
+
+        Use this method if you want to score multiple ChatCompletion responses concurrently
+        without blocking the execution of other operations.
+
+        Args:
+            response (ChatCompletion): The OpenAI ChatCompletion response object to evaluate
+            **openai_kwargs (Any): The original kwargs passed to OpenAI's create() method, must include 'messages'
+
+        Returns:
+            TLMScore: A dict containing the trustworthiness score and optional logs
+        """
         try:
             from openai.lib._parsing._completions import type_to_response_format_param
         except ImportError as e:
@@ -113,15 +135,13 @@ class TLMChatCompletion(BaseTLM):
             combined_kwargs["response_format"] = type_to_response_format_param(combined_kwargs["response_format"])
             return cast(
                 TLMScore,
-                self._event_loop.run_until_complete(
-                    asyncio.wait_for(
-                        tlm_chat_completions_score(
-                            api_key=self._api_key,
-                            response=response,
-                            **combined_kwargs,
-                        ),
-                        timeout=self._timeout,
-                    )
+                await asyncio.wait_for(
+                    tlm_chat_completions_score(
+                        api_key=self._api_key,
+                        response=response,
+                        **combined_kwargs,
+                    ),
+                    timeout=self._timeout,
                 ),
             )
 
@@ -131,7 +151,7 @@ class TLMChatCompletion(BaseTLM):
         prompt_text = _form_prompt_chat_completions_api(messages, tools)
         response_text = form_response_string_chat_completions(response=response)
 
-        return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
+        return cast(TLMScore, await self._tlm.get_trustworthiness_score_async(prompt_text, response_text))
 
     def get_explanation(
         self,
