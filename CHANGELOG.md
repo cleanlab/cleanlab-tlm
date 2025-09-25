@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.35] - 2025-09-25
+
 ### Added 
 
 - Add `score_async` API for TLMChatCompletion
@@ -365,7 +367,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.34...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.35...HEAD
+[1.1.35]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.34...v1.1.35
 [1.1.34]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.33...v1.1.34
 [1.1.33]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.32...v1.1.33
 [1.1.32]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.31...v1.1.32
