@@ -554,7 +554,7 @@ def _form_prompt_responses_api(
         tools (Optional[List[Dict[str, Any]]]): The list of tools made available for the LLM to use when responding to the messages.
             This is the same argument as the tools argument for OpenAI's Responses API.
             This list of tool definitions will be formatted into a system message.
-        response (Optional[Response]): The OpenAI Response object that gets outputted.
+        response (Optional[Response]): Provide this if the Response contains extra tool calls such as web search. When this is provided, the Response's tool calls get put into the TLM prompt.
         **responses_api_kwargs: Optional keyword arguments for OpenAI's Responses API. Currently supported:
             - instructions (str): Developer instructions to prepend to the prompt with highest priority.
 
