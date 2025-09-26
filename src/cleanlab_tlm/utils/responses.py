@@ -5,6 +5,7 @@ If you are using OpenAI's Responses API, this module allows you to incorporate T
 """
 
 import asyncio
+import json
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from cleanlab_tlm.internal.api.api import tlm_chat_completions_score
@@ -88,6 +89,23 @@ class TLMResponses(BaseTLM):
             TLMScore: A dict containing the trustworthiness score and optional logs
         """
 
+        try:
+            from pydantic.json import pydantic_encoder
+        except ImportError as e:
+            raise ImportError(
+                "pydantic is required to use the TLMResponses class. Please install it with `pip install pydantic`."
+            ) from e
+
+        if "previous_response_id" in openai_kwargs:
+            raise NotImplementedError(
+                "The `previous_response_id` argument is not yet supported in TLMResponses.score().  Email support@cleanlab.ai."
+            )
+
+        if "conversation" in openai_kwargs:
+            raise NotImplementedError(
+                "The `conversation` argument is not yet supported in TLMResponses.score(). Email support@cleanlab.ai."
+            )
+
         # handle structured outputs differently
         if "text" in openai_kwargs or "text_format" in openai_kwargs:
             converted_chat_completion = _convert_responses_to_chat_completion(response)
@@ -113,9 +131,11 @@ class TLMResponses(BaseTLM):
             )
 
         # all other cases
-        tools = openai_kwargs.get("tools", None)
-
-        prompt_text = _form_prompt_responses_api(openai_kwargs["input"], tools)
+        prompt_text = _form_prompt_responses_api(
+            json.loads(json.dumps(openai_kwargs["input"], default=pydantic_encoder)),
+            response=response,
+            **openai_kwargs,
+        )
         response_text = form_response_string_responses_api(response=response)
 
         return cast(TLMScore, self._tlm.get_trustworthiness_score(prompt_text, response_text))
