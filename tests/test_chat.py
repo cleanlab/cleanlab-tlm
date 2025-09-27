@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai.types.responses import Response, ResponseTextConfig, ResponseUsage
+from openai.types.responses import Response
 from openai.types.responses.file_search_tool import FileSearchTool, RankingOptions
 from openai.types.responses.response_file_search_tool_call import (
     ResponseFileSearchToolCall,
@@ -19,14 +19,8 @@ from openai.types.responses.response_output_text import (
     AnnotationURLCitation,
     ResponseOutputText,
 )
-from openai.types.responses.response_usage import (
-    InputTokensDetails,
-    OutputTokensDetails,
-)
 from openai.types.responses.tool_choice_types import ToolChoiceTypes
 from openai.types.responses.web_search_tool import UserLocation, WebSearchTool
-from openai.types.shared.reasoning import Reasoning
-from openai.types.shared.response_format_text import ResponseFormatText
 
 from cleanlab_tlm.internal.rag import _is_tool_call_response
 from cleanlab_tlm.utils.chat import (
