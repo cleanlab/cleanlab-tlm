@@ -1231,7 +1231,7 @@ def test_form_prompt_string_responses_file_search() -> None:
         ],
     )
 
-    expected = """System: You are an AI Assistant that can call provided tools (a.k.a. functions). The set of available tools is provided to you as function signatures within <tools> </tools> XML tags. You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, then just respond in natural conversational language. Don't make assumptions about what values to plug into functions. After you choose to call a function, you will be provided with the function's results within <tool_response> </tool_response> XML tags.
+    expected = """System: You are an AI Assistant that can call provided tools (a.k.a. functions). The set of available tools is provided to you as function signatures within <tools> </tools> XML tags. You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, then just respond in natural conversational language. After you choose to call a function, you will be provided with the function's results within <tool_response> </tool_response> XML tags.
 
 <tools>
 {"type":"function","name":"file_search","description":"Search user-uploaded documents for relevant passages.","parameters":{"type":"object","properties":{"queries":{"type":"array","items":{"type":"string"},"description":"Search queries to run against the document index."}},"required":["queries"]}}
@@ -1244,8 +1244,7 @@ Example:
 <tool_call>
 {'name': <function-name>, 'arguments': <args-dict>}
 </tool_call>
-
-Note: Your past messages will include a call_id in the <tool_call> XML tags. However, do not generate your own call_id when making a function call.
+Note: Function calls and their results may optionally include a call_id, which should be ignored.
 
 User: How much gpt-5 cost?
 
@@ -1361,7 +1360,7 @@ def test_form_prompt_string_responses_web_search() -> None:
         ],
     )
 
-    expected = """System: You are an AI Assistant that can call provided tools (a.k.a. functions). The set of available tools is provided to you as function signatures within <tools> </tools> XML tags. You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, then just respond in natural conversational language. Don't make assumptions about what values to plug into functions. After you choose to call a function, you will be provided with the function's results within <tool_response> </tool_response> XML tags.
+    expected = """System: You are an AI Assistant that can call provided tools (a.k.a. functions). The set of available tools is provided to you as function signatures within <tools> </tools> XML tags. You may call one or more of these functions to assist with the user query. If the provided functions are not helpful/relevant, then just respond in natural conversational language. After you choose to call a function, you will be provided with the function's results within <tool_response> </tool_response> XML tags.
 
 <tools>
 {"type":"function","name":"web_search_call","description":"Search the web for relevant information.","parameters":{"type":"object","properties":{"query":{"type":"string","description":"Search the web with a query and return relevant pages."}},"required":["query"]}}
@@ -1374,8 +1373,7 @@ Example:
 <tool_call>
 {'name': <function-name>, 'arguments': <args-dict>}
 </tool_call>
-
-Note: Your past messages will include a call_id in the <tool_call> XML tags. However, do not generate your own call_id when making a function call.
+Note: Function calls and their results may optionally include a call_id, which should be ignored.
 
 User: Give me a positive news story from today
 
