@@ -10,7 +10,6 @@ If you are not using VPC, use the `cleanlab_tlm.utils.chat_completions` module i
 
 from __future__ import annotations
 
-import json
 import os
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
@@ -19,6 +18,7 @@ import requests
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import _VALID_TLM_QUALITY_PRESETS_CHAT_COMPLETIONS
 from cleanlab_tlm.tlm import TLMScore
+from cleanlab_tlm.utils.per_field_score_utils import _get_untrustworthy_fields
 from cleanlab_tlm.utils.vpc.tlm import VPCTLMOptions
 
 if TYPE_CHECKING:
@@ -147,64 +147,24 @@ class TLMChatCompletion(BaseTLM):
         threshold: float = 0.8,
         display_details: bool = True,
     ) -> list[str]:
-        """Get the per-field score breakdown for an OpenAI ChatCompletion response."""
+        """Gets the fields of a structured output response that are considered untrustworthy by TLM.
+        Only works for responses that are valid JSON objects (uses `response_format` to specify the output format).
+        Prints detailed information about the untrustworthy fields if `display_details` is True.
 
-        try:
-            from openai.types.chat import ChatCompletion
-        except ImportError as e:
-            raise ImportError(
-                f"OpenAI is required to use the {self.__class__.__name__} class. Please install it with `pip install openai`."
-            ) from e
+        Args:
+            response (ChatCompletion): The OpenAI ChatCompletion response object to evaluate
+            tlm_result (TLMScore | ChatCompletion): The result object from a previous TLM call
+            threshold (float): The threshold for considering a field untrustworthy
+            display_details (bool): Whether to display detailed information about the untrustworthy fields
 
-        if isinstance(tlm_result, dict):
-            if response is None:
-                raise ValueError("'response' is required when tlm_result is a TLMScore object")
+        Returns:
+            list[str]: The fields of the response that are considered untrustworthy by TLM
+        """
 
-            tlm_metadata = tlm_result
-            response_text = response.choices[0].message.content or "{}"
-
-        elif isinstance(tlm_result, ChatCompletion):
-            if getattr(tlm_result, "tlm_metadata", None) is None:
-                raise ValueError("tlm_result must contain tlm_metadata.")
-
-            tlm_metadata = tlm_result.tlm_metadata  # type: ignore
-            response_text = tlm_result.choices[0].message.content or "{}"
-
-        else:
-            raise TypeError("tlm_result must be a TLMScore or ChatCompletion object.")
-
-        if "per_field_score" not in tlm_metadata.get("log", {}):
-            raise ValueError("per_field_score is not present in the log")
-
-        so_response = json.loads(response_text)
-        per_field_score = tlm_metadata["log"]["per_field_score"]
-        per_score_details = []
-
-        for key, value in per_field_score.items():
-            score = value["score"]
-            if float(score) < threshold:
-                key_details = {
-                    "response": so_response[key],
-                    "score": score,
-                    "explanation": value["explanation"],
-                }
-                per_score_details.append({key: key_details})
-
-        per_score_details.sort(key=lambda x: next(iter(x.values()))["score"])
-        untrustworthy_fields = [next(iter(item.keys())) for item in per_score_details]
-
-        if display_details:
-            if len(untrustworthy_fields) == 0:
-                print("No untrustworthy fields found")
-
-            else:
-                print(f"Untrustworthy fields: {untrustworthy_fields}\n")
-                for item in per_score_details:
-                    print(f"Field: {next(iter(item.keys()))}")
-                    details = next(iter(item.values()))
-                    print(f"Response: {details['response']}")
-                    print(f"Score: {details['score']}")
-                    print(f"Explanation: {details['explanation']}")
-                    print()
-
-        return untrustworthy_fields
+        return _get_untrustworthy_fields(
+            response=response,
+            tlm_result=tlm_result,
+            threshold=threshold,
+            display_details=display_details,
+            class_name=self.__class__.__name__,
+        )
