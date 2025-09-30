@@ -41,6 +41,7 @@ from cleanlab_tlm.internal.validation import (
     tlm_explanation_format_tlm_result,
     tlm_prompt_process_and_validate_kwargs,
     tlm_score_process_response_and_kwargs,
+    validate_logging,
     validate_tlm_prompt,
     validate_tlm_prompt_response,
 )
@@ -117,6 +118,7 @@ class TLM(BaseTLM):
         )
 
         # TLM-specific initialization
+        validate_logging(options=options, quality_preset=quality_preset, subclass="TLM")
         if task not in _VALID_TLM_TASKS:
             raise ValidationError(f"Invalid task {task} -- must be one of {_VALID_TLM_TASKS}")
 
@@ -587,6 +589,59 @@ class TLM(BaseTLM):
                 formatted_tlm_results=formatted_tlm_result,
             )
         )
+
+    async def get_explanation_async(
+        self,
+        *,
+        prompt: Union[str, Sequence[str]],
+        response: Optional[Union[str, Sequence[str]]] = None,
+        tlm_result: Union[TLMResponse, TLMScore, Sequence[TLMResponse], Sequence[TLMScore]],
+    ) -> Union[str, list[str]]:
+        """Asynchronously gets explanations for a given prompt-response pair with a given score.
+
+        This method provides detailed explanations from TLM about why a particular response
+        received its trustworthiness score.
+
+        The `tlm_result` object will be mutated to include the explanation in its log.
+
+        Args:
+            prompt (str | Sequence[str]): The original prompt(s) that were used to generate
+                the response(s) or that were evaluated for trustworthiness scoring.
+            response (str | Sequence[str], optional): The response(s) that were evaluated.
+                Required when `tlm_result` contains a `TLMScore` object, as the response text is
+                not included there. Should not be provided when `tlm_result` contains a `TLMResponse`
+                object, as the response text is already included there.
+            tlm_result (TLMResponse | TLMScore | Sequence[TLMResponse] | Sequence[TLMScore]):
+                The result object(s) from a previous TLM call (either `prompt()` or
+                `get_trustworthiness_score()`).
+
+        Returns:
+            str | list[str]: Explanation(s) for why TLM assigned the given trustworthiness
+                score(s) to the response(s).
+                If a single prompt/result pair was provided, returns a single explanation string.
+                If a list of prompt/results was provided, returns a list of explanation strings matching the input order.
+        """
+        formatted_tlm_result = tlm_explanation_format_tlm_result(tlm_result, response)
+
+        async with aiohttp.ClientSession() as session:
+            if isinstance(prompt, str) and isinstance(tlm_result, dict) and isinstance(formatted_tlm_result, dict):
+                return await self._get_explanation_async(
+                    prompt,
+                    tlm_result,
+                    formatted_tlm_result,
+                    session,
+                    timeout=self._timeout,
+                )
+
+            assert isinstance(prompt, Sequence)
+            assert isinstance(tlm_result, Sequence)
+            assert isinstance(formatted_tlm_result, Sequence)
+
+            return await self._batch_get_explanation(
+                prompts=prompt,
+                tlm_results=tlm_result,
+                formatted_tlm_results=formatted_tlm_result,
+            )
 
     async def _batch_get_explanation(
         self,
