@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.36] - 2025-09-30
+
+## Added
+
+- Extend `TLMResponses` to work for OpenAI-built-in tools
+- Add per-field scoring functionality for structured outputs responses in VPC ChatCompletion module
+
 ## [1.1.35] - 2025-09-25
 
 ### Added 
@@ -367,7 +374,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.35...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.36...HEAD
+[1.1.36]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.35...v1.1.36
 [1.1.35]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.34...v1.1.35
 [1.1.34]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.33...v1.1.34
 [1.1.33]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.32...v1.1.33
