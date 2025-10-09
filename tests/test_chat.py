@@ -11,6 +11,7 @@ from openai.types.responses.response_file_search_tool_call import (
 )
 from openai.types.responses.response_function_web_search import (
     ActionSearch,
+    ActionSearchSource,
     ResponseFunctionWebSearch,
 )
 from openai.types.responses.response_output_message import ResponseOutputMessage
@@ -1308,6 +1309,12 @@ def test_form_prompt_string_responses_web_search() -> None:
                 action=ActionSearch(
                     query="Give me a positive news story from today",
                     type="search",
+                    sources=[
+                        ActionSearchSource(
+                            type="url",
+                            url="https://www.podego.com/insights/august-2025-good-news-ai-pfas-stories?utm_source=openai",
+                        ),
+                    ],
                 ),
                 status="completed",
                 type="web_search_call",
@@ -1394,7 +1401,6 @@ Tool: <tool_response>
   "output": [
     {
       "url": "https://www.podego.com/insights/august-2025-good-news-ai-pfas-stories?utm_source=openai",
-      "title": "Positive News Highlights | AI, PFAS Breakthroughs & More \\u2014 August 2025 \\u2014 Podego",
       "content": "MOCK CONTENT"
     }
   ]
@@ -2342,6 +2348,12 @@ def test_form_response_string_responses_web_search() -> None:
                 action=ActionSearch(
                     query="Give me a positive news story from today",
                     type="search",
+                    sources=[
+                        ActionSearchSource(
+                            type="url",
+                            url="https://www.podego.com/insights/august-2025-good-news-ai-pfas-stories?utm_source=openai",
+                        ),
+                    ],
                 ),
                 status="completed",
                 type="web_search_call",
