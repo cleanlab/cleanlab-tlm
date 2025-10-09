@@ -755,32 +755,14 @@ def _responses_messages_to_string(messages: list[dict[str, Any]]) -> str:
                 )
 
             if message["action"]["type"] == "search":
-                if "annotations" in message:
-                    annotations = message["annotations"]
-                else:
-                    next_text_message = adjusted_messages[i + 1]
-                    if next_text_message["type"] != "message":
-                        continue
-                    next_text_content = next_text_message["content"][0]
-                    if next_text_content["type"] != "output_text":
-                        continue
-                    annotations = next_text_content["annotations"]
-
-                urls = list(
-                    {
-                        (annotation["url"], annotation["title"])
-                        for annotation in annotations
-                        if annotation["type"] == "url_citation"
-                    }
-                )
+                urls = list({source["url"] for source in message["action"]["sources"] if source["type"] == "url"})
 
                 with ThreadPoolExecutor() as executor:
 
-                    def extract_text(pair: tuple[str, str]) -> str:
+                    def extract_text(url: str) -> str:
                         fallback_text = "Response is not shown, but the LLM can still access it. Assume that whatever the LLM references in this URL is true."
 
                         try:
-                            url = pair[0]
                             if url in _url_cache:
                                 return _url_cache[url]
 
@@ -814,10 +796,9 @@ def _responses_messages_to_string(messages: list[dict[str, Any]]) -> str:
                 websites = [
                     {
                         "url": url,
-                        "title": title,
                         "content": data,
                     }
-                    for (url, title), data in zip(urls, requests)
+                    for url, data in zip(urls, requests)
                 ]
 
                 tool_call = {
