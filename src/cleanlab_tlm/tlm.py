@@ -564,7 +564,7 @@ class TLM(BaseTLM):
             str | list[str]: Explanation(s) for why TLM assigned the given trustworthiness
                 score(s) to the response(s).
                 If a single prompt/result pair was provided, returns a single explanation string.
-                If a list of prompt/results was provided, returns a list of explanation strings matching the input order.
+                If a list of prompt/results was provided, returns a list of explanation strings matching the input order..
         """
         formatted_tlm_result = tlm_explanation_format_tlm_result(tlm_result, response)
 
