@@ -876,6 +876,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
+        mode: Optional[str] = "numeric",
     ):
         """
         lazydocs: ignore
@@ -891,6 +892,7 @@ class Eval:
         self.query_identifier = query_identifier
         self.context_identifier = context_identifier
         self.response_identifier = response_identifier
+        self.mode = mode
 
     def __repr__(self) -> str:
         """
@@ -906,6 +908,7 @@ class Eval:
             f"    'query_identifier': {self.query_identifier!r},\n"
             f"    'context_identifier': {self.context_identifier!r},\n"
             f"    'response_identifier': {self.response_identifier!r}\n"
+            f"    'mode': {self.mode!r}\n"
             f"}}"
         )
 
