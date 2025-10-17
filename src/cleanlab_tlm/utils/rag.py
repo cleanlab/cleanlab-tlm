@@ -54,6 +54,20 @@ if TYPE_CHECKING:
     from cleanlab_tlm.tlm import TLMOptions
 
 
+# Criteria constants for response_helpfulness
+_RESPONSE_HELPFULNESS_BINARY_CRITERIA = """Does the AI Assistant Response avoid answering or deflect from the User Query?
+
+A Response is considered as avoiding/deflecting (answer "Yes") if it refuses to answer, such as by saying or implying things like "I don't know", "Sorry", "No information available", or any other form of refusal or deflection.
+
+A Response is considered as attempting to answer (answer "No") if the Assistant makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect the assessment."""
+
+_RESPONSE_HELPFULNESS_NUMERIC_CRITERIA = """Assess whether the AI Assistant Response is a helpful answer to the User Query.
+
+A Response is considered helpful if it makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect the assessment. The only thing that matters is whether the Assistant tries to answer the question.
+
+A Response is considered not helpful if it avoids answering the question. For example, by saying or implying things like "I don't know", "Sorry", "No information available", or any other form of refusal or deflection."""
+
+
 class TrustworthyRAG(BaseTLM):
     """
     Real-time Evals for Retrieval-Augmented Generation (RAG) systems, powered by Cleanlab's Trustworthy Language Model (TLM).
@@ -940,13 +954,11 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
     },
     {
         "name": "response_helpfulness",
-        "criteria": """Assess whether the AI Assistant Response is a helpful answer to the User Query.
-A Response is considered helpful if it makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect the assessment. The only thing that matters is whether the Assistant tries to answer the question.
-A Response is considered not helpful if it avoids answering the question. For example, by saying or implying things like "I don't know", "Sorry", "No information available", or any other form of refusal or deflection.""",
+        "criteria": _RESPONSE_HELPFULNESS_BINARY_CRITERIA,  # Use binary criteria by default
         "query_identifier": "User Query",
         "context_identifier": None,
         "response_identifier": "AI Assistant Response",
-        "mode": "numeric",
+        "mode": "binary",
     },
     {
         "name": "query_ease",
@@ -965,24 +977,24 @@ Should an AI Assistant be able to properly answer the User Request, it is consid
 
 def get_default_evals() -> list[Eval]:
     """
-    Get the evaluation criteria that are run in TrustworthyRAG by default.
+        Get the evaluation criteria that are run in TrustworthyRAG by default.
 
-    Returns:
-        list[Eval]: A list of [Eval](#class-eval) objects based on pre-configured criteria
-        that can be used with TrustworthyRAG.
+        Returns:
+            list[Eval]: A list of [Eval](#class-eval) objects based on pre-configured criteria
+            that can be used with TrustworthyRAG.
 
-    Example:
-        ```python
-        default_evaluations = get_default_evals()
+        Example:
+    ```python
+            default_evaluations = get_default_evals()
 
-        # You can modify the default Evals by:
-        # 1. Adding new evaluation criteria
-        # 2. Updating existing criteria with custom text
-        # 3. Removing specific evaluations you don't need
+            # You can modify the default Evals by:
+            # 1. Adding new evaluation criteria
+            # 2. Updating existing criteria with custom text
+            # 3. Removing specific evaluations you don't need
 
-        # Run TrustworthyRAG with your modified Evals
-        trustworthy_rag = TrustworthyRAG(evals=modified_evaluations)
-        ```
+            # Run TrustworthyRAG with your modified Evals
+            trustworthy_rag = TrustworthyRAG(evals=modified_evaluations)
+    ```
     """
     return [
         Eval(
@@ -1015,26 +1027,26 @@ class EvalMetric(TypedDict):
 class TrustworthyRAGResponse(dict[str, Union[Optional[str], EvalMetric]]):
     """Object returned by `TrustworthyRAG.generate()` containing generated text and evaluation scores. This class is a dictionary with specific keys.
 
-    Attributes:
-        response (str): The generated response text.
-        trustworthiness ([EvalMetric](#class-evalmetric)): Overall trustworthiness of the response.
-        Additional keys: Various evaluation metrics (context_sufficiency, response_helpfulness, etc.),
-            each following the [EvalMetric](#class-evalmetric) structure.
+        Attributes:
+            response (str): The generated response text.
+            trustworthiness ([EvalMetric](#class-evalmetric)): Overall trustworthiness of the response.
+            Additional keys: Various evaluation metrics (context_sufficiency, response_helpfulness, etc.),
+                each following the [EvalMetric](#class-evalmetric) structure.
 
-    Example:
-        ```python
-        {
-            "response": "<response text>",
-            "trustworthiness": {
-                "score": 0.92,
-                "log": {"explanation": "Did not find a reason to doubt trustworthiness."}
-            },
-            "context_informativeness": {
-                "score": 0.65
-            },
-            ...
-        }
-        ```
+        Example:
+    ```python
+            {
+                "response": "<response text>",
+                "trustworthiness": {
+                    "score": 0.92,
+                    "log": {"explanation": "Did not find a reason to doubt trustworthiness."}
+                },
+                "context_informativeness": {
+                    "score": 0.65
+                },
+                ...
+            }
+    ```
     """
 
 
@@ -1049,15 +1061,15 @@ class TrustworthyRAGScore(dict[str, EvalMetric]):
 
     Example:
         ```python
-        {
-            "trustworthiness": {
-                "score": 0.92,
-                "log": {"explanation": "Did not find a reason to doubt trustworthiness."}
-            },
-            "context_informativeness": {
-                "score": 0.65
-            },
-            ...
-        }
+                {
+                    "trustworthiness": {
+                        "score": 0.92,
+                        "log": {"explanation": "Did not find a reason to doubt trustworthiness."}
+                    },
+                    "context_informativeness": {
+                        "score": 0.65
+                    },
+                    ...
+                }
         ```
     """
