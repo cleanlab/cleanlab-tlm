@@ -755,6 +755,14 @@ def _responses_messages_to_string(messages: list[dict[str, Any]]) -> str:
                 )
 
             if message["action"]["type"] == "search":
+                if message["action"]["sources"] is None:
+                    warnings.warn(
+                        "Web search call returned no results. Please include include=['web_search_call.action.sources'] in your request.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    continue
+
                 urls = list({source["url"] for source in message["action"]["sources"] if source["type"] == "url"})
 
                 with ThreadPoolExecutor() as executor:
