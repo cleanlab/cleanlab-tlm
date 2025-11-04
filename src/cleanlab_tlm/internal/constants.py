@@ -111,3 +111,7 @@ _TLM_EVAL_RESPONSE_IDENTIFIER_KEY: str = "response_identifier"
 # Values that wont support logging explanation by default
 _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING: set[str] = {"none", "minimal"}
 _QUALITY_PRESETS_UNSUPPORTED_EXPLANATION_LOGGING: set[str] = {"low", "base"}  # For regular TLM not TrustworthyRAG
+
+# RAG Evals modes binary/continuous
+_CONTINUOUS_STR = "continuous"
+_BINARY_STR = "binary"
