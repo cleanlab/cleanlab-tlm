@@ -13,11 +13,10 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Sequence
 from typing import (
-    # lazydocs: ignore
     TYPE_CHECKING,
     Any,
     Callable,
-    Optional,
+    Optional,  # lazydocs: ignore
     Union,
     cast,
 )
@@ -29,6 +28,8 @@ from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
+    _BINARY_STR,
+    _CONTINUOUS_STR,
     _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_EVAL_CONTEXT_IDENTIFIER_KEY,
     _TLM_EVAL_CRITERIA_KEY,
@@ -37,8 +38,6 @@ from cleanlab_tlm.internal.constants import (
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
-    _CONTINUOUS_STR,
-    _BINARY_STR,
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.rag import _handle_tool_call_filtering
@@ -928,7 +927,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
-        "mode": _CONTINUOUS_STR,
+        "mode": _BINARY_STR,
     },
     {
         "name": "response_groundedness",
@@ -936,7 +935,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Query",
         "context_identifier": "Context",
         "response_identifier": "Response",
-    "mode": _CONTINUOUS_STR,
+        "mode": _CONTINUOUS_STR,
     },
     {
         "name": "response_helpfulness",
