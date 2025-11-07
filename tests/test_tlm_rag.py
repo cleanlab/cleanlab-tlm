@@ -1,6 +1,6 @@
 import os
 import re
-from collections.abc import Generator
+from collections.abc import Generator, Mapping, Sequence
 from typing import Any, cast
 from unittest import mock
 
@@ -1186,8 +1186,6 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
     )
 
 
-from typing import Any, Dict, Mapping, Sequence, Tuple, cast
-
 def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     """Ensure both continuous and binary evals are accepted and scored (0..1)."""
     evals = [
@@ -1213,7 +1211,7 @@ def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     assert is_trustworthy_rag_score(raw_score)
 
     # --- Normalize to: Dict[str, Mapping[str, Any]] ---
-    scores_by_name: Dict[str, Mapping[str, Any]] = {}
+    scores_by_name: dict[str, Mapping[str, Any]] = {}
 
     if isinstance(raw_score, list):
         # e.g. [{"name": "response_helpfulness", "score": 0.7}, ...]
@@ -1225,7 +1223,7 @@ def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     elif isinstance(raw_score, dict):
         # Could be dict[str, ...] OR dict[EvalMetric, ...]
         # Case A: string keys
-        all_str_keys = all(isinstance(k, str) for k in raw_score.keys())
+        all_str_keys = all(isinstance(k, str) for k in raw_score)
         if all_str_keys:
             for k, v in raw_score.items():
                 scores_by_name[k] = cast(Mapping[str, Any], v)
