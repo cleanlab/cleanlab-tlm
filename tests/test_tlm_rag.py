@@ -1183,13 +1183,10 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
     assert sent_evals["mentions_company"].get("mode", sent_evals["mentions_company"].get(_TLM_EVAL_MODE_KEY)) == "binary"
 
 
-def test_score_with_query_context_response_modes_explicit(
-    trustworthy_rag_api_key: str,
-) -> None:
+def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     """Ensure both continuous and binary evals are accepted and scored (0..1)."""
-
     evals = [
-        Eval(  # continuous
+        Eval(
             name="response_helpfulness",
             criteria="Rate helpfulness from 0 to 1.",
             query_identifier="Question",
@@ -1197,19 +1194,27 @@ def test_score_with_query_context_response_modes_explicit(
             response_identifier="Answer",
             mode="continuous",
         ),
-        Eval(  # binary
+        Eval(
             name="mentions_company",
             criteria="Does the Answer mention a company? Yes/No.",
             response_identifier="Answer",
             mode="binary",
         ),
     ]
+
     rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=evals)
     score = rag.score(query=test_query, context=test_context, response=test_response)
 
     assert is_trustworthy_rag_score(score)
-    # Both evals should be present with scores in [0,1] (or None if provider filters something)
+
+    # Normalize: TrustworthyRAG.score may return list or dict
+    if isinstance(score, list):
+        score_by_name = {e["name"]: e for e in score if isinstance(e, dict) and "name" in e}
+    else:
+        score_by_name = score  # type: ignore[assignment]
+
+    # Validate both evals exist and each score ∈ [0,1] or None
     for name in ("response_helpfulness", "mentions_company"):
-        assert name in score
-        s = score[name]["score"]
-        assert (s is None) or (isinstance(s, float) and 0.0 <= s <= 1.0)
+        assert name in score_by_name, f"{name} missing in result"
+        s = score_by_name[name].get("score")  # type: ignore[union-attr]
+        assert s is None or (isinstance(s, float) and 0.0 <= s <= 1.0), f"Invalid score for {name}: {s}"
