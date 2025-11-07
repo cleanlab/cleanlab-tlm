@@ -33,13 +33,12 @@ from cleanlab_tlm.internal.constants import (
     _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_EVAL_CONTEXT_IDENTIFIER_KEY,
     _TLM_EVAL_CRITERIA_KEY,
+    _TLM_EVAL_MODE_KEY,
     _TLM_EVAL_NAME_KEY,
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
-    _TLM_EVAL_MODE_KEY,
-
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.rag import _handle_tool_call_filtering

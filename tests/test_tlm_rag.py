@@ -10,8 +10,8 @@ from cleanlab_tlm.errors import APITimeoutError, MissingApiKeyError, ValidationE
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
-    _VALID_TLM_QUALITY_PRESETS,
     _TLM_EVAL_MODE_KEY,
+    _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.tlm import TLMOptions
 from cleanlab_tlm.utils.rag import (
@@ -1087,7 +1087,6 @@ def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG)
         trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])
 
 
-
 def test_eval_mode_defaults_to_continuous() -> None:
     e = Eval(
         name="helpfulness",
@@ -1176,11 +1175,15 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
     call_args = mock_session.post.call_args
     payload = call_args[1]["json"]
     sent_evals = {e["name"]: e for e in payload.get("evals", [])}
-    assert sent_evals["response_helpfulness"].get("mode", sent_evals["response_helpfulness"].get(_TLM_EVAL_MODE_KEY)) in (
+    assert sent_evals["response_helpfulness"].get(
+        "mode", sent_evals["response_helpfulness"].get(_TLM_EVAL_MODE_KEY)
+    ) in (
         None,
         "continuous",
     )
-    assert sent_evals["mentions_company"].get("mode", sent_evals["mentions_company"].get(_TLM_EVAL_MODE_KEY)) == "binary"
+    assert (
+        sent_evals["mentions_company"].get("mode", sent_evals["mentions_company"].get(_TLM_EVAL_MODE_KEY)) == "binary"
+    )
 
 
 def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
