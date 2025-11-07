@@ -867,12 +867,12 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
-        mode (str, optional): The evaluation mode, either "numeric" (default) or "binary".
-            - "continuous": For evaluations that naturally have a continuous score range (e.g., helpfulness, coherence).
-            - "binary": For yes/no evaluations (e.g., does response mention a company, is query appropriate).
-            Both modes return numeric scores in the 0-1 range.
-            For numeric evaluations, your `criteria` should define what good vs. bad looks like (low evaluation scores will correspond to cases deemed bad).
-            For binary evaluations, your `criteria` should be a Yes/No question (low evaluation scores will correspond to "Yes" cases, so phrase your question such that the likelihood of "Yes" matches the likelihood of the particular problem you wish to detect).
+        mode (str, optional): What type of evaluation these `criteria` correspond to, either "continuous" (default) or "binary".
+            - "continuous": For `criteria` that define what is good/better v.s. what is bad/worse, corresponding to evaluations of quality along a continuous spectrum (e.g., relevance, conciseness).
+            - "binary": For `criteria` written as Yes/No questions, corresponding to evaluations that most would consider either True or False rather than grading along a continuous spectrum (e.g., does Response mention ACME Inc., is Query asking about refund, ...).
+            Both modes return scores in the 0-1 range.
+            For "continuous" evaluations, your `criteria` should define what good vs. bad looks like (cases deemed bad will return low evaluation scores).
+            For binary evaluations, your `criteria` should be a Yes/No question (cases answered "Yes" will return low evaluation scores, so phrase your question such that the likelihood of "Yes" matches the likelihood of the particular problem you wish to detect).
 
     Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
         (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
