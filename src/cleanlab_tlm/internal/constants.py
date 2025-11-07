@@ -107,6 +107,7 @@ _TLM_EVAL_CRITERIA_KEY: str = "criteria"
 _TLM_EVAL_QUERY_IDENTIFIER_KEY: str = "query_identifier"
 _TLM_EVAL_CONTEXT_IDENTIFIER_KEY: str = "context_identifier"
 _TLM_EVAL_RESPONSE_IDENTIFIER_KEY: str = "response_identifier"
+_TLM_EVAL_MODE_KEY: str = "mode"
 
 # Values that wont support logging explanation by default
 _REASONING_EFFORT_UNSUPPORTED_EXPLANATION_LOGGING: set[str] = {"none", "minimal"}

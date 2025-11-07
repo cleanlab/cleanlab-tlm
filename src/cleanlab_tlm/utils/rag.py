@@ -38,6 +38,8 @@ from cleanlab_tlm.internal.constants import (
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
     _TLM_MAX_RETRIES,
     _VALID_TLM_QUALITY_PRESETS,
+    _TLM_EVAL_MODE_KEY,
+
 )
 from cleanlab_tlm.internal.exception_handling import handle_tlm_exceptions
 from cleanlab_tlm.internal.rag import _handle_tool_call_filtering
@@ -125,6 +127,7 @@ class TrustworthyRAG(BaseTLM):
                     query_identifier=eval_config.get(_TLM_EVAL_QUERY_IDENTIFIER_KEY),
                     context_identifier=eval_config.get(_TLM_EVAL_CONTEXT_IDENTIFIER_KEY),
                     response_identifier=eval_config.get(_TLM_EVAL_RESPONSE_IDENTIFIER_KEY),
+                    mode=eval_config.get(_TLM_EVAL_MODE_KEY),
                 )
                 for eval_config in _DEFAULT_EVALS
             ]
