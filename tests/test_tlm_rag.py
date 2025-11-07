@@ -1186,6 +1186,8 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
     )
 
 
+from typing import Any, Dict, Mapping, Sequence, Tuple, cast
+
 def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     """Ensure both continuous and binary evals are accepted and scored (0..1)."""
     evals = [
@@ -1206,18 +1208,37 @@ def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     ]
 
     rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=evals)
-    score = rag.score(query=test_query, context=test_context, response=test_response)
+    raw_score = rag.score(query=test_query, context=test_context, response=test_response)
 
-    assert is_trustworthy_rag_score(score)
+    assert is_trustworthy_rag_score(raw_score)
 
-    # Normalize: TrustworthyRAG.score may return list or dict
-    if isinstance(score, list):
-        score_by_name = {e["name"]: e for e in score if isinstance(e, dict) and "name" in e}
-    else:
-        score_by_name = score  # type: ignore[assignment]
+    # --- Normalize to: Dict[str, Mapping[str, Any]] ---
+    scores_by_name: Dict[str, Mapping[str, Any]] = {}
 
-    # Validate both evals exist and each score ∈ [0,1] or None
-    for name in ("response_helpfulness", "mentions_company"):
-        assert name in score_by_name, f"{name} missing in result"
-        s = score_by_name[name].get("score")  # type: ignore[union-attr]
-        assert s is None or (isinstance(s, float) and 0.0 <= s <= 1.0), f"Invalid score for {name}: {s}"
+    if isinstance(raw_score, list):
+        # e.g. [{"name": "response_helpfulness", "score": 0.7}, ...]
+        for e in raw_score:
+            if isinstance(e, dict):
+                name = e.get("name")
+                if isinstance(name, str):
+                    scores_by_name[name] = cast(Mapping[str, Any], e)
+    elif isinstance(raw_score, dict):
+        # Could be dict[str, ...] OR dict[EvalMetric, ...]
+        # Case A: string keys
+        all_str_keys = all(isinstance(k, str) for k in raw_score.keys())
+        if all_str_keys:
+            for k, v in raw_score.items():
+                scores_by_name[k] = cast(Mapping[str, Any], v)
+        else:
+            # Case B: enum/non-str keys → align by order with our 'evals' list
+            # Dicts preserve insertion order; assume provider returns in same order as 'evals'
+            values_in_order: Sequence[Any] = list(raw_score.values())
+            for ev, v in zip(evals, values_in_order):
+                if isinstance(v, dict):
+                    scores_by_name[ev.name] = cast(Mapping[str, Any], v)
+
+    # --- Validate both evals exist and have score ∈ [0,1] or None ---
+    for expected in ("response_helpfulness", "mentions_company"):
+        assert expected in scores_by_name, f"{expected} missing in result"
+        s = scores_by_name[expected].get("score")
+        assert (s is None) or (isinstance(s, float) and 0.0 <= s <= 1.0), f"Invalid score for {expected}: {s}"
