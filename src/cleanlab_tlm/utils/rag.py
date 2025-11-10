@@ -1000,14 +1000,19 @@ class Eval:
 
         tlm = TLM(quality_preset="base")
 
-        prompt = f"""Analyze the following evaluation criteria and determine if it is phrased as a Yes/No question.
+        prompt = f"""Consider the following statement:
 
-A Yes/No question is one that can be answered with "Yes" or "No" (or True/False, etc.).
-
-Evaluation Criteria:
+<statement>
 {criteria}
+</statement>
 
-Is this a Yes/No question? Answer only "Yes" or "No"."""
+## Instructions
+
+Classify this statement into one of the following options:
+A) This statement is essentially worded as a Yes/No question or implies a Yes/No question.
+B) This statement is not a Yes/No question, since replying to it with either "Yes" or "No" would not be sensible.
+
+Your output must be one choice from either A or B (output only a single letter, no other text)."""
 
         response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
         if isinstance(response, list):
