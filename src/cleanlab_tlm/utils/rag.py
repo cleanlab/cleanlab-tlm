@@ -975,10 +975,9 @@ class Eval:
             has_numeric = self._check_numeric_scoring_scheme(criteria)
             if has_numeric:
                 warning_msg = (
-                    f"Eval '{name}': Mode is set to 'continuous' but criteria already specifies "
-                    "a numeric scoring scheme. TrustworthyRAG will normalize scores to 0-1 range, "
-                    "which may conflict with your specified scoring scheme. Consider removing the "
-                    "numeric scoring scheme from the criteria."
+                    f"Eval '{name}': Your `criteria` appears to specify "
+                    "a numeric scoring scheme. We recommend removing any "
+                    "specific numeric scoring scheme from your `criteria` and just specifying what is considered good/better vs. bad/worse."
                 )
                 warnings.warn(warning_msg, UserWarning)
 
