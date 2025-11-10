@@ -919,7 +919,6 @@ class Eval:
         Returns:
             str: The compiled mode ("binary" or "continuous")
         """
-        from cleanlab_tlm.tlm import TLM
 
         # If mode is auto, determine it automatically
         if mode == "auto":
