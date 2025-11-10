@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.37] - 2025-11-10
+
+## Added
+
+- Added sources field for web search responses in `TLMResponses` (fix scoring + API compatibility)
+
 ## [1.1.36] - 2025-09-30
 
 ## Added
@@ -374,7 +380,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.36...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.37...HEAD
+[1.1.37]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.36...v1.1.37
 [1.1.36]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.35...v1.1.36
 [1.1.35]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.34...v1.1.35
 [1.1.34]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.33...v1.1.34
