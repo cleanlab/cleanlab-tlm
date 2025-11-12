@@ -28,6 +28,7 @@ from typing_extensions import NotRequired, TypedDict
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
+from cleanlab_tlm.tlm import TLM
 from cleanlab_tlm.internal.constants import (
     _BINARY_STR,
     _CONTINUOUS_STR,
@@ -887,7 +888,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
-        mode: Optional[str] = _CONTINUOUS_STR,
+        mode: Optional[str] = "auto", 
     ):
         """
         lazydocs: ignore
@@ -919,10 +920,12 @@ class Eval:
         Returns:
             str: The compiled mode ("binary" or "continuous")
         """
-
+        
+        # Check binary criteria once at the beginning
+        is_binary = self._check_binary_criteria(criteria)
+        
         # If mode is auto, determine it automatically
         if mode == "auto":
-            is_binary = self._check_binary_criteria(criteria)
             compiled_mode = _BINARY_STR if is_binary else _CONTINUOUS_STR
 
             # Check if it's appropriate for neither
@@ -942,22 +945,20 @@ class Eval:
 
         # Validation checks for explicit mode specification
         if mode == _BINARY_STR:
-            is_binary = self._check_binary_criteria(criteria)
             if not is_binary:
                 warning_msg = (
-                    f"Eval '{name}': Mode is set to 'binary' but criteria does not appear "
+                    f"Eval '{name}': mode is set to '{_BINARY_STR}' but criteria does not appear "
                     "to be a Yes/No question. Consider rephrasing as a Yes/No question or "
-                    "changing mode to 'continuous'."
+                    f"changing mode to '{_CONTINUOUS_STR}'."
                 )
                 warnings.warn(warning_msg, UserWarning)
 
         elif mode == _CONTINUOUS_STR:
             # Check if it's actually a Yes/No question
-            is_binary = self._check_binary_criteria(criteria)
             if is_binary:
                 warning_msg = (
-                    f"Eval '{name}': Mode is set to 'continuous' but criteria appears to be "
-                    "a Yes/No question. Consider changing mode to 'binary' for more appropriate scoring."
+                    f"Eval '{name}': mode is set to '{_CONTINUOUS_STR}' but criteria appears to be "
+                    f"a Yes/No question. Consider changing mode to '{_BINARY_STR}' for more appropriate scoring."
                 )
                 warnings.warn(warning_msg, UserWarning)
 
@@ -965,7 +966,7 @@ class Eval:
             has_good_bad = self._check_good_bad_specified(criteria)
             if not has_good_bad:
                 warning_msg = (
-                    f"Eval '{name}': Mode is set to 'continuous' but criteria does not clearly "
+                    f"Eval '{name}': mode is set to '{_CONTINUOUS_STR}' but criteria does not clearly "
                     "specify what is good/desirable versus bad/undesirable. This may lead to "
                     "inconsistent or unclear scoring."
                 )
@@ -981,7 +982,13 @@ class Eval:
                 )
                 warnings.warn(warning_msg, UserWarning)
 
-        return mode or _CONTINUOUS_STR
+        # For explicit modes, return as-is (already validated above)
+        if mode in (_BINARY_STR, _CONTINUOUS_STR):
+            return mode
+        
+        # Default to continuous for None or any other value
+        return _CONTINUOUS_STR
+
 
     @staticmethod
     def _check_binary_criteria(criteria: str) -> bool:
@@ -994,31 +1001,30 @@ class Eval:
         Returns:
             True if criteria is a Yes/No question, False otherwise
         """
-        from cleanlab_tlm.tlm import TLM
-
         tlm = TLM(quality_preset="base")
 
         prompt = f"""Consider the following statement:
 
-<statement>
-{criteria}
-</statement>
+    <statement>
+    {criteria}
+    </statement>
 
-## Instructions
+    ## Instructions
 
-Classify this statement into one of the following options:
-A) This statement is essentially worded as a Yes/No question or implies a Yes/No question.
-B) This statement is not a Yes/No question, since replying to it with either "Yes" or "No" would not be sensible.
+    Classify this statement into one of the following options:
+    A) This statement is essentially worded as a Yes/No question or implies a Yes/No question.
+    B) This statement is not a Yes/No question, since replying to it with either "Yes" or "No" would not be sensible.
 
-Your output must be one choice from either A or B (output only a single letter, no other text)."""
+    Your output must be one choice from either A or B (output only a single letter, no other text)."""
 
-        response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
+        response = tlm.prompt(prompt, constrain_outputs=["A", "B"])
         if isinstance(response, list):
             return False
         response_text = response.get("response", "")
         if response_text is None:
             return False
-        return str(response_text).strip().lower() == "yes"
+        return str(response_text).strip().upper() == "A"
+
 
     @staticmethod
     def _check_good_bad_specified(criteria: str) -> bool:
@@ -1031,18 +1037,16 @@ Your output must be one choice from either A or B (output only a single letter, 
         Returns:
             True if criteria clearly defines good/bad or desirable/undesirable, False otherwise
         """
-        from cleanlab_tlm.tlm import TLM
-
         tlm = TLM(quality_preset="base")
 
         prompt = f"""Analyze the following evaluation criteria and determine if it clearly specifies what is "good" versus "bad", "desirable" versus "undesirable", "better" versus "worse", or uses similar language to define quality distinctions.
 
-The criteria should make it clear what characteristics or qualities are considered positive/desirable versus negative/undesirable.
+    The criteria should make it clear what characteristics or qualities are considered positive/desirable versus negative/undesirable.
 
-Evaluation Criteria:
-{criteria}
+    Evaluation Criteria:
+    {criteria}
 
-Does this criteria clearly specify what is good/desirable versus bad/undesirable? Answer only "Yes" or "No"."""
+    Does this criteria clearly specify what is good/desirable versus bad/undesirable? Answer only "Yes" or "No"."""
 
         response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
         if isinstance(response, list):
@@ -1051,6 +1055,7 @@ Does this criteria clearly specify what is good/desirable versus bad/undesirable
         if response_text is None:
             return False
         return str(response_text).strip().lower() == "yes"
+
 
     @staticmethod
     def _check_numeric_scoring_scheme(criteria: str) -> bool:
@@ -1063,22 +1068,20 @@ Does this criteria clearly specify what is good/desirable versus bad/undesirable
         Returns:
             True if criteria includes a numeric scoring scheme, False otherwise
         """
-        from cleanlab_tlm.tlm import TLM
-
         tlm = TLM(quality_preset="base")
 
         prompt = f"""Analyze the following evaluation criteria and determine if it contains a specific numeric scoring scheme.
 
-Examples of numeric scoring schemes include:
-- "Rate from 1 to 5"
-- "Score between 0 and 100"
-- "Assign a rating of 1-10"
-- "Give a score from 0 to 1"
+    Examples of numeric scoring schemes include:
+    - "Rate from 1 to 5"
+    - "Score between 0 and 100"
+    - "Assign a rating of 1-10"
+    - "Give a score from 0 to 1"
 
-Evaluation Criteria:
-{criteria}
+    Evaluation Criteria:
+    {criteria}
 
-Does this criteria specify a numeric scoring scheme? Answer only "Yes" or "No"."""
+    Does this criteria specify a numeric scoring scheme? Answer only "Yes" or "No"."""
 
         response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
         if isinstance(response, list):
