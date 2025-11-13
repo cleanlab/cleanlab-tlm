@@ -13,11 +13,10 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Sequence
 from typing import (
-    # lazydocs: ignore
     TYPE_CHECKING,
     Any,
     Callable,
-    Optional,
+    Optional,  # lazydocs: ignore
     Union,
     cast,
 )
@@ -29,9 +28,12 @@ from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
+    _BINARY_STR,
+    _CONTINUOUS_STR,
     _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_EVAL_CONTEXT_IDENTIFIER_KEY,
     _TLM_EVAL_CRITERIA_KEY,
+    _TLM_EVAL_MODE_KEY,
     _TLM_EVAL_NAME_KEY,
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
@@ -124,6 +126,7 @@ class TrustworthyRAG(BaseTLM):
                     query_identifier=eval_config.get(_TLM_EVAL_QUERY_IDENTIFIER_KEY),
                     context_identifier=eval_config.get(_TLM_EVAL_CONTEXT_IDENTIFIER_KEY),
                     response_identifier=eval_config.get(_TLM_EVAL_RESPONSE_IDENTIFIER_KEY),
+                    mode=eval_config.get(_TLM_EVAL_MODE_KEY),
                 )
                 for eval_config in _DEFAULT_EVALS
             ]
@@ -863,6 +866,12 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
+        mode (str, optional): What type of evaluation these `criteria` correspond to, either "continuous" (default) or "binary".
+            - "continuous": For `criteria` that define what is good/better v.s. what is bad/worse, corresponding to evaluations of quality along a continuous spectrum (e.g., relevance, conciseness).
+            - "binary": For `criteria` written as Yes/No questions, corresponding to evaluations that most would consider either True or False rather than grading along a continuous spectrum (e.g., does Response mention ACME Inc., is Query asking about refund, ...).
+            Both modes return scores in the 0-1 range.
+            For "continuous" evaluations, your `criteria` should define what good vs. bad looks like (cases deemed bad will return low evaluation scores).
+            For binary evaluations, your `criteria` should be a Yes/No question (cases answered "Yes" will return low evaluation scores, so phrase your question such that the likelihood of "Yes" matches the likelihood of the particular problem you wish to detect).
 
     Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
         (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
@@ -876,6 +885,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
+        mode: Optional[str] = _CONTINUOUS_STR,
     ):
         """
         lazydocs: ignore
@@ -891,6 +901,7 @@ class Eval:
         self.query_identifier = query_identifier
         self.context_identifier = context_identifier
         self.response_identifier = response_identifier
+        self.mode = mode
 
     def __repr__(self) -> str:
         """
@@ -906,6 +917,7 @@ class Eval:
             f"    'query_identifier': {self.query_identifier!r},\n"
             f"    'context_identifier': {self.context_identifier!r},\n"
             f"    'response_identifier': {self.response_identifier!r}\n"
+            f"    'mode': {self.mode!r}\n"
             f"}}"
         )
 
@@ -917,6 +929,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
+        "mode": _BINARY_STR,
     },
     {
         "name": "response_groundedness",
@@ -924,6 +937,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Query",
         "context_identifier": "Context",
         "response_identifier": "Response",
+        "mode": _CONTINUOUS_STR,
     },
     {
         "name": "response_helpfulness",
@@ -933,6 +947,7 @@ A Response is considered not helpful if it avoids answering the question. For ex
         "query_identifier": "User Query",
         "context_identifier": None,
         "response_identifier": "AI Assistant Response",
+        "mode": _CONTINUOUS_STR,
     },
     {
         "name": "query_ease",
@@ -944,6 +959,7 @@ Should an AI Assistant be able to properly answer the User Request, it is consid
         "query_identifier": "User Request",
         "context_identifier": None,
         "response_identifier": None,
+        "mode": _CONTINUOUS_STR,
     },
 ]
 
@@ -976,6 +992,7 @@ def get_default_evals() -> list[Eval]:
             query_identifier=eval_config.get("query_identifier"),
             context_identifier=eval_config.get("context_identifier"),
             response_identifier=eval_config.get("response_identifier"),
+            mode=eval_config.get("mode"),
         )
         for eval_config in _DEFAULT_EVALS
     ]

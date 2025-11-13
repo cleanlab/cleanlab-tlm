@@ -1,6 +1,6 @@
 import os
 import re
-from collections.abc import Generator
+from collections.abc import Generator, Mapping, Sequence
 from typing import Any, cast
 from unittest import mock
 
@@ -10,6 +10,7 @@ from cleanlab_tlm.errors import APITimeoutError, MissingApiKeyError, ValidationE
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
+    _TLM_EVAL_MODE_KEY,
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.tlm import TLMOptions
@@ -1084,3 +1085,158 @@ def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG)
         ),
     ):
         trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])
+
+
+def test_eval_mode_defaults_to_continuous() -> None:
+    e = Eval(
+        name="helpfulness",
+        criteria="Rate if the AI Answer is helpful to the User Question using the Retrieved Context.",
+        query_identifier="User Question",
+        context_identifier="Retrieved Context",
+        response_identifier="AI Answer",
+    )
+    # default should be continuous
+    assert e.mode in (
+        None,
+        "continuous",
+    ), "Eval.mode should default to 'continuous' (or None treated as continuous)"
+
+
+def test_eval_mode_binary_set_and_persisted() -> None:
+    e = Eval(
+        name="mentions_company",
+        criteria="Does the AI Answer mention any company names? Answer Yes/No.",
+        query_identifier="User Question",
+        response_identifier="AI Answer",
+        mode="binary",
+    )
+    assert e.mode == "binary"
+    assert e.response_identifier == "AI Answer"
+    assert e.query_identifier == "User Question"
+
+
+@pytest.mark.asyncio
+async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
+    """Mix of modes should be preserved per-eval in payload."""
+    evals = [
+        Eval(
+            name="response_helpfulness",
+            criteria="Rate helpfulness from 0-1.",
+            query_identifier="Question",
+            context_identifier="Context",
+            response_identifier="Answer",
+            mode="continuous",
+        ),
+        Eval(
+            name="mentions_company",
+            criteria="Does the Answer mention any company? Yes/No.",
+            response_identifier="Answer",
+            mode="binary",
+        ),
+    ]
+
+    mock_resp_json = {
+        "trustworthiness": {"score": 0.9},
+        "response_helpfulness": {"score": 0.8},
+        "mentions_company": {"score": 0.0},
+    }
+
+    mock_response = mock.MagicMock()
+    mock_response.status = 200
+    mock_response.json = mock.AsyncMock(return_value=mock_resp_json)
+
+    mock_session = mock.MagicMock()
+    mock_session.post = mock.AsyncMock(return_value=mock_response)
+    mock_session.close = mock.AsyncMock()
+
+    mock_rate_handler = mock.MagicMock()
+    mock_rate_handler.__aenter__ = mock.AsyncMock()
+    mock_rate_handler.__aexit__ = mock.AsyncMock()
+
+    with mock.patch("aiohttp.ClientSession", return_value=mock_session):
+        result = await api.tlm_rag_score(
+            api_key="k",
+            response={"response": "A"},
+            prompt=None,
+            query="Q?",
+            context="C",
+            evals=evals,
+            quality_preset="medium",
+            options=None,
+            rate_handler=mock_rate_handler,
+        )
+
+    assert set(result.keys()) >= {
+        "trustworthiness",
+        "response_helpfulness",
+        "mentions_company",
+    }
+
+    call_args = mock_session.post.call_args
+    payload = call_args[1]["json"]
+    sent_evals = {e["name"]: e for e in payload.get("evals", [])}
+    assert sent_evals["response_helpfulness"].get(
+        "mode", sent_evals["response_helpfulness"].get(_TLM_EVAL_MODE_KEY)
+    ) in (
+        None,
+        "continuous",
+    )
+    assert (
+        sent_evals["mentions_company"].get("mode", sent_evals["mentions_company"].get(_TLM_EVAL_MODE_KEY)) == "binary"
+    )
+
+
+def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
+    """Ensure both continuous and binary evals are accepted and scored (0..1)."""
+    evals = [
+        Eval(
+            name="response_helpfulness",
+            criteria="Rate helpfulness from 0 to 1.",
+            query_identifier="Question",
+            context_identifier="Context",
+            response_identifier="Answer",
+            mode="continuous",
+        ),
+        Eval(
+            name="mentions_company",
+            criteria="Does the Answer mention a company? Yes/No.",
+            response_identifier="Answer",
+            mode="binary",
+        ),
+    ]
+
+    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=evals)
+    raw_score = rag.score(query=test_query, context=test_context, response=test_response)
+
+    assert is_trustworthy_rag_score(raw_score)
+
+    # --- Normalize to: Dict[str, Mapping[str, Any]] ---
+    scores_by_name: dict[str, Mapping[str, Any]] = {}
+
+    if isinstance(raw_score, list):
+        # e.g. [{"name": "response_helpfulness", "score": 0.7}, ...]
+        for e in raw_score:
+            if isinstance(e, dict):
+                name = e.get("name")
+                if isinstance(name, str):
+                    scores_by_name[name] = cast(Mapping[str, Any], e)
+    elif isinstance(raw_score, dict):
+        # Could be dict[str, ...] OR dict[EvalMetric, ...]
+        # Case A: string keys
+        all_str_keys = all(isinstance(k, str) for k in raw_score)
+        if all_str_keys:
+            for k, v in raw_score.items():
+                scores_by_name[k] = cast(Mapping[str, Any], v)
+        else:
+            # Case B: enum/non-str keys → align by order with our 'evals' list
+            # Dicts preserve insertion order; assume provider returns in same order as 'evals'
+            values_in_order: Sequence[Any] = list(raw_score.values())
+            for ev, v in zip(evals, values_in_order):
+                if isinstance(v, dict):
+                    scores_by_name[ev.name] = cast(Mapping[str, Any], v)
+
+    # --- Validate both evals exist and have score ∈ [0,1] or None ---
+    for expected in ("response_helpfulness", "mentions_company"):
+        assert expected in scores_by_name, f"{expected} missing in result"
+        s = scores_by_name[expected].get("score")
+        assert (s is None) or (isinstance(s, float) and 0.0 <= s <= 1.0), f"Invalid score for {expected}: {s}"
