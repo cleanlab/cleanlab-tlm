@@ -55,6 +55,12 @@ def _get_untrustworthy_fields(
     per_field_score = tlm_metadata["log"]["per_field_score"]
     per_score_details = []
 
+    # handle cases where error log is returned
+    if len(per_field_score) == 1 and isinstance(per_field_score.get("error"), str):
+        print("Per-field score returned an error message:")
+        print(per_field_score.get("error"))
+        return []
+
     for key, value in per_field_score.items():
         score = value["score"]
         if float(score) < threshold:
