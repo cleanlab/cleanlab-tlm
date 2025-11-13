@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.38] - 2025-11-13
+
+## Added
+
+- Add error handling for structure outputs per-field scoring 
+
 ## [1.1.37] - 2025-11-10
 
 ## Added
@@ -380,7 +386,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.37...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.38...HEAD
+[1.1.38]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.37...v1.1.38
 [1.1.37]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.36...v1.1.37
 [1.1.36]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.35...v1.1.36
 [1.1.35]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.34...v1.1.35
