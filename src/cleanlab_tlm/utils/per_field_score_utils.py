@@ -57,7 +57,7 @@ def _get_untrustworthy_fields(
 
     # handle cases where error log is returned
     if len(per_field_score) == 1 and isinstance(per_field_score.get("error"), str):
-        print("Per-field score returned an error message:")
+        print("Per-field score returned an error:")
         print(per_field_score.get("error"))
         return []
 
