@@ -59,6 +59,7 @@ MODELS_WITH_NO_PERPLEXITY_SCORE: list[str] = [
     "o3-mini",
     "o4-mini",
     "gpt-4.5-preview",
+    "gpt-5.1",  # supports perplexity score in some configs, should update at a later date
     "gpt-5",
     "gpt-5-mini",
     "gpt-5-nano",
