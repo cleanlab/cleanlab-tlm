@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.39] - 2025-11-21
+
+## Added
+
+- Add support for new model: `gpt-5.1`
+
 ## [1.1.38] - 2025-11-13
 
 ## Added
@@ -386,7 +392,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release of the Cleanlab TLM Python client.
 
-[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.38...HEAD
+[Unreleased]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.39...HEAD
+[1.1.39]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.38...v1.1.39
 [1.1.38]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.37...v1.1.38
 [1.1.37]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.36...v1.1.37
 [1.1.36]: https://github.com/cleanlab/cleanlab-tlm/compare/v1.1.35...v1.1.36
