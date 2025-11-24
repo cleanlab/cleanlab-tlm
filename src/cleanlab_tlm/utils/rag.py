@@ -11,6 +11,7 @@ For RAG use-cases, we recommend using this module's `TrustworthyRAG` object in p
 from __future__ import annotations
 
 import asyncio
+import warnings
 from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
@@ -27,6 +28,7 @@ from typing_extensions import NotRequired, TypedDict
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
+from cleanlab_tlm.tlm import TLM
 from cleanlab_tlm.internal.constants import (
     _BINARY_STR,
     _CONTINUOUS_STR,
@@ -866,9 +868,10 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
-        mode (str, optional): What type of evaluation these `criteria` correspond to, either "continuous" (default) or "binary".
+        mode (str, optional): What type of evaluation these `criteria` correspond to, either "continuous" (default), "binary", or "auto".
             - "continuous": For `criteria` that define what is good/better v.s. what is bad/worse, corresponding to evaluations of quality along a continuous spectrum (e.g., relevance, conciseness).
             - "binary": For `criteria` written as Yes/No questions, corresponding to evaluations that most would consider either True or False rather than grading along a continuous spectrum (e.g., does Response mention ACME Inc., is Query asking about refund, ...).
+            - "auto": Automatically determines whether the criteria is binary or continuous based on the criteria text.
             Both modes return scores in the 0-1 range.
             For "continuous" evaluations, your `criteria` should define what good vs. bad looks like (cases deemed bad will return low evaluation scores).
             For binary evaluations, your `criteria` should be a Yes/No question (cases answered "Yes" will return low evaluation scores, so phrase your question such that the likelihood of "Yes" matches the likelihood of the particular problem you wish to detect).
@@ -885,7 +888,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
-        mode: Optional[str] = _CONTINUOUS_STR,
+        mode: Optional[str] = "auto", 
     ):
         """
         lazydocs: ignore
@@ -901,7 +904,192 @@ class Eval:
         self.query_identifier = query_identifier
         self.context_identifier = context_identifier
         self.response_identifier = response_identifier
-        self.mode = mode
+
+        # Compile and validate the eval
+        self.mode = self._compile_mode(mode, criteria, name)
+
+    def _compile_mode(self, mode: Optional[str], criteria: str, name: str) -> str:
+        """
+        Compile and validate the mode based on criteria.
+
+        Args:
+            mode: The specified mode ("binary", "continuous", or "auto")
+            criteria: The evaluation criteria text
+            name: The name of the evaluation
+
+        Returns:
+            str: The compiled mode ("binary" or "continuous")
+        """
+        
+        # Check binary criteria once at the beginning
+        is_binary = self._check_binary_criteria(criteria)
+        
+        # If mode is auto, determine it automatically
+        if mode == "auto":
+            compiled_mode = _BINARY_STR if is_binary else _CONTINUOUS_STR
+
+            # Check if it's appropriate for neither
+            if not is_binary:
+                has_good_bad = self._check_good_bad_specified(criteria)
+                has_numeric = self._check_numeric_scoring_scheme(criteria)
+
+                if not has_good_bad and not has_numeric:
+                    warning_msg = (
+                        f"Eval '{name}': Criteria does not appear to be a Yes/No question "
+                        "and does not clearly specify what is good/bad or desirable/undesirable. "
+                        "This may result in poor evaluation quality."
+                    )
+                    warnings.warn(warning_msg, UserWarning)
+
+            return compiled_mode
+
+        # Validation checks for explicit mode specification
+        if mode == _BINARY_STR:
+            if not is_binary:
+                warning_msg = (
+                    f"Eval '{name}': mode is set to '{_BINARY_STR}' but criteria does not appear "
+                    "to be a Yes/No question. Consider rephrasing as a Yes/No question or "
+                    f"changing mode to '{_CONTINUOUS_STR}'."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+        elif mode == _CONTINUOUS_STR:
+            # Check if it's actually a Yes/No question
+            if is_binary:
+                warning_msg = (
+                    f"Eval '{name}': mode is set to '{_CONTINUOUS_STR}' but criteria appears to be "
+                    f"a Yes/No question. Consider changing mode to '{_BINARY_STR}' for more appropriate scoring."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+            # Check if good/bad is specified
+            has_good_bad = self._check_good_bad_specified(criteria)
+            if not has_good_bad:
+                warning_msg = (
+                    f"Eval '{name}': mode is set to '{_CONTINUOUS_STR}' but criteria does not clearly "
+                    "specify what is good/desirable versus bad/undesirable. This may lead to "
+                    "inconsistent or unclear scoring."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+            # Check if it already has a numeric scoring scheme
+            has_numeric = self._check_numeric_scoring_scheme(criteria)
+            if has_numeric:
+                warning_msg = (
+                    f"Eval '{name}': Your `criteria` appears to specify "
+                    "a numeric scoring scheme. We recommend removing any "
+                    "specific numeric scoring scheme from your `criteria` and just specifying what is considered good/better vs. bad/worse."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+        # For explicit modes, return as-is (already validated above)
+        if mode in (_BINARY_STR, _CONTINUOUS_STR):
+            return mode
+        
+        # Default to continuous for None or any other value
+        return _CONTINUOUS_STR
+
+
+    @staticmethod
+    def _check_binary_criteria(criteria: str) -> bool:
+        """
+        Check if criteria is a Yes/No question using TLM.
+
+        Args:
+            criteria: The evaluation criteria text
+
+        Returns:
+            True if criteria is a Yes/No question, False otherwise
+        """
+        tlm = TLM(quality_preset="base")
+
+        prompt = f"""Consider the following statement:
+
+    <statement>
+    {criteria}
+    </statement>
+
+    ## Instructions
+
+    Classify this statement into one of the following options:
+    A) This statement is essentially worded as a Yes/No question or implies a Yes/No question.
+    B) This statement is not a Yes/No question, since replying to it with either "Yes" or "No" would not be sensible.
+
+    Your output must be one choice from either A or B (output only a single letter, no other text)."""
+
+        response = tlm.prompt(prompt, constrain_outputs=["A", "B"])
+        if isinstance(response, list):
+            return False
+        response_text = response.get("response", "")
+        if response_text is None:
+            return False
+        return str(response_text).strip().upper() == "A"
+
+
+    @staticmethod
+    def _check_good_bad_specified(criteria: str) -> bool:
+        """
+        Check if criteria clearly specifies what is Good vs Bad or Desirable vs Undesirable.
+
+        Args:
+            criteria: The evaluation criteria text
+
+        Returns:
+            True if criteria clearly defines good/bad or desirable/undesirable, False otherwise
+        """
+        tlm = TLM(quality_preset="base")
+
+        prompt = f"""Analyze the following evaluation criteria and determine if it clearly specifies what is "good" versus "bad", "desirable" versus "undesirable", "better" versus "worse", or uses similar language to define quality distinctions.
+
+    The criteria should make it clear what characteristics or qualities are considered positive/desirable versus negative/undesirable.
+
+    Evaluation Criteria:
+    {criteria}
+
+    Does this criteria clearly specify what is good/desirable versus bad/undesirable? Answer only "Yes" or "No"."""
+
+        response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
+        if isinstance(response, list):
+            return False
+        response_text = response.get("response", "")
+        if response_text is None:
+            return False
+        return str(response_text).strip().lower() == "yes"
+
+
+    @staticmethod
+    def _check_numeric_scoring_scheme(criteria: str) -> bool:
+        """
+        Check if criteria contains a specific numeric scoring scheme (e.g., "rate from 1-5", "score 0-100").
+
+        Args:
+            criteria: The evaluation criteria text
+
+        Returns:
+            True if criteria includes a numeric scoring scheme, False otherwise
+        """
+        tlm = TLM(quality_preset="base")
+
+        prompt = f"""Analyze the following evaluation criteria and determine if it contains a specific numeric scoring scheme.
+
+    Examples of numeric scoring schemes include:
+    - "Rate from 1 to 5"
+    - "Score between 0 and 100"
+    - "Assign a rating of 1-10"
+    - "Give a score from 0 to 1"
+
+    Evaluation Criteria:
+    {criteria}
+
+    Does this criteria specify a numeric scoring scheme? Answer only "Yes" or "No"."""
+
+        response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
+        if isinstance(response, list):
+            return False
+        response_text = response.get("response", "")
+        if response_text is None:
+            return False
+        return str(response_text).strip().lower() == "yes"
 
     def __repr__(self) -> str:
         """
