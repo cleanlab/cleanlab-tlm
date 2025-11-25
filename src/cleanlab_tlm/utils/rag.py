@@ -28,7 +28,6 @@ from typing_extensions import NotRequired, TypedDict
 from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
-from cleanlab_tlm.tlm import TLM
 from cleanlab_tlm.internal.constants import (
     _BINARY_STR,
     _CONTINUOUS_STR,
@@ -51,6 +50,7 @@ from cleanlab_tlm.internal.validation import (
     validate_logging,
     validate_rag_inputs,
 )
+from cleanlab_tlm.tlm import TLM
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine
@@ -888,7 +888,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
-        mode: Optional[str] = "auto", 
+        mode: Optional[str] = "auto",
     ):
         """
         lazydocs: ignore
@@ -920,10 +920,10 @@ class Eval:
         Returns:
             str: The compiled mode ("binary" or "continuous")
         """
-        
+
         # Check binary criteria once at the beginning
         is_binary = self._check_binary_criteria(criteria)
-        
+
         # If mode is auto, determine it automatically
         if mode == "auto":
             compiled_mode = _BINARY_STR if is_binary else _CONTINUOUS_STR
@@ -985,10 +985,9 @@ class Eval:
         # For explicit modes, return as-is (already validated above)
         if mode in (_BINARY_STR, _CONTINUOUS_STR):
             return mode
-        
+
         # Default to continuous for None or any other value
         return _CONTINUOUS_STR
-
 
     @staticmethod
     def _check_binary_criteria(criteria: str) -> bool:
@@ -1025,7 +1024,6 @@ class Eval:
             return False
         return str(response_text).strip().upper() == "A"
 
-
     @staticmethod
     def _check_good_bad_specified(criteria: str) -> bool:
         """
@@ -1055,7 +1053,6 @@ class Eval:
         if response_text is None:
             return False
         return str(response_text).strip().lower() == "yes"
-
 
     @staticmethod
     def _check_numeric_scoring_scheme(criteria: str) -> bool:
