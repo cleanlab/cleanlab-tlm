@@ -7,12 +7,12 @@ from tests.test_tlm_rag import (
     test_prompt,
     test_query,
     test_response,
-    trustworthy_rag,  # noqa: F401
-    trustworthy_rag_api_key,  # noqa: F401
 )
 
 
-def test_decorator_skips_bulk_logic_for_non_tool_calls(trustworthy_rag: TrustworthyRAG) -> None:  # noqa: F811
+def test_decorator_skips_bulk_logic_for_non_tool_calls(
+    trustworthy_rag: TrustworthyRAG,
+) -> None:
     """Tests that the _handle_tool_call_filtering decorator skips the bulk of its logic for non-tool calls.
 
     Expected:
@@ -63,7 +63,9 @@ def test_decorator_skips_bulk_logic_for_non_tool_calls(trustworthy_rag: Trustwor
             assert eval_data["score"] is not None or eval_name == "trustworthiness"
 
 
-def test_decorator_calls_api_with_full_evals_for_non_tool_calls(trustworthy_rag_api_key: str) -> None:  # noqa: F811
+def test_decorator_calls_api_with_full_evals_for_non_tool_calls(
+    trustworthy_rag_api_key: str,
+) -> None:
     """Decorator should pass full evals to API for non-tool-call responses.
 
     Expected:
@@ -105,7 +107,9 @@ def test_decorator_calls_api_with_full_evals_for_non_tool_calls(trustworthy_rag_
         assert isinstance(eval_dict["score"], float)
 
 
-def test_ordering_preserved_for_non_tool_calls(trustworthy_rag_api_key: str) -> None:  # noqa: F811
+def test_ordering_preserved_for_non_tool_calls(
+    trustworthy_rag_api_key: str,
+) -> None:
     """When not a tool call, ordering should match exactly what the mocked api.tlm_rag_score returns."""
     tlm_rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
 
@@ -133,7 +137,9 @@ def test_ordering_preserved_for_non_tool_calls(trustworthy_rag_api_key: str) -> 
     assert list(result.keys()) == list(mocked_backend.keys())
 
 
-def test_ordering_rebuilt_for_tool_calls(trustworthy_rag_api_key: str) -> None:  # noqa: F811
+def test_ordering_rebuilt_for_tool_calls(
+    trustworthy_rag_api_key: str,
+) -> None:
     """For tool calls, non-eval keys keep backend order, then all evals in self._evals order with filtered as None."""
     tlm_rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
 
@@ -156,7 +162,10 @@ def test_ordering_rebuilt_for_tool_calls(trustworthy_rag_api_key: str) -> None: 
 
     with (
         mock.patch("cleanlab_tlm.internal.rag._is_tool_call_response", return_value=True),
-        mock.patch("cleanlab_tlm.internal.api.api.tlm_rag_score", return_value=mocked_backend_processed),
+        mock.patch(
+            "cleanlab_tlm.internal.api.api.tlm_rag_score",
+            return_value=mocked_backend_processed,
+        ),
     ):
         result = tlm_rag.score(
             query=test_query,

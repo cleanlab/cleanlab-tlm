@@ -1,5 +1,6 @@
 import os
 import re
+import warnings
 from collections.abc import Generator, Mapping, Sequence
 from typing import Any, cast
 from unittest import mock
@@ -69,7 +70,13 @@ def trustworthy_rag_api_key() -> str:
 @pytest.fixture(scope="module")
 def trustworthy_rag(trustworthy_rag_api_key: str) -> TrustworthyRAG:
     try:
-        return TrustworthyRAG(api_key=trustworthy_rag_api_key)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+                category=UserWarning,
+            )
+            return TrustworthyRAG(api_key=trustworthy_rag_api_key)
     except Exception as e:
         environment = os.environ.get("CLEANLAB_API_BASE_URL")
         pytest.skip(f"Failed to create TrustworthyRAG: {e}. Check your API key and environment: ({environment}).")
@@ -123,7 +130,13 @@ def is_trustworthy_rag_score(score: Any) -> bool:
 
 
 def test_init_with_api_key(trustworthy_rag_api_key: str) -> None:
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
 
     assert rag is not None
     assert rag._api_key == trustworthy_rag_api_key
@@ -155,8 +168,13 @@ def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
             response_identifier="Answer",
         )
     ]
-
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=custom_evals)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=custom_evals)
 
     assert rag is not None
     assert len(rag._evals) == 1
@@ -187,7 +205,13 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
         "num_self_reflections": 3,
     }
 
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
 
     assert rag is not None
     assert rag._options is not None
@@ -496,7 +520,13 @@ def test_generate_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> No
 def test_generate_with_empty_evals(trustworthy_rag_api_key: str) -> None:
     """Tests RAG generate with empty evaluations list."""
     # Create a TrustworthyRAG instance with empty evals
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
 
     # Generate response with empty evals
     response = rag.generate(
@@ -595,6 +625,7 @@ def test_score_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> None:
 def test_score_with_empty_evals(trustworthy_rag_api_key: str) -> None:
     """Tests RAG score with empty evaluations list."""
     # Create a TrustworthyRAG instance with empty evals
+
     rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
 
     # Score response with empty evals
@@ -978,16 +1009,28 @@ def test_score_with_disable_trustworthiness(trustworthy_rag_api_key: str) -> Non
     - trustworthiness score should be None
     - No exceptions are raised
     """
-    trustworthy_rag = TrustworthyRAG(
-        api_key=trustworthy_rag_api_key,
-        options={"disable_trustworthiness": True},
-    )
-    response = trustworthy_rag.score(
-        query=test_query,
-        context=test_context,
-        response=test_response,
-        prompt=test_prompt,
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+                category=UserWarning,
+            )
+            trustworthy_rag = TrustworthyRAG(
+                api_key=trustworthy_rag_api_key,
+                options={"disable_trustworthiness": True},
+            )
+        response = trustworthy_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+            prompt=test_prompt,
+        )
     assert not isinstance(response, list)
     assert "trustworthiness" in response
     assert response["trustworthiness"]["score"] is None
