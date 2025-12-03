@@ -1114,7 +1114,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
-        "mode": _BINARY_STR,
+        "mode": _CONTINUOUS_STR,
     },
     {
         "name": "response_groundedness",
