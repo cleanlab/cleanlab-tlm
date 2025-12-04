@@ -1,8 +1,9 @@
+import warnings
 from typing import Any, cast
 
 import numpy as np
 import pytest
-import warnings
+
 from cleanlab_tlm.errors import TlmBadRequestError, ValidationError
 from cleanlab_tlm.internal.constants import (
     _VALID_TLM_TASKS,

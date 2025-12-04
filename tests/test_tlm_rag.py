@@ -159,7 +159,6 @@ def test_init_with_missing_api_key() -> None:
 
 
 def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
-
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
