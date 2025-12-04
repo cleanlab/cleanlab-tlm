@@ -159,21 +159,22 @@ def test_init_with_missing_api_key() -> None:
 
 
 def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
-    custom_evals = [
-        Eval(
-            name="test_evaluation",
-            criteria="Evaluate the response based on X",
-            query_identifier="Question",
-            context_identifier="Context",
-            response_identifier="Answer",
-        )
-    ]
+
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
             message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
             category=UserWarning,
         )
+        custom_evals = [
+            Eval(
+                name="test_evaluation",
+                criteria="Evaluate the response based on X",
+                query_identifier="Question",
+                context_identifier="Context",
+                response_identifier="Answer",
+            )
+        ]
         rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=custom_evals)
 
     assert rag is not None
@@ -222,7 +223,13 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
 
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_init_with_quality_preset(trustworthy_rag_api_key: str, quality_preset: str) -> None:
-    tlm_rag = TrustworthyRAG(quality_preset=quality_preset, api_key=trustworthy_rag_api_key)  # type: ignore
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        tlm_rag = TrustworthyRAG(quality_preset=quality_preset, api_key=trustworthy_rag_api_key)  # type: ignore
     assert tlm_rag is not None
     assert tlm_rag._quality_preset == quality_preset
 
@@ -235,7 +242,13 @@ def test_get_model_name(trustworthy_rag: TrustworthyRAG) -> None:
 
 
 def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
-    evals = trustworthy_rag.get_evals()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        evals = trustworthy_rag.get_evals()
 
     assert evals is not None
     assert len(evals) > 0
@@ -249,7 +262,13 @@ def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
 
 
 def test_get_default_evals() -> None:
-    evals = get_default_evals()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        evals = get_default_evals()
 
     assert evals is not None
     assert len(evals) > 0
@@ -280,11 +299,17 @@ def test_eval_class_initialization() -> None:
 
 
 def test_eval_class_with_defaults() -> None:
-    eval_obj = Eval(
-        name="test_eval",
-        criteria="Test evaluation criteria",
-        query_identifier="Query",  # Adding at least one identifier to pass validation
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        eval_obj = Eval(
+            name="test_eval",
+            criteria="Test evaluation criteria",
+            query_identifier="Query",  # Adding at least one identifier to pass validation
+        )
 
     assert eval_obj is not None
     assert eval_obj.name == "test_eval"
@@ -1131,13 +1156,19 @@ def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG)
 
 
 def test_eval_mode_defaults_to_continuous() -> None:
-    e = Eval(
-        name="helpfulness",
-        criteria="Rate if the AI Answer is helpful to the User Question using the Retrieved Context.",
-        query_identifier="User Question",
-        context_identifier="Retrieved Context",
-        response_identifier="AI Answer",
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        e = Eval(
+            name="helpfulness",
+            criteria="Rate if the AI Answer is helpful to the User Question using the Retrieved Context.",
+            query_identifier="User Question",
+            context_identifier="Retrieved Context",
+            response_identifier="AI Answer",
+        )
     # default should be continuous
     assert e.mode in (
         None,
@@ -1161,22 +1192,28 @@ def test_eval_mode_binary_set_and_persisted() -> None:
 @pytest.mark.asyncio
 async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
     """Mix of modes should be preserved per-eval in payload."""
-    evals = [
-        Eval(
-            name="response_helpfulness",
-            criteria="Rate helpfulness from 0-1.",
-            query_identifier="Question",
-            context_identifier="Context",
-            response_identifier="Answer",
-            mode="continuous",
-        ),
-        Eval(
-            name="mentions_company",
-            criteria="Does the Answer mention any company? Yes/No.",
-            response_identifier="Answer",
-            mode="binary",
-        ),
-    ]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        evals = [
+            Eval(
+                name="response_helpfulness",
+                criteria="Rate helpfulness from 0-1.",
+                query_identifier="Question",
+                context_identifier="Context",
+                response_identifier="Answer",
+                mode="continuous",
+            ),
+            Eval(
+                name="mentions_company",
+                criteria="Does the Answer mention any company? Yes/No.",
+                response_identifier="Answer",
+                mode="binary",
+            ),
+        ]
 
     mock_resp_json = {
         "trustworthiness": {"score": 0.9},

@@ -2,7 +2,7 @@ from typing import Any, cast
 
 import numpy as np
 import pytest
-
+import warnings
 from cleanlab_tlm.errors import TlmBadRequestError, ValidationError
 from cleanlab_tlm.internal.constants import (
     _VALID_TLM_TASKS,
@@ -881,7 +881,13 @@ def test_disable_trustworthiness_without_custom_criteria_raises_error_rag(tlm_ap
 
 def test_disable_trustworthiness_with_custom_criteria_works_rag(tlm_api_key: str) -> None:
     """Test that disable_trustworthiness=True with custom_eval_criteria works normally for TrustworthyRAG."""
-    TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            category=UserWarning,
+        )
+        TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
