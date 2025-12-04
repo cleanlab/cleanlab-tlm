@@ -885,7 +885,7 @@ def test_disable_trustworthiness_with_custom_criteria_works_rag(tlm_api_key: str
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})

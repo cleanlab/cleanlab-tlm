@@ -73,7 +73,7 @@ def trustworthy_rag(trustworthy_rag_api_key: str) -> TrustworthyRAG:
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
-                message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+                message=".*criteria.*",
                 category=UserWarning,
             )
             return TrustworthyRAG(api_key=trustworthy_rag_api_key)
@@ -133,7 +133,7 @@ def test_init_with_api_key(trustworthy_rag_api_key: str) -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
@@ -162,7 +162,7 @@ def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         custom_evals = [
@@ -208,7 +208,7 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
@@ -225,7 +225,7 @@ def test_init_with_quality_preset(trustworthy_rag_api_key: str, quality_preset: 
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         tlm_rag = TrustworthyRAG(quality_preset=quality_preset, api_key=trustworthy_rag_api_key)  # type: ignore
@@ -244,7 +244,7 @@ def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         evals = trustworthy_rag.get_evals()
@@ -264,7 +264,7 @@ def test_get_default_evals() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         evals = get_default_evals()
@@ -301,7 +301,7 @@ def test_eval_class_with_defaults() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         eval_obj = Eval(
@@ -547,7 +547,7 @@ def test_generate_with_empty_evals(trustworthy_rag_api_key: str) -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
@@ -1036,13 +1036,13 @@ def test_score_with_disable_trustworthiness(trustworthy_rag_api_key: str) -> Non
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
-                message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+                message=".*criteria.*",
                 category=UserWarning,
             )
             trustworthy_rag = TrustworthyRAG(
@@ -1158,7 +1158,7 @@ def test_eval_mode_defaults_to_continuous() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         e = Eval(
@@ -1194,7 +1194,7 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
-            message=".*mode is set to 'continuous' but criteria appears to be a Yes/No question.*",
+            message=".*criteria.*",
             category=UserWarning,
         )
         evals = [
