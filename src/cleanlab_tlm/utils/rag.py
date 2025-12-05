@@ -126,25 +126,37 @@ class TrustworthyRAG(BaseTLM):
                     name=cast(str, eval_config[_TLM_EVAL_NAME_KEY]),
                     criteria=cast(str, eval_config[_TLM_EVAL_CRITERIA_KEY]),
                     query_identifier=eval_config.get(_TLM_EVAL_QUERY_IDENTIFIER_KEY),
-                    context_identifier=eval_config.get(_TLM_EVAL_CONTEXT_IDENTIFIER_KEY),
-                    response_identifier=eval_config.get(_TLM_EVAL_RESPONSE_IDENTIFIER_KEY),
+                    context_identifier=eval_config.get(
+                        _TLM_EVAL_CONTEXT_IDENTIFIER_KEY
+                    ),
+                    response_identifier=eval_config.get(
+                        _TLM_EVAL_RESPONSE_IDENTIFIER_KEY
+                    ),
                     mode=eval_config.get(_TLM_EVAL_MODE_KEY),
                 )
                 for eval_config in _DEFAULT_EVALS
             ]
         else:
             # validate that evals is a list of Eval objects
-            if not isinstance(evals, list) or any(not isinstance(ev, Eval) for ev in evals):
+            if not isinstance(evals, list) or any(
+                not isinstance(ev, Eval) for ev in evals
+            ):
                 raise ValidationError("'evals' must be a list of Eval objects")
 
             self._evals = evals
 
-        _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
-        validate_logging(options=options, quality_preset=quality_preset, subclass="TrustworthyRAG")
+        _validate_trustworthy_rag_options(
+            options=options, initialized_evals=self._evals
+        )
+        validate_logging(
+            options=options, quality_preset=quality_preset, subclass="TrustworthyRAG"
+        )
 
         # Optional per-eval tool call overrides
         # These are name-based include/exclude sets used only in the _handle_tool_call_filtering decorator
-        self._configure_tool_call_eval_overrides(exclude_names=[k.name for k in self._evals if k.response_identifier])
+        self._configure_tool_call_eval_overrides(
+            exclude_names=[k.name for k in self._evals if k.response_identifier]
+        )
 
     def _configure_tool_call_eval_overrides(
         self,
@@ -169,7 +181,9 @@ class TrustworthyRAG(BaseTLM):
             raise ValidationError(
                 f"Invalid eval name(s) for tool-call exclusion (must exist and have response_identifier): {', '.join(invalid)}"
             )
-        self._tool_call_eval_exclude_names = set(names)  # membership filter; order/dupes irrelevant
+        self._tool_call_eval_exclude_names = set(
+            names
+        )  # membership filter; order/dupes irrelevant
 
     def score(
         self,
@@ -212,10 +226,16 @@ class TrustworthyRAG(BaseTLM):
         )
 
         # Support constrain_outputs later
-        processed_responses = tlm_score_process_response_and_kwargs(formatted_prompts, response, None, {})
+        processed_responses = tlm_score_process_response_and_kwargs(
+            formatted_prompts, response, None, {}
+        )
 
         # Check if we're handling a batch or a single item
-        if isinstance(query, str) and isinstance(context, str) and isinstance(processed_responses, dict):
+        if (
+            isinstance(query, str)
+            and isinstance(context, str)
+            and isinstance(processed_responses, dict)
+        ):
             return self._event_loop.run_until_complete(
                 self._score_async(
                     response=processed_responses,
@@ -277,10 +297,16 @@ class TrustworthyRAG(BaseTLM):
         )
 
         # Support constrain_outputs later
-        processed_responses = tlm_score_process_response_and_kwargs(formatted_prompts, response, None, {})
+        processed_responses = tlm_score_process_response_and_kwargs(
+            formatted_prompts, response, None, {}
+        )
 
         # Check if we're handling a batch or a single item
-        if isinstance(query, str) and isinstance(context, str) and isinstance(processed_responses, dict):
+        if (
+            isinstance(query, str)
+            and isinstance(context, str)
+            and isinstance(processed_responses, dict)
+        ):
             return await self._score_async(
                 response=processed_responses,
                 prompt=formatted_prompts,
@@ -329,7 +355,11 @@ class TrustworthyRAG(BaseTLM):
         )
 
         # Check if we're handling a batch or a single item
-        if isinstance(query, str) and isinstance(context, str) and isinstance(formatted_prompts, str):
+        if (
+            isinstance(query, str)
+            and isinstance(context, str)
+            and isinstance(formatted_prompts, str)
+        ):
             return self._event_loop.run_until_complete(
                 self._generate_async(
                     prompt=formatted_prompts,
@@ -405,7 +435,9 @@ class TrustworthyRAG(BaseTLM):
             is_generate=response is None,
         )
 
-        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(
+            tlm_result, response
+        )
 
         if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
             assert isinstance(tlm_result, dict)
@@ -488,7 +520,9 @@ class TrustworthyRAG(BaseTLM):
             is_generate=response is None,
         )
 
-        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(
+            tlm_result, response
+        )
 
         if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
             assert isinstance(tlm_result, dict)
@@ -535,7 +569,9 @@ class TrustworthyRAG(BaseTLM):
                     formatted_tlm_result=formatted_tlm_result,
                     timeout=self._timeout,
                 )
-                for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
+                for prompt, tlm_result, formatted_tlm_result in zip(
+                    prompts, tlm_results, formatted_tlm_results
+                )
             ]
         )
         return cast(list[str], tlm_explanations)
@@ -629,7 +665,9 @@ class TrustworthyRAG(BaseTLM):
                     capture_exceptions=True,
                     batch_index=batch_index,
                 )
-                for batch_index, (prompt, query, context) in enumerate(zip(prompts, queries, contexts))
+                for batch_index, (prompt, query, context) in enumerate(
+                    zip(prompts, queries, contexts)
+                )
             ]
         )
 
@@ -676,7 +714,11 @@ class TrustworthyRAG(BaseTLM):
 
     async def _batch_async(
         self,
-        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]],
+        rag_coroutines: Sequence[
+            Coroutine[
+                None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]
+            ]
+        ],
     ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]:
         """Runs batch of TrustworthyRAG operations.
 
@@ -841,7 +883,9 @@ class TrustworthyRAG(BaseTLM):
         prompt_parts.append("---------------------\n")
 
         # Add instruction to use context
-        prompt_parts.append("Using the context information provided above, please answer the following question:\n")
+        prompt_parts.append(
+            "Using the context information provided above, please answer the following question:\n"
+        )
 
         # Add user query
         prompt_parts.append(f"User: {query.strip()}\n")
@@ -894,7 +938,11 @@ class Eval:
         lazydocs: ignore
         """
         # Validate that at least one identifier is specified
-        if query_identifier is None and context_identifier is None and response_identifier is None:
+        if (
+            query_identifier is None
+            and context_identifier is None
+            and response_identifier is None
+        ):
             raise ValueError(
                 "At least one of query_identifier, context_identifier, or response_identifier must be specified."
             )
@@ -1126,25 +1174,41 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
     },
     {
         "name": "response_helpfulness",
-        "criteria": """Assess whether the AI Assistant Response is a helpful answer to the User Query.
-A Response is considered helpful if it makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect the assessment. The only thing that matters is whether the Assistant tries to answer the question.
-A Response is considered not helpful if it avoids answering the question. For example, by saying or implying things like "I don't know", "Sorry", "No information available", or any other form of refusal or deflection.""",
+        "criteria": """Does the AI Assistant Response avoid or deflect from answering the User Query?
+
+Answer "Yes" if the AI Assistant:
+- Refuses or avoids answering the question.
+- Says or implies phrases like "I don't know", "Sorry", "No information available", or similar forms of refusal.
+- Deflects the query without attempting to provide an answer.
+
+Answer "No" if the AI Assistant:
+- Makes a genuine attempt to answer the question.
+- Provides any response intended to address the query, even if incomplete or factually incorrect.
+- Demonstrates effort to be helpful rather than refusing or deflecting.""",
         "query_identifier": "User Query",
         "context_identifier": None,
         "response_identifier": "AI Assistant Response",
-        "mode": _CONTINUOUS_STR,
+        "mode": _BINARY_STR,
     },
     {
         "name": "query_ease",
-        "criteria": """Determine whether the above User Request appears simple and straightforward.
-A bad User Request will appear either: ambiguous in intent, complex, purposefully tricky, abnormal, or disgruntled.
-A good User Request is phrased clearly and expresses an achievable intent. Basic conversational and non-propositional statements are also considered good.
-Should an AI Assistant be able to properly answer the User Request, it is considered good. The AI Assistant handling this User Request has additional knowledge about: the user, domain-specific terms and abbreviations, and any necessary factual information. So a User Request missing information could still be good; vagueness due to undefined pronouns/terms or references to unknown context does not make a User Request bad.
-""",
+        "criteria": """Does the User Request appear simple and straightforward?
+
+Answer "Yes" if the User Request:
+- Is phrased clearly and expresses an achievable intent.
+- Appears simple, straightforward, or basic conversational.
+- Could reasonably be answered by an AI Assistant, even if some details are missing.
+- May reference undefined terms, prior context, or pronouns — this does NOT make it bad.
+  The Assistant is assumed to have additional knowledge about the user, domain-specific terms, and necessary background.
+
+Answer "No" if the User Request:
+- Appears ambiguous in intent, complex, purposefully tricky, abnormal, or disgruntled.
+- Seems unusually phrased, hard to interpret, or intentionally confusing.
+- Lacks a clear purpose or expresses an objective the Assistant cannot reasonably fulfill.""",
         "query_identifier": "User Request",
         "context_identifier": None,
         "response_identifier": None,
-        "mode": _CONTINUOUS_STR,
+        "mode": _BINARY_STR,
     },
 ]
 
