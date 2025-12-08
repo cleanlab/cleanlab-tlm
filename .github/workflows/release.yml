@@ -27,6 +27,8 @@ jobs:
           python-version: "3.12"
       - name: Install hatch
         uses: pypa/hatch@install
+        with:
+          version: "1.15.1"
       - name: Check versions match
         run: |
           pkg_version=$(hatch version)
