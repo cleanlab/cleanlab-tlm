@@ -14,10 +14,11 @@ import asyncio
 import warnings
 from collections.abc import Sequence
 from typing import (
+    # lazydocs: ignore
     TYPE_CHECKING,
     Any,
     Callable,
-    Optional,  # lazydocs: ignore
+    Optional,
     Union,
     cast,
 )
