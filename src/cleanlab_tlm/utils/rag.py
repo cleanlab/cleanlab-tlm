@@ -126,37 +126,25 @@ class TrustworthyRAG(BaseTLM):
                     name=cast(str, eval_config[_TLM_EVAL_NAME_KEY]),
                     criteria=cast(str, eval_config[_TLM_EVAL_CRITERIA_KEY]),
                     query_identifier=eval_config.get(_TLM_EVAL_QUERY_IDENTIFIER_KEY),
-                    context_identifier=eval_config.get(
-                        _TLM_EVAL_CONTEXT_IDENTIFIER_KEY
-                    ),
-                    response_identifier=eval_config.get(
-                        _TLM_EVAL_RESPONSE_IDENTIFIER_KEY
-                    ),
+                    context_identifier=eval_config.get(_TLM_EVAL_CONTEXT_IDENTIFIER_KEY),
+                    response_identifier=eval_config.get(_TLM_EVAL_RESPONSE_IDENTIFIER_KEY),
                     mode=eval_config.get(_TLM_EVAL_MODE_KEY),
                 )
                 for eval_config in _DEFAULT_EVALS
             ]
         else:
             # validate that evals is a list of Eval objects
-            if not isinstance(evals, list) or any(
-                not isinstance(ev, Eval) for ev in evals
-            ):
+            if not isinstance(evals, list) or any(not isinstance(ev, Eval) for ev in evals):
                 raise ValidationError("'evals' must be a list of Eval objects")
 
             self._evals = evals
 
-        _validate_trustworthy_rag_options(
-            options=options, initialized_evals=self._evals
-        )
-        validate_logging(
-            options=options, quality_preset=quality_preset, subclass="TrustworthyRAG"
-        )
+        _validate_trustworthy_rag_options(options=options, initialized_evals=self._evals)
+        validate_logging(options=options, quality_preset=quality_preset, subclass="TrustworthyRAG")
 
         # Optional per-eval tool call overrides
         # These are name-based include/exclude sets used only in the _handle_tool_call_filtering decorator
-        self._configure_tool_call_eval_overrides(
-            exclude_names=[k.name for k in self._evals if k.response_identifier]
-        )
+        self._configure_tool_call_eval_overrides(exclude_names=[k.name for k in self._evals if k.response_identifier])
 
     def _configure_tool_call_eval_overrides(
         self,
@@ -181,9 +169,7 @@ class TrustworthyRAG(BaseTLM):
             raise ValidationError(
                 f"Invalid eval name(s) for tool-call exclusion (must exist and have response_identifier): {', '.join(invalid)}"
             )
-        self._tool_call_eval_exclude_names = set(
-            names
-        )  # membership filter; order/dupes irrelevant
+        self._tool_call_eval_exclude_names = set(names)  # membership filter; order/dupes irrelevant
 
     def score(
         self,
@@ -226,16 +212,10 @@ class TrustworthyRAG(BaseTLM):
         )
 
         # Support constrain_outputs later
-        processed_responses = tlm_score_process_response_and_kwargs(
-            formatted_prompts, response, None, {}
-        )
+        processed_responses = tlm_score_process_response_and_kwargs(formatted_prompts, response, None, {})
 
         # Check if we're handling a batch or a single item
-        if (
-            isinstance(query, str)
-            and isinstance(context, str)
-            and isinstance(processed_responses, dict)
-        ):
+        if isinstance(query, str) and isinstance(context, str) and isinstance(processed_responses, dict):
             return self._event_loop.run_until_complete(
                 self._score_async(
                     response=processed_responses,
@@ -297,16 +277,10 @@ class TrustworthyRAG(BaseTLM):
         )
 
         # Support constrain_outputs later
-        processed_responses = tlm_score_process_response_and_kwargs(
-            formatted_prompts, response, None, {}
-        )
+        processed_responses = tlm_score_process_response_and_kwargs(formatted_prompts, response, None, {})
 
         # Check if we're handling a batch or a single item
-        if (
-            isinstance(query, str)
-            and isinstance(context, str)
-            and isinstance(processed_responses, dict)
-        ):
+        if isinstance(query, str) and isinstance(context, str) and isinstance(processed_responses, dict):
             return await self._score_async(
                 response=processed_responses,
                 prompt=formatted_prompts,
@@ -355,11 +329,7 @@ class TrustworthyRAG(BaseTLM):
         )
 
         # Check if we're handling a batch or a single item
-        if (
-            isinstance(query, str)
-            and isinstance(context, str)
-            and isinstance(formatted_prompts, str)
-        ):
+        if isinstance(query, str) and isinstance(context, str) and isinstance(formatted_prompts, str):
             return self._event_loop.run_until_complete(
                 self._generate_async(
                     prompt=formatted_prompts,
@@ -435,9 +405,7 @@ class TrustworthyRAG(BaseTLM):
             is_generate=response is None,
         )
 
-        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(
-            tlm_result, response
-        )
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
 
         if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
             assert isinstance(tlm_result, dict)
@@ -520,9 +488,7 @@ class TrustworthyRAG(BaseTLM):
             is_generate=response is None,
         )
 
-        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(
-            tlm_result, response
-        )
+        formatted_tlm_result = tlm_explanation_format_trustworthy_rag_result(tlm_result, response)
 
         if isinstance(formatted_prompt, str) and isinstance(formatted_tlm_result, dict):
             assert isinstance(tlm_result, dict)
@@ -569,9 +535,7 @@ class TrustworthyRAG(BaseTLM):
                     formatted_tlm_result=formatted_tlm_result,
                     timeout=self._timeout,
                 )
-                for prompt, tlm_result, formatted_tlm_result in zip(
-                    prompts, tlm_results, formatted_tlm_results
-                )
+                for prompt, tlm_result, formatted_tlm_result in zip(prompts, tlm_results, formatted_tlm_results)
             ]
         )
         return cast(list[str], tlm_explanations)
@@ -665,9 +629,7 @@ class TrustworthyRAG(BaseTLM):
                     capture_exceptions=True,
                     batch_index=batch_index,
                 )
-                for batch_index, (prompt, query, context) in enumerate(
-                    zip(prompts, queries, contexts)
-                )
+                for batch_index, (prompt, query, context) in enumerate(zip(prompts, queries, contexts))
             ]
         )
 
@@ -714,11 +676,7 @@ class TrustworthyRAG(BaseTLM):
 
     async def _batch_async(
         self,
-        rag_coroutines: Sequence[
-            Coroutine[
-                None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]
-            ]
-        ],
+        rag_coroutines: Sequence[Coroutine[None, None, Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]],
     ) -> Sequence[Union[TrustworthyRAGResponse, TrustworthyRAGScore, str]]:
         """Runs batch of TrustworthyRAG operations.
 
@@ -883,9 +841,7 @@ class TrustworthyRAG(BaseTLM):
         prompt_parts.append("---------------------\n")
 
         # Add instruction to use context
-        prompt_parts.append(
-            "Using the context information provided above, please answer the following question:\n"
-        )
+        prompt_parts.append("Using the context information provided above, please answer the following question:\n")
 
         # Add user query
         prompt_parts.append(f"User: {query.strip()}\n")
@@ -938,11 +894,7 @@ class Eval:
         lazydocs: ignore
         """
         # Validate that at least one identifier is specified
-        if (
-            query_identifier is None
-            and context_identifier is None
-            and response_identifier is None
-        ):
+        if query_identifier is None and context_identifier is None and response_identifier is None:
             raise ValueError(
                 "At least one of query_identifier, context_identifier, or response_identifier must be specified."
             )
