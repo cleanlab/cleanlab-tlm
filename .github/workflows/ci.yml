@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: pypa/hatch@install
+      - uses: pypa/hatch@1.15.1
       - run: hatch run types:check
   fmt:
     name: Format and lint
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: pypa/hatch@install
+      - uses: pypa/hatch@1.15.1
       - run: hatch fmt --check
 
   tests:
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - uses: pypa/hatch@install
+      - uses: pypa/hatch@1.15.1
       
       - name: Skip tests for non-code changes
         if: steps.filter.outputs.code-changes == 'false'
