@@ -923,7 +923,8 @@ class Eval:
         """
 
         # Check binary criteria once at the beginning
-        is_binary = self._check_binary_criteria(criteria)
+        # Context sufficiency is False by default
+        is_binary = False if name == "context_sufficiency" else self._check_binary_criteria(criteria)
 
         # If mode is auto, determine it automatically
         if mode == "auto":
