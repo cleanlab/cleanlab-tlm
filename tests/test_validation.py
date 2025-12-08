@@ -473,15 +473,21 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
 
 
 def test_validate_proper_evals_input(tlm_api_key: str) -> None:
-    evals = [
-        Eval(
-            name="test_eval",
-            criteria="This is a test criteria",
-            query_identifier="query",
-            context_identifier="context",
-            response_identifier="response",
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
         )
-    ]
+        evals = [
+            Eval(
+                name="test_eval",
+                criteria="This is a test criteria",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            )
+        ]
 
     # test the expected case will work
     tlm_rag = TrustworthyRAG(api_key=tlm_api_key, evals=evals)

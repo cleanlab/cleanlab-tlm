@@ -281,13 +281,19 @@ def test_get_default_evals() -> None:
 
 
 def test_eval_class_initialization() -> None:
-    eval_obj = Eval(
-        name="test_eval",
-        criteria="Test evaluation criteria",
-        query_identifier="Query",
-        context_identifier="Context",
-        response_identifier="Response",
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        eval_obj = Eval(
+            name="test_eval",
+            criteria="Test evaluation criteria",
+            query_identifier="Query",
+            context_identifier="Context",
+            response_identifier="Response",
+        )
 
     assert eval_obj is not None
     assert eval_obj.name == "test_eval"
@@ -1204,7 +1210,7 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
                 query_identifier="Question",
                 context_identifier="Context",
                 response_identifier="Answer",
-                mode="continuous",
+                mode="binary",
             ),
             Eval(
                 name="mentions_company",
