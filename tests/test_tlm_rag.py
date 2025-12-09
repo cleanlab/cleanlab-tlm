@@ -1273,24 +1273,30 @@ async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
 
 def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
     """Ensure both continuous and binary evals are accepted and scored (0..1)."""
-    evals = [
-        Eval(
-            name="response_helpfulness",
-            criteria="Rate helpfulness from 0 to 1.",
-            query_identifier="Question",
-            context_identifier="Context",
-            response_identifier="Answer",
-            mode="continuous",
-        ),
-        Eval(
-            name="mentions_company",
-            criteria="Does the Answer mention a company? Yes/No.",
-            response_identifier="Answer",
-            mode="binary",
-        ),
-    ]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals = [
+            Eval(
+                name="response_helpfulness",
+                criteria="Rate helpfulness from 0 to 1.",
+                query_identifier="Question",
+                context_identifier="Context",
+                response_identifier="Answer",
+                mode="continuous",
+            ),
+            Eval(
+                name="mentions_company",
+                criteria="Does the Answer mention a company? Yes/No.",
+                response_identifier="Answer",
+                mode="binary",
+            ),
+        ]
 
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=evals)
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=evals)
     raw_score = rag.score(query=test_query, context=test_context, response=test_response)
 
     assert is_trustworthy_rag_score(raw_score)
