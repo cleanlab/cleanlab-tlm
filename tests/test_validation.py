@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, cast
 
 import numpy as np
@@ -472,15 +473,21 @@ def test_validate_rag_inputs_invalid_param_types() -> None:
 
 
 def test_validate_proper_evals_input(tlm_api_key: str) -> None:
-    evals = [
-        Eval(
-            name="test_eval",
-            criteria="This is a test criteria",
-            query_identifier="query",
-            context_identifier="context",
-            response_identifier="response",
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
         )
-    ]
+        evals = [
+            Eval(
+                name="test_eval",
+                criteria="This is a test criteria",
+                query_identifier="query",
+                context_identifier="context",
+                response_identifier="response",
+            )
+        ]
 
     # test the expected case will work
     tlm_rag = TrustworthyRAG(api_key=tlm_api_key, evals=evals)
@@ -881,7 +888,13 @@ def test_disable_trustworthiness_without_custom_criteria_raises_error_rag(tlm_ap
 
 def test_disable_trustworthiness_with_custom_criteria_works_rag(tlm_api_key: str) -> None:
     """Test that disable_trustworthiness=True with custom_eval_criteria works normally for TrustworthyRAG."""
-    TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        TrustworthyRAG(api_key=tlm_api_key, options={"disable_trustworthiness": True})
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")

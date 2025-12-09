@@ -11,6 +11,7 @@ For RAG use-cases, we recommend using this module's `TrustworthyRAG` object in p
 from __future__ import annotations
 
 import asyncio
+import warnings
 from collections.abc import Sequence
 from typing import (
     # lazydocs: ignore
@@ -29,9 +30,12 @@ from cleanlab_tlm.errors import ValidationError
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.base import BaseTLM
 from cleanlab_tlm.internal.constants import (
+    _BINARY_STR,
+    _CONTINUOUS_STR,
     _DEFAULT_TLM_QUALITY_PRESET,
     _TLM_EVAL_CONTEXT_IDENTIFIER_KEY,
     _TLM_EVAL_CRITERIA_KEY,
+    _TLM_EVAL_MODE_KEY,
     _TLM_EVAL_NAME_KEY,
     _TLM_EVAL_QUERY_IDENTIFIER_KEY,
     _TLM_EVAL_RESPONSE_IDENTIFIER_KEY,
@@ -47,6 +51,7 @@ from cleanlab_tlm.internal.validation import (
     validate_logging,
     validate_rag_inputs,
 )
+from cleanlab_tlm.tlm import TLM
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine
@@ -124,6 +129,7 @@ class TrustworthyRAG(BaseTLM):
                     query_identifier=eval_config.get(_TLM_EVAL_QUERY_IDENTIFIER_KEY),
                     context_identifier=eval_config.get(_TLM_EVAL_CONTEXT_IDENTIFIER_KEY),
                     response_identifier=eval_config.get(_TLM_EVAL_RESPONSE_IDENTIFIER_KEY),
+                    mode=eval_config.get(_TLM_EVAL_MODE_KEY),
                 )
                 for eval_config in _DEFAULT_EVALS
             ]
@@ -863,6 +869,13 @@ class Eval:
         response_identifier (str, optional): The exact string used in your evaluation `criteria` to reference the RAG/LLM response.
             For example, specifying `response_identifier` as "AI Answer" means your `criteria` should refer to the response as "AI Answer".
             Leave this value as None (the default) if this Eval doesn't consider the response.
+        mode (str, optional): What type of evaluation these `criteria` correspond to, either "continuous" (default), "binary", or "auto".
+            - "continuous": For `criteria` that define what is good/better v.s. what is bad/worse, corresponding to evaluations of quality along a continuous spectrum (e.g., relevance, conciseness).
+            - "binary": For `criteria` written as Yes/No questions, corresponding to evaluations that most would consider either True or False rather than grading along a continuous spectrum (e.g., does Response mention ACME Inc., is Query asking about refund, ...).
+            - "auto": Automatically determines whether the criteria is binary or continuous based on the criteria text.
+            Both modes return scores in the 0-1 range.
+            For "continuous" evaluations, your `criteria` should define what good vs. bad looks like (cases deemed bad will return low evaluation scores).
+            For binary evaluations, your `criteria` should be a Yes/No question (cases answered "Yes" will return low evaluation scores, so phrase your question such that the likelihood of "Yes" matches the likelihood of the particular problem you wish to detect).
 
     Note on handling Tool Calls: By default, when a tool call response is detected, evaluations that analyze the response content
         (those with a `response_identifier`) are assigned `score=None`. You can override this behavior for specific evals via
@@ -876,6 +889,7 @@ class Eval:
         query_identifier: Optional[str] = None,
         context_identifier: Optional[str] = None,
         response_identifier: Optional[str] = None,
+        mode: Optional[str] = "auto",
     ):
         """
         lazydocs: ignore
@@ -892,6 +906,190 @@ class Eval:
         self.context_identifier = context_identifier
         self.response_identifier = response_identifier
 
+        # Compile and validate the eval
+        self.mode = self._compile_mode(mode, criteria, name)
+
+    def _compile_mode(self, mode: Optional[str], criteria: str, name: str) -> str:
+        """
+        Compile and validate the mode based on criteria.
+
+        Args:
+            mode: The specified mode ("binary", "continuous", or "auto")
+            criteria: The evaluation criteria text
+            name: The name of the evaluation
+
+        Returns:
+            str: The compiled mode ("binary" or "continuous")
+        """
+
+        # Check binary criteria once at the beginning
+        # Context sufficiency is False by default
+        is_binary = False if name == "context_sufficiency" else self._check_binary_criteria(criteria)
+
+        # If mode is auto, determine it automatically
+        if mode == "auto":
+            compiled_mode = _BINARY_STR if is_binary else _CONTINUOUS_STR
+
+            # Check if it's appropriate for neither
+            if not is_binary:
+                has_good_bad = self._check_good_bad_specified(criteria)
+                has_numeric = self._check_numeric_scoring_scheme(criteria)
+
+                if not has_good_bad and not has_numeric:
+                    warning_msg = (
+                        f"Eval '{name}': Criteria does not appear to be a Yes/No question "
+                        "and does not clearly specify what is good/bad or desirable/undesirable. "
+                        "This may result in poor evaluation quality."
+                    )
+                    warnings.warn(warning_msg, UserWarning)
+
+            return compiled_mode
+
+        # Validation checks for explicit mode specification
+        if mode == _BINARY_STR:
+            if not is_binary:
+                warning_msg = (
+                    f"Eval '{name}': mode is set to '{_BINARY_STR}' but criteria does not appear "
+                    "to be a Yes/No question. Consider rephrasing as a Yes/No question or "
+                    f"changing mode to '{_CONTINUOUS_STR}'."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+        elif mode == _CONTINUOUS_STR:
+            # Check if it's actually a Yes/No question
+            if is_binary:
+                warning_msg = (
+                    f"Eval '{name}': mode is set to '{_CONTINUOUS_STR}' but criteria appears to be "
+                    f"a Yes/No question. Consider changing mode to '{_BINARY_STR}' for more appropriate scoring."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+            # Check if good/bad is specified
+            has_good_bad = self._check_good_bad_specified(criteria)
+            if not has_good_bad:
+                warning_msg = (
+                    f"Eval '{name}': mode is set to '{_CONTINUOUS_STR}' but criteria does not clearly "
+                    "specify what is good/desirable versus bad/undesirable. This may lead to "
+                    "inconsistent or unclear scoring."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+            # Check if it already has a numeric scoring scheme
+            has_numeric = self._check_numeric_scoring_scheme(criteria)
+            if has_numeric:
+                warning_msg = (
+                    f"Eval '{name}': Your `criteria` appears to specify "
+                    "a numeric scoring scheme. We recommend removing any "
+                    "specific numeric scoring scheme from your `criteria` and just specifying what is considered good/better vs. bad/worse."
+                )
+                warnings.warn(warning_msg, UserWarning)
+
+        # For explicit modes, return as-is (already validated above)
+        if mode in (_BINARY_STR, _CONTINUOUS_STR):
+            return mode
+
+        # Default to continuous for None or any other value
+        return _CONTINUOUS_STR
+
+    @staticmethod
+    def _check_binary_criteria(criteria: str) -> bool:
+        """
+        Check if criteria is a Yes/No question using TLM.
+
+        Args:
+            criteria: The evaluation criteria text
+
+        Returns:
+            True if criteria is a Yes/No question, False otherwise
+        """
+        tlm = TLM(quality_preset="base")
+
+        prompt = f"""Consider the following statement:
+
+    <statement>
+    {criteria}
+    </statement>
+
+    ## Instructions
+
+    Classify this statement into one of the following options:
+    A) This statement is essentially worded as a Yes/No question or implies a Yes/No question.
+    B) This statement is not a Yes/No question, since replying to it with either "Yes" or "No" would not be sensible.
+
+    Your output must be one choice from either A or B (output only a single letter, no other text)."""
+
+        response = tlm.prompt(prompt, constrain_outputs=["A", "B"])
+        if isinstance(response, list):
+            return False
+        response_text = response.get("response", "")
+        if response_text is None:
+            return False
+        return str(response_text).strip().upper() == "A"
+
+    @staticmethod
+    def _check_good_bad_specified(criteria: str) -> bool:
+        """
+        Check if criteria clearly specifies what is Good vs Bad or Desirable vs Undesirable.
+
+        Args:
+            criteria: The evaluation criteria text
+
+        Returns:
+            True if criteria clearly defines good/bad or desirable/undesirable, False otherwise
+        """
+        tlm = TLM(quality_preset="base")
+
+        prompt = f"""Analyze the following evaluation criteria and determine if it clearly specifies what is "good" versus "bad", "desirable" versus "undesirable", "better" versus "worse", or uses similar language to define quality distinctions.
+
+    The criteria should make it clear what characteristics or qualities are considered positive/desirable versus negative/undesirable.
+
+    Evaluation Criteria:
+    {criteria}
+
+    Does this criteria clearly specify what is good/desirable versus bad/undesirable? Answer only "Yes" or "No"."""
+
+        response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
+        if isinstance(response, list):
+            return False
+        response_text = response.get("response", "")
+        if response_text is None:
+            return False
+        return str(response_text).strip().lower() == "yes"
+
+    @staticmethod
+    def _check_numeric_scoring_scheme(criteria: str) -> bool:
+        """
+        Check if criteria contains a specific numeric scoring scheme (e.g., "rate from 1-5", "score 0-100").
+
+        Args:
+            criteria: The evaluation criteria text
+
+        Returns:
+            True if criteria includes a numeric scoring scheme, False otherwise
+        """
+        tlm = TLM(quality_preset="base")
+
+        prompt = f"""Analyze the following evaluation criteria and determine if it contains a specific numeric scoring scheme.
+
+    Examples of numeric scoring schemes include:
+    - "Rate from 1 to 5"
+    - "Score between 0 and 100"
+    - "Assign a rating of 1-10"
+    - "Give a score from 0 to 1"
+
+    Evaluation Criteria:
+    {criteria}
+
+    Does this criteria specify a numeric scoring scheme? Answer only "Yes" or "No"."""
+
+        response = tlm.prompt(prompt, constrain_outputs=["Yes", "No"])
+        if isinstance(response, list):
+            return False
+        response_text = response.get("response", "")
+        if response_text is None:
+            return False
+        return str(response_text).strip().lower() == "yes"
+
     def __repr__(self) -> str:
         """
         Return a string representation of the Eval object in dictionary format.
@@ -906,6 +1104,7 @@ class Eval:
             f"    'query_identifier': {self.query_identifier!r},\n"
             f"    'context_identifier': {self.context_identifier!r},\n"
             f"    'response_identifier': {self.response_identifier!r}\n"
+            f"    'mode': {self.mode!r}\n"
             f"}}"
         )
 
@@ -917,6 +1116,7 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Question",
         "context_identifier": "Document",
         "response_identifier": None,
+        "mode": _CONTINUOUS_STR,
     },
     {
         "name": "response_groundedness",
@@ -924,26 +1124,45 @@ _DEFAULT_EVALS: list[dict[str, Optional[str]]] = [
         "query_identifier": "Query",
         "context_identifier": "Context",
         "response_identifier": "Response",
+        "mode": _CONTINUOUS_STR,
     },
     {
         "name": "response_helpfulness",
-        "criteria": """Assess whether the AI Assistant Response is a helpful answer to the User Query.
-A Response is considered helpful if it makes a genuine attempt to answer the question, even if the answer is incorrect or incomplete. Factual inaccuracies should not affect the assessment. The only thing that matters is whether the Assistant tries to answer the question.
-A Response is considered not helpful if it avoids answering the question. For example, by saying or implying things like "I don't know", "Sorry", "No information available", or any other form of refusal or deflection.""",
+        "criteria": """Does the AI Assistant Response avoid or deflect from answering the User Query?
+
+Answer "Yes" if the AI Assistant:
+- Refuses or avoids answering the question.
+- Says or implies phrases like "I don't know", "Sorry", "No information available", or similar forms of refusal.
+- Deflects the query without attempting to provide an answer.
+
+Answer "No" if the AI Assistant:
+- Makes a genuine attempt to answer the question.
+- Provides any response intended to address the query, even if incomplete or factually incorrect.
+- Demonstrates effort to be helpful rather than refusing or deflecting.""",
         "query_identifier": "User Query",
         "context_identifier": None,
         "response_identifier": "AI Assistant Response",
+        "mode": _BINARY_STR,
     },
     {
         "name": "query_ease",
-        "criteria": """Determine whether the above User Request appears simple and straightforward.
-A bad User Request will appear either: ambiguous in intent, complex, purposefully tricky, abnormal, or disgruntled.
-A good User Request is phrased clearly and expresses an achievable intent. Basic conversational and non-propositional statements are also considered good.
-Should an AI Assistant be able to properly answer the User Request, it is considered good. The AI Assistant handling this User Request has additional knowledge about: the user, domain-specific terms and abbreviations, and any necessary factual information. So a User Request missing information could still be good; vagueness due to undefined pronouns/terms or references to unknown context does not make a User Request bad.
-""",
+        "criteria": """Does the User Request appear simple and straightforward?
+
+Answer "Yes" if the User Request:
+- Is phrased clearly and expresses an achievable intent.
+- Appears simple, straightforward, or basic conversational.
+- Could reasonably be answered by an AI Assistant, even if some details are missing.
+- May reference undefined terms, prior context, or pronouns — this does NOT make it bad.
+  The Assistant is assumed to have additional knowledge about the user, domain-specific terms, and necessary background.
+
+Answer "No" if the User Request:
+- Appears ambiguous in intent, complex, purposefully tricky, abnormal, or disgruntled.
+- Seems unusually phrased, hard to interpret, or intentionally confusing.
+- Lacks a clear purpose or expresses an objective the Assistant cannot reasonably fulfill.""",
         "query_identifier": "User Request",
         "context_identifier": None,
         "response_identifier": None,
+        "mode": _BINARY_STR,
     },
 ]
 
@@ -976,6 +1195,7 @@ def get_default_evals() -> list[Eval]:
             query_identifier=eval_config.get("query_identifier"),
             context_identifier=eval_config.get("context_identifier"),
             response_identifier=eval_config.get("response_identifier"),
+            mode=eval_config.get("mode"),
         )
         for eval_config in _DEFAULT_EVALS
     ]

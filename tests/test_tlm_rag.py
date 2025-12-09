@@ -1,6 +1,7 @@
 import os
 import re
-from collections.abc import Generator
+import warnings
+from collections.abc import Generator, Mapping, Sequence
 from typing import Any, cast
 from unittest import mock
 
@@ -10,6 +11,7 @@ from cleanlab_tlm.errors import APITimeoutError, MissingApiKeyError, ValidationE
 from cleanlab_tlm.internal.api import api
 from cleanlab_tlm.internal.constants import (
     _TLM_DEFAULT_MODEL,
+    _TLM_EVAL_MODE_KEY,
     _VALID_TLM_QUALITY_PRESETS,
 )
 from cleanlab_tlm.tlm import TLMOptions
@@ -68,7 +70,13 @@ def trustworthy_rag_api_key() -> str:
 @pytest.fixture(scope="module")
 def trustworthy_rag(trustworthy_rag_api_key: str) -> TrustworthyRAG:
     try:
-        return TrustworthyRAG(api_key=trustworthy_rag_api_key)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*criteria.*",
+                category=UserWarning,
+            )
+            return TrustworthyRAG(api_key=trustworthy_rag_api_key)
     except Exception as e:
         environment = os.environ.get("CLEANLAB_API_BASE_URL")
         pytest.skip(f"Failed to create TrustworthyRAG: {e}. Check your API key and environment: ({environment}).")
@@ -122,7 +130,13 @@ def is_trustworthy_rag_score(score: Any) -> bool:
 
 
 def test_init_with_api_key(trustworthy_rag_api_key: str) -> None:
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key)
 
     assert rag is not None
     assert rag._api_key == trustworthy_rag_api_key
@@ -145,17 +159,22 @@ def test_init_with_missing_api_key() -> None:
 
 
 def test_init_with_custom_evals(trustworthy_rag_api_key: str) -> None:
-    custom_evals = [
-        Eval(
-            name="test_evaluation",
-            criteria="Evaluate the response based on X",
-            query_identifier="Question",
-            context_identifier="Context",
-            response_identifier="Answer",
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
         )
-    ]
-
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=custom_evals)
+        custom_evals = [
+            Eval(
+                name="test_evaluation",
+                criteria="Evaluate the response based on X",
+                query_identifier="Question",
+                context_identifier="Context",
+                response_identifier="Answer",
+            )
+        ]
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=custom_evals)
 
     assert rag is not None
     assert len(rag._evals) == 1
@@ -186,7 +205,13 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
         "num_self_reflections": 3,
     }
 
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, options=options)
 
     assert rag is not None
     assert rag._options is not None
@@ -197,7 +222,13 @@ def test_init_with_options(trustworthy_rag_api_key: str) -> None:
 
 @pytest.mark.parametrize("quality_preset", _VALID_TLM_QUALITY_PRESETS)
 def test_init_with_quality_preset(trustworthy_rag_api_key: str, quality_preset: str) -> None:
-    tlm_rag = TrustworthyRAG(quality_preset=quality_preset, api_key=trustworthy_rag_api_key)  # type: ignore
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        tlm_rag = TrustworthyRAG(quality_preset=quality_preset, api_key=trustworthy_rag_api_key)  # type: ignore
     assert tlm_rag is not None
     assert tlm_rag._quality_preset == quality_preset
 
@@ -210,7 +241,13 @@ def test_get_model_name(trustworthy_rag: TrustworthyRAG) -> None:
 
 
 def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
-    evals = trustworthy_rag.get_evals()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals = trustworthy_rag.get_evals()
 
     assert evals is not None
     assert len(evals) > 0
@@ -218,13 +255,25 @@ def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
 
     # Verify that the returned list is a copy
     original_evals = trustworthy_rag._evals
-    evals.append(Eval(name="new_eval", criteria="New criteria", query_identifier="query"))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals.append(Eval(name="new_eval", criteria="New criteria", query_identifier="query"))
     assert len(evals) == len(original_evals) + 1
     assert len(trustworthy_rag._evals) == len(original_evals)
 
 
 def test_get_default_evals() -> None:
-    evals = get_default_evals()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals = get_default_evals()
 
     assert evals is not None
     assert len(evals) > 0
@@ -238,13 +287,19 @@ def test_get_default_evals() -> None:
 
 
 def test_eval_class_initialization() -> None:
-    eval_obj = Eval(
-        name="test_eval",
-        criteria="Test evaluation criteria",
-        query_identifier="Query",
-        context_identifier="Context",
-        response_identifier="Response",
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        eval_obj = Eval(
+            name="test_eval",
+            criteria="Test evaluation criteria",
+            query_identifier="Query",
+            context_identifier="Context",
+            response_identifier="Response",
+        )
 
     assert eval_obj is not None
     assert eval_obj.name == "test_eval"
@@ -255,11 +310,17 @@ def test_eval_class_initialization() -> None:
 
 
 def test_eval_class_with_defaults() -> None:
-    eval_obj = Eval(
-        name="test_eval",
-        criteria="Test evaluation criteria",
-        query_identifier="Query",  # Adding at least one identifier to pass validation
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        eval_obj = Eval(
+            name="test_eval",
+            criteria="Test evaluation criteria",
+            query_identifier="Query",  # Adding at least one identifier to pass validation
+        )
 
     assert eval_obj is not None
     assert eval_obj.name == "test_eval"
@@ -495,7 +556,13 @@ def test_generate_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> No
 def test_generate_with_empty_evals(trustworthy_rag_api_key: str) -> None:
     """Tests RAG generate with empty evaluations list."""
     # Create a TrustworthyRAG instance with empty evals
-    rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
 
     # Generate response with empty evals
     response = rag.generate(
@@ -594,6 +661,7 @@ def test_score_with_custom_form_prompt(trustworthy_rag: TrustworthyRAG) -> None:
 def test_score_with_empty_evals(trustworthy_rag_api_key: str) -> None:
     """Tests RAG score with empty evaluations list."""
     # Create a TrustworthyRAG instance with empty evals
+
     rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=[])
 
     # Score response with empty evals
@@ -977,16 +1045,28 @@ def test_score_with_disable_trustworthiness(trustworthy_rag_api_key: str) -> Non
     - trustworthiness score should be None
     - No exceptions are raised
     """
-    trustworthy_rag = TrustworthyRAG(
-        api_key=trustworthy_rag_api_key,
-        options={"disable_trustworthiness": True},
-    )
-    response = trustworthy_rag.score(
-        query=test_query,
-        context=test_context,
-        response=test_response,
-        prompt=test_prompt,
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*criteria.*",
+                category=UserWarning,
+            )
+            trustworthy_rag = TrustworthyRAG(
+                api_key=trustworthy_rag_api_key,
+                options={"disable_trustworthiness": True},
+            )
+        response = trustworthy_rag.score(
+            query=test_query,
+            context=test_context,
+            response=test_response,
+            prompt=test_prompt,
+        )
     assert not isinstance(response, list)
     assert "trustworthiness" in response
     assert response["trustworthiness"]["score"] is None
@@ -1084,3 +1164,176 @@ def test_tool_call_override_invalid_name_raises(trustworthy_rag: TrustworthyRAG)
         ),
     ):
         trustworthy_rag._configure_tool_call_eval_overrides(exclude_names=[existing_eval_name, "not_a_real_eval"])
+
+
+def test_eval_mode_defaults_to_continuous() -> None:
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        e = Eval(
+            name="helpfulness",
+            criteria="Rate if the AI Answer is helpful to the User Question using the Retrieved Context.",
+            query_identifier="User Question",
+            context_identifier="Retrieved Context",
+            response_identifier="AI Answer",
+        )
+    # default should be continuous
+    assert e.mode in (
+        None,
+        "continuous",
+    ), "Eval.mode should default to 'continuous' (or None treated as continuous)"
+
+
+def test_eval_mode_binary_set_and_persisted() -> None:
+    e = Eval(
+        name="mentions_company",
+        criteria="Does the AI Answer mention any company names? Answer Yes/No.",
+        query_identifier="User Question",
+        response_identifier="AI Answer",
+        mode="binary",
+    )
+    assert e.mode == "binary"
+    assert e.response_identifier == "AI Answer"
+    assert e.query_identifier == "User Question"
+
+
+@pytest.mark.asyncio
+async def test_api_binary_and_continuous_mix_roundtrip_payload() -> None:
+    """Mix of modes should be preserved per-eval in payload."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals = [
+            Eval(
+                name="response_helpfulness",
+                criteria="Rate helpfulness from 0-1.",
+                query_identifier="Question",
+                context_identifier="Context",
+                response_identifier="Answer",
+                mode="binary",
+            ),
+            Eval(
+                name="mentions_company",
+                criteria="Does the Answer mention any company? Yes/No.",
+                response_identifier="Answer",
+                mode="binary",
+            ),
+        ]
+
+    mock_resp_json = {
+        "trustworthiness": {"score": 0.9},
+        "response_helpfulness": {"score": 0.8},
+        "mentions_company": {"score": 0.0},
+    }
+
+    mock_response = mock.MagicMock()
+    mock_response.status = 200
+    mock_response.json = mock.AsyncMock(return_value=mock_resp_json)
+
+    mock_session = mock.MagicMock()
+    mock_session.post = mock.AsyncMock(return_value=mock_response)
+    mock_session.close = mock.AsyncMock()
+
+    mock_rate_handler = mock.MagicMock()
+    mock_rate_handler.__aenter__ = mock.AsyncMock()
+    mock_rate_handler.__aexit__ = mock.AsyncMock()
+
+    with mock.patch("aiohttp.ClientSession", return_value=mock_session):
+        result = await api.tlm_rag_score(
+            api_key="k",
+            response={"response": "A"},
+            prompt=None,
+            query="Q?",
+            context="C",
+            evals=evals,
+            quality_preset="medium",
+            options=None,
+            rate_handler=mock_rate_handler,
+        )
+
+    assert set(result.keys()) >= {
+        "trustworthiness",
+        "response_helpfulness",
+        "mentions_company",
+    }
+
+    call_args = mock_session.post.call_args
+    payload = call_args[1]["json"]
+    sent_evals = {e["name"]: e for e in payload.get("evals", [])}
+    assert sent_evals["response_helpfulness"].get(
+        "mode", sent_evals["response_helpfulness"].get(_TLM_EVAL_MODE_KEY)
+    ) in (
+        None,
+        "continuous",
+    )
+    assert (
+        sent_evals["mentions_company"].get("mode", sent_evals["mentions_company"].get(_TLM_EVAL_MODE_KEY)) == "binary"
+    )
+
+
+def test_score_modes_explicit(trustworthy_rag_api_key: str) -> None:
+    """Ensure both continuous and binary evals are accepted and scored (0..1)."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals = [
+            Eval(
+                name="response_helpfulness",
+                criteria="Rate helpfulness from 0 to 1.",
+                query_identifier="Question",
+                context_identifier="Context",
+                response_identifier="Answer",
+                mode="continuous",
+            ),
+            Eval(
+                name="mentions_company",
+                criteria="Does the Answer mention a company? Yes/No.",
+                response_identifier="Answer",
+                mode="binary",
+            ),
+        ]
+
+        rag = TrustworthyRAG(api_key=trustworthy_rag_api_key, evals=evals)
+    raw_score = rag.score(query=test_query, context=test_context, response=test_response)
+
+    assert is_trustworthy_rag_score(raw_score)
+
+    # --- Normalize to: Dict[str, Mapping[str, Any]] ---
+    scores_by_name: dict[str, Mapping[str, Any]] = {}
+
+    if isinstance(raw_score, list):
+        # e.g. [{"name": "response_helpfulness", "score": 0.7}, ...]
+        for e in raw_score:
+            if isinstance(e, dict):
+                name = e.get("name")
+                if isinstance(name, str):
+                    scores_by_name[name] = cast(Mapping[str, Any], e)
+    elif isinstance(raw_score, dict):
+        # Could be dict[str, ...] OR dict[EvalMetric, ...]
+        # Case A: string keys
+        all_str_keys = all(isinstance(k, str) for k in raw_score)
+        if all_str_keys:
+            for k, v in raw_score.items():
+                scores_by_name[k] = cast(Mapping[str, Any], v)
+        else:
+            # Case B: enum/non-str keys → align by order with our 'evals' list
+            # Dicts preserve insertion order; assume provider returns in same order as 'evals'
+            values_in_order: Sequence[Any] = list(raw_score.values())
+            for ev, v in zip(evals, values_in_order):
+                if isinstance(v, dict):
+                    scores_by_name[ev.name] = cast(Mapping[str, Any], v)
+
+    # --- Validate both evals exist and have score ∈ [0,1] or None ---
+    for expected in ("response_helpfulness", "mentions_company"):
+        assert expected in scores_by_name, f"{expected} missing in result"
+        s = scores_by_name[expected].get("score")
+        assert (s is None) or (isinstance(s, float) and 0.0 <= s <= 1.0), f"Invalid score for {expected}: {s}"
