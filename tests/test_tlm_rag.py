@@ -255,7 +255,13 @@ def test_get_evals(trustworthy_rag: TrustworthyRAG) -> None:
 
     # Verify that the returned list is a copy
     original_evals = trustworthy_rag._evals
-    evals.append(Eval(name="new_eval", criteria="New criteria", query_identifier="query"))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*criteria.*",
+            category=UserWarning,
+        )
+        evals.append(Eval(name="new_eval", criteria="New criteria", query_identifier="query"))
     assert len(evals) == len(original_evals) + 1
     assert len(trustworthy_rag._evals) == len(original_evals)
 
